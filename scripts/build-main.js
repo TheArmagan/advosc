@@ -1,28 +1,41 @@
 import esbuild from 'esbuild';
-import path from 'node:path';
 
 const watch = process.argv.includes('--watch');
 
-const buildOptions = {
-  entryPoints: ['src/main/main.ts', 'src/main/preload.ts'],
+// Separate build configs so preload stays CommonJS (Electron expects CJS for preload)
+const mainConfig = {
+  entryPoints: ['src/main/main.ts'],
   bundle: true,
   platform: 'node',
   target: 'node18',
-  outdir: 'dist',
+  outfile: 'dist/main.js',
   external: ['electron'],
   sourcemap: true,
   minify: !watch,
   format: 'esm',
 };
 
+const preloadConfig = {
+  entryPoints: ['src/main/preload.ts'],
+  bundle: true,
+  platform: 'node',
+  target: 'node18',
+  outfile: 'dist/preload.js',
+  external: ['electron'],
+  sourcemap: true,
+  minify: !watch,
+  format: 'cjs', // keep preload as CommonJS so Electron doesn't throw import syntax error
+};
+
 async function build() {
   if (watch) {
-    const ctx = await esbuild.context(buildOptions);
-    await ctx.watch();
-    console.log('Watching for changes in main process...');
+    const mainCtx = await esbuild.context(mainConfig);
+    const preloadCtx = await esbuild.context(preloadConfig);
+    await Promise.all([mainCtx.watch(), preloadCtx.watch()]);
+    console.log('Watching for changes in main & preload...');
   } else {
-    await esbuild.build(buildOptions);
-    console.log('Main process built successfully!');
+    await Promise.all([esbuild.build(mainConfig), esbuild.build(preloadConfig)]);
+    console.log('Main & preload built successfully!');
   }
 }
 

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,7 +16,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-    },
+    }
   });
 
   // Set CSP header
@@ -28,6 +28,8 @@ function createWindow() {
       },
     });
   });
+
+  // --
 
   // Load the index.html
   mainWindow.loadFile(path.join(__dirname, '../index.html'));
@@ -43,6 +45,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Theme IPC: get current and emit on changes
+  ipcMain.handle('theme:get', () => (nativeTheme.shouldUseDarkColors ? 'dark' : 'light'));
+  ipcMain.on('theme:get-sync', (event) => {
+    event.returnValue = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  });
+  nativeTheme.on('updated', () => {
+    const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+    BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('theme:changed', theme));
+  });
+
   createWindow();
 
   app.on('activate', () => {

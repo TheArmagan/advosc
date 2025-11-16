@@ -8,12 +8,23 @@
     CardHeader,
     CardTitle,
   } from "$lib/components/ui/card";
+  import { onMount } from "svelte";
 
   let count = $state(0);
 
   function increment() {
     count++;
   }
+
+  onMount(() => {
+    document.documentElement.classList.toggle(
+      "dark",
+      window.electronAPI.theme.current() === "dark"
+    );
+    return window.electronAPI.theme.onChange((theme) => {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    });
+  });
 </script>
 
 <main class="container mx-auto p-8">

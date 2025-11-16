@@ -45,7 +45,10 @@ const buildOptions = {
   outfile: 'dist/renderer.js',
   sourcemap: true,
   minify: !watch,
-  conditions: ['style', 'browser', 'module', 'default'],
+  // Include 'svelte' so packages exporting a Svelte build (mode-watcher, component libs) resolve.
+  conditions: ['svelte', 'style', 'browser', 'module', 'default'],
+  // Prefer the 'svelte' field before browser/module/main when resolving entry points.
+  mainFields: ['svelte', 'browser', 'module', 'main'],
   alias: {
     '$lib': path.resolve(__dirname, '..', 'src', 'renderer', 'lib').replace(/\\/g, '/'),
   },
