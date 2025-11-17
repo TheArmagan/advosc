@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
+import chokidar, { type FSWatcher } from 'chokidar';
 import { fileURLToPath } from 'url';
 // @ts-ignore
 import OSCReq from "osc";
@@ -79,6 +81,67 @@ app.whenReady().then(async () => {
     event.returnValue = process.env[key];
   });
 
+  // Path join (sync)
+  ipcMain.on('path:join', (event, ...paths: string[]) => {
+    event.returnValue = path.join(...paths);
+  });
+
+  ipcMain.on('path:sep', (event) => {
+    event.returnValue = path.sep;
+  });
+
+  // Files: read text (async)
+  ipcMain.handle('files:readText', async (_event, filePath: string, enc: string = 'utf-8') => {
+    return await fs.promises.readFile(filePath, enc as BufferEncoding);
+  });
+
+  // read json
+  ipcMain.handle('files:readJSON', async (_event, filePath: string, enc: string = 'utf-8') => {
+    let text = await fs.promises.readFile(filePath, enc as BufferEncoding);
+    // remove BOM if present
+    text = text.replace(/\uFEFF/g, '');
+    return JSON.parse(text);
+  });
+
+  // Files: find files recursively (basic, no external filter for security)
+  ipcMain.handle('files:findFiles', async (_event, dirPath: string) => {
+    const results: string[] = [];
+    const walk = (current: string) => {
+      const items = fs.readdirSync(current);
+      for (const item of items) {
+        const full = path.join(current, item);
+        const stat = fs.statSync(full);
+        if (stat.isDirectory()) walk(full); else results.push(full);
+      }
+    };
+    try {
+      walk(dirPath);
+    } catch (_) { }
+    return results;
+  });
+
+  // Files: watch
+  const watchers = new Map<string, FSWatcher>();
+  ipcMain.on('files:watch:start', (event, payload: { id: string; filePaths: string[]; options?: { ignoreInitial?: boolean } }) => {
+    const { id, filePaths, options } = payload;
+    const watcher = chokidar.watch(filePaths, { ignoreInitial: options?.ignoreInitial ?? true });
+    const send = (eventName: string, filePath: string) => {
+      event.sender.send('files:watch:event', { id, eventName, path: filePath });
+    };
+    watcher.on('add', p => send('add', p));
+    watcher.on('change', p => send('change', p));
+    watcher.on('unlink', p => send('unlink', p));
+    watchers.set(id, watcher);
+  });
+  ipcMain.on('files:watch:stop', (_event, id: string) => {
+    const watcher = watchers.get(id);
+    if (watcher) {
+      watcher.removeAllListeners();
+      watcher.close();
+      watchers.delete(id);
+    }
+  });
+
   // Theme IPC: get current and emit on changes
   ipcMain.on('theme:get', (event) => {
     event.returnValue = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
@@ -103,6 +166,7 @@ app.whenReady().then(async () => {
   });
 
   port.on("message", (message: OSCMessage) => {
+    if (!message || !message.address) return;
     BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('osc:message', message));
   });
 
