@@ -14,7 +14,7 @@ export interface PreloadElectronAPI {
     close: () => void;
   };
   osc: {
-    send: (address: string, args?: (number | string | boolean | null | undefined)[]) => void;
+    send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
   };
 }
@@ -37,7 +37,7 @@ const api: PreloadElectronAPI = {
     close: () => ipcRenderer.send('frame:close'),
   },
   osc: {
-    send: (address: string, args: (number | string | boolean | null | undefined)[] = []) => {
+    send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => {
       ipcRenderer.invoke('osc:send', address, args);
     },
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => {
