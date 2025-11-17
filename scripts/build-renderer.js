@@ -64,6 +64,7 @@ const buildOptions = {
       compilerOptions: {
         css: 'injected',
         dev: watch,
+        runes: true,
       },
       filterWarnings: (warning) => {
         // Suppress certain warnings if needed

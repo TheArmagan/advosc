@@ -1,48 +1,51 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-// Define channel sets with literal types
-const TO_MAIN_CHANNELS = ['toMain'] as const;
-const FROM_MAIN_CHANNELS = ['fromMain'] as const;
-
-export type ToMainChannel = typeof TO_MAIN_CHANNELS[number];
-export type FromMainChannel = typeof FROM_MAIN_CHANNELS[number];
-
-interface PreloadEnvAPI {
-  get(key: string): string | undefined;
-}
-
 export interface PreloadElectronAPI {
-  send(channel: ToMainChannel, data: unknown): void;
-  receive(channel: FromMainChannel, func: (...args: unknown[]) => void): void;
-  env: PreloadEnvAPI;
+  env: {
+    get(key: string): string | undefined;
+  };
   theme: {
     current: () => 'light' | 'dark';
     onChange: (callback: (theme: 'light' | 'dark') => void) => () => void;
   };
+  frame: {
+    minimize: () => void;
+    maximize: () => void;
+    close: () => void;
+  };
+  osc: {
+    send: (address: string, args?: (number | string | boolean | null | undefined)[]) => void;
+    onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
+  };
 }
 
 const api: PreloadElectronAPI = {
-  send: (channel, data) => {
-    if (TO_MAIN_CHANNELS.includes(channel)) {
-      ipcRenderer.send(channel, data);
-    }
-  },
-  receive: (channel, func) => {
-    if (FROM_MAIN_CHANNELS.includes(channel)) {
-      ipcRenderer.on(channel, (event, ...args) => func(...args));
-    }
-  },
   env: {
-    get: (key) => process.env[key],
+    get: (key) => ipcRenderer.sendSync('env:get', key),
   },
   theme: {
-    current: () => ipcRenderer.sendSync('theme:get-sync') as 'light' | 'dark',
+    current: () => ipcRenderer.sendSync('theme:get') as 'light' | 'dark',
     onChange: (callback) => {
       const listener = (_e: unknown, theme: 'light' | 'dark') => callback(theme);
       ipcRenderer.on('theme:changed', listener as any);
       return () => ipcRenderer.removeListener('theme:changed', listener as any);
     },
   },
+  frame: {
+    minimize: () => ipcRenderer.send('frame:minimize'),
+    maximize: () => ipcRenderer.send('frame:maximize'),
+    close: () => ipcRenderer.send('frame:close'),
+  },
+  osc: {
+    send: (address: string, args: (number | string | boolean | null | undefined)[] = []) => {
+      ipcRenderer.invoke('osc:send', address, args);
+    },
+    onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => {
+      const listener = (_e: unknown, message: { address: string; args: any[] }) => callback(message);
+      ipcRenderer.on('osc:message', listener as any);
+      return () => ipcRenderer.removeListener('osc:message', listener as any);
+    }
+  }
 };
 
-contextBridge.exposeInMainWorld('electronAPI', api);
+contextBridge.exposeInMainWorld('ADVOSCNative', api);

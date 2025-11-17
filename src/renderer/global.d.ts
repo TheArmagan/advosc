@@ -4,7 +4,7 @@ import type { PreloadElectronAPI } from "../main/preload";
 
 declare global {
   interface Window {
-    electronAPI: PreloadElectronAPI;
+    ADVOSCNative: PreloadElectronAPI;
   }
 }
 

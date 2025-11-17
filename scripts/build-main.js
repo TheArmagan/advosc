@@ -9,7 +9,7 @@ const mainConfig = {
   platform: 'node',
   target: 'node18',
   outfile: 'dist/main.js',
-  external: ['electron'],
+  external: ['electron', 'osc'],
   sourcemap: true,
   minify: !watch,
   format: 'esm',
