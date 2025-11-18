@@ -1,3 +1,4 @@
+import _ from "lodash"
 import { writable, get } from "svelte/store"
 
 export type AvatarOSCSchema = {
@@ -32,43 +33,87 @@ const VRChatLocalAvatarDataDir = window.ADVOSCNative.path.join(window.ADVOSCNati
 const schemaStore = writable<AvatarOSCSchema | null>(null);
 const parametersStore = writable<Record<string, number>>({});
 
+let cachedTypes: Record<string, "Float" | "Int" | "Bool"> = {};
 let lastAvatarId: string | null = null;
 let lastUserId: string | null = null;
 
 export const avatarOSC = {
   parameters: parametersStore,
   schema: schemaStore,
+  getParameterType(address: string): "Float" | "Int" | "Bool" | null {
+    if (cachedTypes[address]) return cachedTypes[address];
+    const schema = get(schemaStore);
+    const parameter = schema?.parameters.find(p => p.input?.address === address || p.output?.address === address);
+    if (parameter) {
+      const type = parameter.input?.address === address ? parameter.input?.type : parameter.output?.type;
+      cachedTypes[address] = type;
+      return type;
+    }
+    return null;
+  },
+  setParameter(address: string, value: number) {
+    parametersStore.update(prev => ({ ...prev, [address]: value }));
+    window.ADVOSCNative.osc.send(address, value);
+  },
   get lastAvatarId() {
     return lastAvatarId;
   },
   get lastUserId() {
     return lastUserId;
-  }
+  },
+  updateOSCSchema,
 }
+
+
+let lastMessageUpdates: Record<string, number> = {};
+
+const updateLastestUpdates = _.throttle(() => {
+  const existingParameters = get(parametersStore);
+  parametersStore.set({ ...existingParameters, ...lastMessageUpdates });
+  lastMessageUpdates = {};
+}, 50);
+
+let pauseUntil = 0;
 
 window.ADVOSCNative.osc.onMessage((message) => {
   if (message.address === "/avatar/change") {
     const avatarId = message.args[0];
     console.log("Avatar changed:", avatarId);
     lastAvatarId = avatarId as string;
+    parametersStore.set({});
+    lastMessageUpdates = {};
+    updateLastestUpdates();
+    pauseUntil = Date.now() + 1000; // pause updates for 500ms to allow file writes
     updateOSCSchema();
     return;
   }
-  if (message.address.startsWith("/avatar/")) {
+  if (message.address.startsWith("/avatar/") && Date.now() > pauseUntil) {
     let value = message.args[0] as number;
-    const schema = get(schemaStore);
-    const parameter = schema?.parameters.find(p => p.input?.address === message.address);
-    if (parameter) {
-      if (parameter.input.type === "Bool") {
-        value = value !== 0 ? 1 : 0;
-      } else if (parameter.input.type === "Int") {
-        value = Math.floor(value);
-      } else if (parameter.input.type === "Float") {
-        if (value <= 0) value = 0.001;
-        if (value > 1) value = 1;
+    const type = avatarOSC.getParameterType(message.address);
+
+    let estimatedType = type;
+    if (!estimatedType) {
+      if (value > 0 && value < 1 && (Number(value) === value && value % 1 !== 0)) {
+        estimatedType = "Float";
+      } else if (value === 0 || value === 1) {
+        estimatedType = "Bool";
+      } else {
+        estimatedType = "Int";
       }
+      cachedTypes[message.address] = estimatedType;
     }
-    parametersStore.update(prev => ({ ...prev, [message.address]: value }));
+
+    switch (type) {
+      case "Bool": value = value ? 1 : 0; break;
+      case "Int": value = Math.floor(value); break;
+      case "Float":
+        if (value <= 0) value = 0.0001;
+        if (value > 1) value = 1;
+        break;
+    }
+
+    lastMessageUpdates[message.address] = value;
+    updateLastestUpdates();
     // console.log("Avatar parameter updated:", message.address, value);
   }
 });
@@ -87,6 +132,7 @@ async function updateOSCSchema() {
   );
   const oscData = await window.ADVOSCNative.files.readJSON(oscFilePath);
   if (!oscData) return;
+  cachedTypes = {};
   schemaStore.set(oscData as AvatarOSCSchema);
   console.log("Avatar OSC schema loaded from existing file:", oscData);
 }
@@ -95,7 +141,7 @@ window.ADVOSCNative.files.watch(
   [VRChatOSCBaseDir, VRChatLocalAvatarDataDir],
   async (eventName, path) => {
     if (eventName !== "change" && eventName !== "add") return;
-    await new Promise(resolve => setTimeout(resolve, 100)); // wait a bit for file to be fully written
+    await new Promise(resolve => setTimeout(resolve, 500)); // wait a bit for file to be fully written
 
     if (path.includes(PathVerifiers.VRChatLocalAvatarDataDir)) {
       const pathSplit = path.split(window.ADVOSCNative.path.sep);

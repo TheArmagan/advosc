@@ -4,23 +4,25 @@
   import { Maximize, Minus, X } from "@lucide/svelte";
   import RouteLink from "$lib/components/route-link.svelte";
   import { router } from "$lib/router";
+  import { Toaster } from "$lib/components/ui/sonner/index.js";
 
+  let currentTheme: "light" | "dark" = $state("light");
   onMount(() => {
-    document.documentElement.classList.toggle(
-      "dark",
-      window.ADVOSCNative.theme.current() === "dark"
-    );
+    currentTheme = window.ADVOSCNative.theme.current();
+    document.documentElement.classList.toggle("dark", currentTheme === "dark");
     return window.ADVOSCNative.theme.onChange((theme) => {
       document.documentElement.classList.toggle("dark", theme === "dark");
+      currentTheme = theme;
     });
   });
 
   const currentPage = $derived($router.currentPage);
 </script>
 
+<Toaster theme={currentTheme} />
 <main class="w-full h-full flex flex-col">
   <nav
-    class="w-full h-12 bg-black/75 flex items-center pl-4 border-b justify-between"
+    class="w-full h-12 bg-black/95 flex items-center pl-4 border-b justify-between fixed"
     style="-webkit-app-region: drag;"
   >
     <div class="flex items-center gap-4 h-12">
@@ -77,5 +79,7 @@
       </button>
     </div>
   </nav>
-  <currentPage.component class="flex-1 w-full h-full overflow-auto" />
+  <div class="w-full flex-1 flex pt-12">
+    <currentPage.component />
+  </div>
 </main>
