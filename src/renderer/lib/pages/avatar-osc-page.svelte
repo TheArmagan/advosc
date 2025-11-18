@@ -8,13 +8,14 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import { SearchIcon } from "@lucide/svelte";
+  import { LockIcon, LockOpenIcon, SearchIcon } from "@lucide/svelte";
   import * as Select from "$lib/components/ui/select/index.js";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   const schema = avatarOSC.schema;
   const parameters = avatarOSC.parameters;
+  const lockedParameterAddresses = avatarOSC.lockedParameterAddresses;
 
   let inputParameters = $state<Record<string, number>>({});
 
@@ -212,6 +213,8 @@
                       <InputGroup.Addon align="inline-end">
                         <InputGroup.Button
                           onclick={() => {
+                            if (inputParameters[key] === undefined)
+                              inputParameters[key] = 0;
                             avatarOSC.setParameter(
                               key,
                               inputParameters[key] || 0
@@ -219,6 +222,39 @@
                             toast.success("Parameter Updated");
                           }}>Update</InputGroup.Button
                         >
+                      </InputGroup.Addon>
+                      <InputGroup.Addon align="inline-end">
+                        {#if $lockedParameterAddresses.includes(key)}
+                          <InputGroup.Button
+                            onclick={() => {
+                              if (inputParameters[key] === undefined)
+                                inputParameters[key] = 0;
+                              avatarOSC.setParameter(
+                                key,
+                                inputParameters[key] || 0,
+                                false
+                              );
+                              toast.success("Parameter Unlocked");
+                            }}
+                          >
+                            <LockIcon />
+                          </InputGroup.Button>
+                        {:else}
+                          <InputGroup.Button
+                            onclick={() => {
+                              if (inputParameters[key] === undefined)
+                                inputParameters[key] = 0;
+                              avatarOSC.setParameter(
+                                key,
+                                inputParameters[key] || 0,
+                                true
+                              );
+                              toast.success("Parameter Locked");
+                            }}
+                          >
+                            <LockOpenIcon />
+                          </InputGroup.Button>
+                        {/if}
                       </InputGroup.Addon>
                     </InputGroup.Root>
                   </div>

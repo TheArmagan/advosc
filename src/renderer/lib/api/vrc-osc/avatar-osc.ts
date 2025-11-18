@@ -33,6 +33,9 @@ const VRChatLocalAvatarDataDir = window.ADVOSCNative.path.join(window.ADVOSCNati
 const schemaStore = writable<AvatarOSCSchema | null>(null);
 const parametersStore = writable<Record<string, number>>({});
 
+let lockedParameters: Record<string, number> = {};
+const lockedParameterAddresses = writable<string[]>([]);
+
 let cachedTypes: Record<string, "Float" | "Int" | "Bool"> = {};
 let lastAvatarId: string | null = null;
 let lastUserId: string | null = null;
@@ -40,6 +43,7 @@ let lastUserId: string | null = null;
 export const avatarOSC = {
   parameters: parametersStore,
   schema: schemaStore,
+  lockedParameterAddresses,
   getParameterType(address: string): "Float" | "Int" | "Bool" | null {
     if (cachedTypes[address]) return cachedTypes[address];
     const schema = get(schemaStore);
@@ -51,8 +55,14 @@ export const avatarOSC = {
     }
     return null;
   },
-  setParameter(address: string, value: number) {
+  setParameter(address: string, value: number, locked: boolean = false) {
     parametersStore.update(prev => ({ ...prev, [address]: value }));
+    if (locked) {
+      lockedParameters[address] = value;
+    } else {
+      delete lockedParameters[address];
+    }
+    lockedParameterAddresses.set(Object.keys(lockedParameters));
     window.ADVOSCNative.osc.send(address, value);
   },
   get lastAvatarId() {
@@ -82,6 +92,9 @@ window.ADVOSCNative.osc.onMessage((message) => {
     lastAvatarId = avatarId as string;
     parametersStore.set({});
     lastMessageUpdates = {};
+    lockedParameters = {};
+    lockedParameterAddresses.set([]);
+    cachedTypes = {};
     updateLastestUpdates();
     pauseUntil = Date.now() + 1000; // pause updates for 500ms to allow file writes
     updateOSCSchema();
@@ -89,6 +102,12 @@ window.ADVOSCNative.osc.onMessage((message) => {
   }
   if (message.address.startsWith("/avatar/") && Date.now() > pauseUntil) {
     let value = message.args[0] as number;
+
+    if (lockedParameters[message.address] !== undefined) {
+      value = lockedParameters[message.address];
+      window.ADVOSCNative.osc.send(message.address, value);
+    }
+
     const type = avatarOSC.getParameterType(message.address);
 
     let estimatedType = type;
