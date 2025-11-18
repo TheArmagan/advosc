@@ -1,4 +1,4 @@
-import { writable } from "svelte/store"
+import { writable, get } from "svelte/store"
 
 export type AvatarOSCSchema = {
   id: string,
@@ -29,15 +29,15 @@ export type AvatarData = {
 const VRChatOSCBaseDir = window.ADVOSCNative.path.join(window.ADVOSCNative.env.get("APPDATA")!, "../LocalLow/VRChat/VRChat/OSC");
 const VRChatLocalAvatarDataDir = window.ADVOSCNative.path.join(window.ADVOSCNative.env.get("APPDATA")!, "../LocalLow/VRChat/VRChat/LocalAvatarData");
 
-let avatarOSCSchema: AvatarOSCSchema | null = null;
-let currentParameters = writable<{ [address: string]: number }>({});
+const schemaStore = writable<AvatarOSCSchema | null>(null);
+const parametersStore = writable<Record<string, number>>({});
 
 let lastAvatarId: string | null = null;
 let lastUserId: string | null = null;
 
 export const avatarOSC = {
-  schema: () => avatarOSCSchema,
-  parameters: currentParameters,
+  parameters: parametersStore,
+  schema: schemaStore,
   get lastAvatarId() {
     return lastAvatarId;
   },
@@ -55,23 +55,20 @@ window.ADVOSCNative.osc.onMessage((message) => {
     return;
   }
   if (message.address.startsWith("/avatar/")) {
-    let value = message.args[0];
-    const parameter = avatarOSCSchema?.parameters.find(p => p.input?.address === message.address);
+    let value = message.args[0] as number;
+    const schema = get(schemaStore);
+    const parameter = schema?.parameters.find(p => p.input?.address === message.address);
     if (parameter) {
       if (parameter.input.type === "Bool") {
-        value = (value as number) !== 0 ? 1 : 0;
+        value = value !== 0 ? 1 : 0;
       } else if (parameter.input.type === "Int") {
-        value = Math.floor(value as number);
+        value = Math.floor(value);
       } else if (parameter.input.type === "Float") {
-        value = value as number;
         if (value <= 0) value = 0.001;
         if (value > 1) value = 1;
       }
     }
-    currentParameters.update(params => {
-      params[message.address] = value as number;
-      return params;
-    });
+    parametersStore.update(prev => ({ ...prev, [message.address]: value }));
     // console.log("Avatar parameter updated:", message.address, value);
   }
 });
@@ -88,13 +85,10 @@ async function updateOSCSchema() {
     "Avatars",
     `${lastAvatarId}.json`
   );
-  try {
-    const oscData = await window.ADVOSCNative.files.readJSON(oscFilePath);
-    avatarOSCSchema = oscData;
-    console.log("Avatar OSC schema loaded from existing file:", avatarOSCSchema);
-  } catch (e) {
-    console.warn("Failed to load existing Avatar OSC schema file:", e);
-  }
+  const oscData = await window.ADVOSCNative.files.readJSON(oscFilePath);
+  if (!oscData) return;
+  schemaStore.set(oscData as AvatarOSCSchema);
+  console.log("Avatar OSC schema loaded from existing file:", oscData);
 }
 
 window.ADVOSCNative.files.watch(
@@ -117,17 +111,19 @@ window.ADVOSCNative.files.watch(
 
     if (lastAvatarId && path.includes(lastAvatarId)) {
       const data = await window.ADVOSCNative.files.readJSON(path);
-      if (path.includes(PathVerifiers.VRChatLocalAvatarDataDir)) {
+      if (data && path.includes(PathVerifiers.VRChatLocalAvatarDataDir)) {
         const existingParameters = (data as AvatarData).animationParameters || [];
+        const schema = get(schemaStore);
+        const updates: Record<string, number> = {};
         existingParameters.forEach(param => {
-          const schemaParam = avatarOSCSchema?.parameters.find(p => p.name === param.name);
+          const schemaParam = schema?.parameters.find(p => p.name === param.name);
           if (schemaParam) {
-            currentParameters.update(params => {
-              params[schemaParam.input.address] = param.value;
-              return params;
-            });
+            updates[schemaParam.input.address] = param.value;
           }
         });
+        if (Object.keys(updates).length) {
+          parametersStore.update(prev => ({ ...prev, ...updates }));
+        }
         console.log("Avatar data updated:", data);
       }
 

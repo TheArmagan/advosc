@@ -38,24 +38,29 @@ function createWindow() {
     frame: false
   });
 
-  // Set CSP header
+  const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
+
+  // Set CSP for both dev and production
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': ["default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"],
+        'Content-Security-Policy': [
+          isDev
+            ? "default-src 'self' http://localhost:5173 ws://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; script-src 'self' http://localhost:5173; connect-src 'self' http://localhost:5173 ws://localhost:5173"
+            : "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+        ],
       },
     });
   });
 
-  // --
-
-  // Load the index.html
-  mainWindow.loadFile(path.join(__dirname, '../index.html'));
-
-  // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
+  if (isDev) {
+    // Vite dev server
+    mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
+  } else {
+    // After Vite build, index.html is emitted to dist next to main.js
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
   }
 
   mainWindow.on('closed', () => {
@@ -92,11 +97,13 @@ app.whenReady().then(async () => {
 
   // Files: read text (async)
   ipcMain.handle('files:readText', async (_event, filePath: string, enc: string = 'utf-8') => {
+    if (!fs.existsSync(filePath)) return null;
     return await fs.promises.readFile(filePath, enc as BufferEncoding);
   });
 
   // read json
   ipcMain.handle('files:readJSON', async (_event, filePath: string, enc: string = 'utf-8') => {
+    if (!fs.existsSync(filePath)) return null;
     let text = await fs.promises.readFile(filePath, enc as BufferEncoding);
     // remove BOM if present
     text = text.replace(/\uFEFF/g, '');
