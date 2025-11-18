@@ -8,24 +8,26 @@
   const parameters = avatarOSC.parameters;
 </script>
 
-<pre>{JSON.stringify($schema, null, 2)}</pre>
-<pre>{JSON.stringify($parameters, null, 2)}</pre>
+<!-- <pre>{JSON.stringify($schema, null, 2)}</pre>
+<pre>{JSON.stringify($parameters, null, 2)}</pre> -->
 
-<Tabs.Root value="parameters" class="w-[400px]">
-  <Tabs.List class="grid w-full grid-cols-2">
-    <Tabs.Trigger value="parameters">Parameters</Tabs.Trigger>
-  </Tabs.List>
-  <Tabs.Content value="account">
-    <Item.Root variant="muted">
-      <Item.Content>
-        <Item.Title>Muted Variant</Item.Title>
-        <Item.Description>
-          Subdued appearance with muted colors for secondary content.
-        </Item.Description>
-      </Item.Content>
-      <Item.Actions>
-        <Button variant="outline" size="sm">Open</Button>
-      </Item.Actions>
-    </Item.Root>
-  </Tabs.Content>
-</Tabs.Root>
+<div class="p-4 w-full">
+  <Tabs.Root value="parameters" class="w-[400px]">
+    <Tabs.List>
+      <Tabs.Trigger value="parameters">Parameters</Tabs.Trigger>
+    </Tabs.List>
+    <Tabs.Content value="parameters">
+      <Item.Root variant="muted">
+        <Item.Content>
+          <Item.Title>Muted Variant</Item.Title>
+          <Item.Description>
+            Subdued appearance with muted colors for secondary content.
+          </Item.Description>
+        </Item.Content>
+        <Item.Actions>
+          <Button variant="outline" size="sm">Open</Button>
+        </Item.Actions>
+      </Item.Root>
+    </Tabs.Content>
+  </Tabs.Root>
+</div>
