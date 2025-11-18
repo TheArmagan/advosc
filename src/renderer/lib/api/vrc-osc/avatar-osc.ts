@@ -35,6 +35,17 @@ let currentParameters = writable<{ [address: string]: number }>({});
 let lastAvatarId: string | null = null;
 let lastUserId: string | null = null;
 
+export const avatarOSC = {
+  schema: () => avatarOSCSchema,
+  parameters: currentParameters,
+  get lastAvatarId() {
+    return lastAvatarId;
+  },
+  get lastUserId() {
+    return lastUserId;
+  }
+}
+
 window.ADVOSCNative.osc.onMessage((message) => {
   if (message.address === "/avatar/change") {
     const avatarId = message.args[0];
@@ -65,7 +76,7 @@ window.ADVOSCNative.osc.onMessage((message) => {
   }
 });
 
-const KeyVerifiers = {
+const PathVerifiers = {
   "VRChatOSCBaseDir": `VRChat${window.ADVOSCNative.path.sep}OSC`,
   "VRChatLocalAvatarDataDir": `VRChat${window.ADVOSCNative.path.sep}LocalAvatarData`
 };
@@ -92,13 +103,13 @@ window.ADVOSCNative.files.watch(
     if (eventName !== "change" && eventName !== "add") return;
     await new Promise(resolve => setTimeout(resolve, 100)); // wait a bit for file to be fully written
 
-    if (path.includes(KeyVerifiers.VRChatLocalAvatarDataDir)) {
+    if (path.includes(PathVerifiers.VRChatLocalAvatarDataDir)) {
       const pathSplit = path.split(window.ADVOSCNative.path.sep);
       const userId = pathSplit[pathSplit.lastIndexOf("LocalAvatarData") + 1];
       lastUserId = userId;
     }
 
-    if (path.includes(KeyVerifiers.VRChatOSCBaseDir)) {
+    if (path.includes(PathVerifiers.VRChatOSCBaseDir)) {
       const pathSplit = path.split(window.ADVOSCNative.path.sep);
       const userId = pathSplit[pathSplit.lastIndexOf("OSC") + 1];
       lastUserId = userId;
@@ -106,7 +117,7 @@ window.ADVOSCNative.files.watch(
 
     if (lastAvatarId && path.includes(lastAvatarId)) {
       const data = await window.ADVOSCNative.files.readJSON(path);
-      if (path.includes(KeyVerifiers.VRChatLocalAvatarDataDir)) {
+      if (path.includes(PathVerifiers.VRChatLocalAvatarDataDir)) {
         const existingParameters = (data as AvatarData).animationParameters || [];
         existingParameters.forEach(param => {
           const schemaParam = avatarOSCSchema?.parameters.find(p => p.name === param.name);
