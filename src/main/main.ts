@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
 import { fileURLToPath } from 'url';
+import { spawn, type ChildProcess } from 'child_process';
 // @ts-ignore
 import OSCReq from "osc";
 
@@ -21,7 +22,21 @@ const port = new OSCReq.UDPPort({
   remotePort: VRChatSenderPort,
 });
 
+type MediaCommand = 'skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
+
+interface MediaInfo {
+  title?: string;
+  artist?: string;
+  album?: string;
+  playbackStatus: 'Playing' | 'Paused' | 'Stopped' | 'Unknown';
+  position?: number;
+  duration?: number;
+  appName?: string;
+  hasArtwork: boolean;
+}
+
 let mainWindow: BrowserWindow | null = null;
+let mediaProcess: ChildProcess | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -61,14 +76,113 @@ function createWindow() {
   } else {
     // In production, try unpacked directory first (for asar.unpack), then fall back to regular path
     const unpackedPath = path.join(__dirname, '..', 'app.asar.unpacked', 'dist', 'index.html');
-    const regularPath = path.join(__dirname, 'index.html');
-
-    const indexPath = fs.existsSync(unpackedPath) ? unpackedPath : regularPath;
-    mainWindow.loadFile(indexPath);
+    mainWindow.loadFile(unpackedPath);
   }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+}
+
+function startMediaMonitor() {
+  if (mediaProcess) {
+    return;
+  }
+
+  const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
+  const exePath = isDev
+    ? path.join(__dirname, '..', 'static', 'win-media-info.exe')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
+
+  if (!fs.existsSync(exePath)) {
+    console.error('win-media-info.exe not found at:', exePath);
+    return;
+  }
+
+  // Don't pass any command to use default monitor behavior
+  mediaProcess = spawn(exePath, []);
+  let buffer = '';
+
+  mediaProcess.stdout?.on('data', (data: Buffer) => {
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const rawData = JSON.parse(trimmed);
+        const mediaInfo: MediaInfo = {
+          title: rawData.title,
+          artist: rawData.artist,
+          album: rawData.album,
+          playbackStatus: rawData.playback_status,
+          position: rawData.position,
+          duration: rawData.duration,
+          appName: rawData.app_name,
+          hasArtwork: rawData.has_artwork
+        };
+        BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('media:info', mediaInfo));
+      } catch (err) {
+        console.error('Failed to parse media info:', err, 'Line:', trimmed);
+      }
+    }
+  });
+
+  mediaProcess.stderr?.on('data', (data: Buffer) => {
+    console.error('Media monitor error:', data.toString());
+  });
+
+  mediaProcess.on('close', (code: number | null) => {
+    console.log('Media monitor process exited with code:', code);
+    mediaProcess = null;
+    // Restart after 5 seconds if not manually stopped
+    setTimeout(() => {
+      if (BrowserWindow.getAllWindows().length > 0) {
+        startMediaMonitor();
+      }
+    }, 5000);
+  });
+}
+
+function stopMediaMonitor() {
+  if (mediaProcess) {
+    mediaProcess.kill();
+    mediaProcess = null;
+  }
+}
+
+async function executeMediaCommand(command: MediaCommand): Promise<{ success: boolean; command: string; error?: string }> {
+  const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
+  const exePath = isDev
+    ? path.join(__dirname, '..', 'static', 'win-media-info.exe')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
+
+  if (!fs.existsSync(exePath)) {
+    return { success: false, command, error: 'win-media-info.exe not found' };
+  }
+
+  return new Promise((resolve) => {
+    const proc = spawn(exePath, [command]);
+    let output = '';
+
+    proc.stdout?.on('data', (data: Buffer) => {
+      output += data.toString();
+    });
+
+    proc.on('close', (code: number | null) => {
+      try {
+        const result = JSON.parse(output.trim());
+        resolve(result);
+      } catch {
+        resolve({ success: code === 0, command, error: code !== 0 ? 'Command failed' : undefined });
+      }
+    });
+
+    proc.on('error', (err) => {
+      resolve({ success: false, command, error: err.message });
+    });
   });
 }
 
@@ -197,6 +311,13 @@ app.whenReady().then(async () => {
     mainWindow?.close();
   });
 
+  // Media IPC handlers
+  ipcMain.handle('media:execute', async (_event, command: MediaCommand) => {
+    return await executeMediaCommand(command);
+  });
+
+  // Start media monitor
+  startMediaMonitor();
 
   createWindow();
 
@@ -208,6 +329,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  stopMediaMonitor();
   if (process.platform !== 'darwin') {
     app.quit();
   }

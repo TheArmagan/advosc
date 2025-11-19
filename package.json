@@ -7,7 +7,9 @@
   "scripts": {
     "build:main": "vite build --config vite.main.config.ts && vite build --config vite.preload.config.ts",
     "build:renderer": "vite build",
-    "build": "bun run build:main && bun run build:renderer",
+    "copy:static": "xcopy /E /I /Y static dist\\static",
+    "copy:natives": "if not exist dist\\natives mkdir dist\\natives && copy /Y src\\natives\\win-media-info\\target\\release\\win-media-info.exe dist\\natives\\",
+    "build": "bun run copy:static && bun run copy:natives && bun run build:main && bun run build:renderer",
     "dev:main": "concurrently \"vite build --config vite.main.config.ts --watch\" \"vite build --config vite.preload.config.ts --watch\"",
     "dev:renderer": "vite",
     "dev": "concurrently \"bun run dev:main\" \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=true NODE_ENV=development electron .\"",

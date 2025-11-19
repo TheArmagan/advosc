@@ -3,6 +3,19 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Local watcher event names we propagate from main
 type WatchEventName = 'add' | 'change' | 'unlink';
 
+export type MediaCommand = 'skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
+
+export interface MediaInfo {
+  title?: string;
+  artist?: string;
+  album?: string;
+  playbackStatus: 'Playing' | 'Paused' | 'Stopped' | 'Unknown';
+  position?: number;
+  duration?: number;
+  appName?: string;
+  hasArtwork: boolean;
+}
+
 export interface PreloadElectronAPI {
   env: { get(key: string): string | undefined };
   theme: {
@@ -10,6 +23,10 @@ export interface PreloadElectronAPI {
     onChange: (callback: (theme: 'light' | 'dark') => void) => () => void;
   };
   frame: { minimize: () => void; maximize: () => void; close: () => void };
+  media: {
+    execute: (command: MediaCommand) => Promise<{ success: boolean; command: string; error?: string }>;
+    onMediaInfo: (callback: (info: MediaInfo) => void) => () => void;
+  };
   osc: {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
@@ -46,6 +63,14 @@ const api: PreloadElectronAPI = {
     minimize: () => ipcRenderer.send('frame:minimize'),
     maximize: () => ipcRenderer.send('frame:maximize'),
     close: () => ipcRenderer.send('frame:close'),
+  },
+  media: {
+    execute: (command: MediaCommand) => ipcRenderer.invoke('media:execute', command) as Promise<{ success: boolean; command: string; error?: string }>,
+    onMediaInfo: (callback) => {
+      const listener = (_e: unknown, info: MediaInfo) => callback(info);
+      ipcRenderer.on('media:info', listener as any);
+      return () => ipcRenderer.removeListener('media:info', listener as any);
+    },
   },
   osc: {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => {
