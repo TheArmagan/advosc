@@ -9,13 +9,16 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
   import {
+    EqualIcon,
     FastForwardIcon,
+    LinkIcon,
     LockIcon,
     LockOpenIcon,
     PlayIcon,
     RotateCcwIcon,
     SearchIcon,
     SquareIcon,
+    UnlinkIcon,
   } from "@lucide/svelte";
   import * as Select from "$lib/components/ui/select/index.js";
   import { onMount } from "svelte";
@@ -54,10 +57,26 @@
     yoyo: false,
   });
 
+  let linkedProperties = $state<Record<string, string>>({});
+  let targetLinkedProperty = $state({
+    drawerOpen: false,
+    fromAddress: "",
+    toAddress: "",
+  });
+
   onMount(() => {
     inputParameters = { ...$parameters };
 
+    const unsubParams = avatarOSC.onParameterChange((address, value) => {
+      if (linkedProperties[address]) {
+        const linkedAddress = linkedProperties[address];
+        inputParameters[linkedAddress] = value;
+        avatarOSC.setParameter(linkedAddress, value, false);
+      }
+    });
+
     return () => {
+      unsubParams();
       // Cleanup GSAP timelines on unmount
       Object.values(gsapTimelines).forEach((tl) => tl?.kill());
     };
@@ -178,7 +197,11 @@
                   key
                 )
                   ? 'border border-red-500'
-                  : ''} {gsapTimelines[key] ? 'bg-green-500/10' : ''}"
+                  : ''} {gsapTimelines[key]
+                  ? 'bg-green-500/10'
+                  : ''} {linkedProperties[key]
+                  ? 'border border-orange-500'
+                  : ''}"
                 variant="muted"
               >
                 <div class="flex justify-between items-center w-full">
@@ -317,6 +340,16 @@
                               >
                                 <FastForwardIcon />
                                 Animate Parameter
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                onclick={() => {
+                                  targetLinkedProperty.fromAddress = key;
+                                  targetLinkedProperty.toAddress = "";
+                                  targetLinkedProperty.drawerOpen = true;
+                                }}
+                              >
+                                <EqualIcon />
+                                Link Property
                               </DropdownMenu.Item>
                             </DropdownMenu.Group>
                           </DropdownMenu.Content>
@@ -628,6 +661,102 @@
             }}
           >
             <PlayIcon />
+          </Button>
+        </div>
+        <Drawer.Close>
+          <Button variant="outline">Close</Button>
+        </Drawer.Close>
+      </Drawer.Footer>
+    </div>
+  </Drawer.Content>
+</Drawer.Root>
+<Drawer.Root
+  open={targetLinkedProperty.drawerOpen}
+  onOpenChange={(v) => (targetLinkedProperty.drawerOpen = v)}
+>
+  <Drawer.Content class="flex items-center justify-center">
+    <div class="w-96 flex flex-col gap-4 p-4">
+      <Drawer.Header class="flex items-center flex-col gap-2">
+        <Drawer.Title class="text-center">Link Parameter</Drawer.Title>
+        <Drawer.Description>
+          <div
+            class="font-mono w-fit text-sm bg-black/50 px-2 py-1 rounded truncate text-center"
+          >
+            {targetLinkedProperty.fromAddress}
+          </div>
+        </Drawer.Description>
+      </Drawer.Header>
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-1">
+          <Label>To Address</Label>
+          <Select.Root
+            type="single"
+            value={targetLinkedProperty.toAddress}
+            onValueChange={(v) => {
+              targetLinkedProperty.toAddress = v as string;
+            }}
+          >
+            <Select.Trigger class="w-full">
+              <div class="w-full items-center flex gap-1">
+                <span class="font-medium">
+                  {targetLinkedProperty.toAddress}
+                </span>
+              </div>
+            </Select.Trigger>
+            <Select.Content>
+              {#each Object.keys($parameters) as paramAddress}
+                {#if paramAddress !== targetLinkedProperty.fromAddress}
+                  <Select.Item
+                    value={paramAddress}
+                    class="flex items-center gap-2"
+                  >
+                    <div class="px-2 py-1 border w-12 text-center rounded">
+                      {avatarOSC.getParameterType(paramAddress) || "Unknown"}
+                    </div>
+                    <div class="flex flex-col gap-1">
+                      <span
+                        class="font-mono text-[10px] bg-black/50 px-1 py-0.5 rounded text-foreground/70 truncate"
+                        >{paramAddress}</span
+                      >
+                    </div>
+                  </Select.Item>
+                {/if}
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+      </div>
+      <Drawer.Footer class="flex items-center justify-between">
+        <div class="flex gap-2 items-center">
+          <Button
+            variant="destructive"
+            size="icon"
+            disabled={!linkedProperties[targetLinkedProperty.fromAddress]}
+            onclick={() => {
+              const fromAddress = targetLinkedProperty.fromAddress;
+              if (linkedProperties[fromAddress]) {
+                delete linkedProperties[fromAddress];
+                toast.success("Properties Unlinked");
+              }
+              targetLinkedProperty.drawerOpen = false;
+            }}
+          >
+            <UnlinkIcon />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            disabled={!!linkedProperties[targetLinkedProperty.fromAddress]}
+            onclick={() => {
+              const { fromAddress, toAddress } = targetLinkedProperty;
+              if (!fromAddress || !toAddress) return;
+
+              linkedProperties[fromAddress] = toAddress;
+              toast.success("Properties Linked");
+              targetLinkedProperty.drawerOpen = false;
+            }}
+          >
+            <LinkIcon />
           </Button>
         </div>
         <Drawer.Close>

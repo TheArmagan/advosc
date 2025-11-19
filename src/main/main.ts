@@ -55,6 +55,11 @@ function createWindow() {
 
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
 
+  const allowList = [
+    "https://lrclib.net",
+    "https://cdn.jsdelivr.net"
+  ]
+
   // Set CSP for both dev and production
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -62,8 +67,8 @@ function createWindow() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? "default-src 'self' http://localhost:5173 ws://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; script-src 'self' http://localhost:5173; connect-src 'self' http://localhost:5173 ws://localhost:5173"
-            : "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+            ? `default-src 'self' http://localhost:5173 ws://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; script-src 'self' http://localhost:5173; connect-src 'self' http://localhost:5173 ws://localhost:5173 ${allowList.join(' ')}`
+            : `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ${allowList.join(' ')}`
         ],
       },
     });

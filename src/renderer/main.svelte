@@ -1,25 +1,14 @@
 <script lang="ts">
   import "./app.css";
-  import { onMount } from "svelte";
   import { Maximize, Minus, X } from "@lucide/svelte";
   import RouteLink from "$lib/components/route-link.svelte";
   import { router } from "$lib/router";
   import { Toaster } from "$lib/components/ui/sonner/index.js";
 
-  let currentTheme: "light" | "dark" = $state("light");
-  onMount(() => {
-    currentTheme = window.ADVOSCNative.theme.current();
-    document.documentElement.classList.toggle("dark", currentTheme === "dark");
-    return window.ADVOSCNative.theme.onChange((theme) => {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      currentTheme = theme;
-    });
-  });
-
   const currentPage = $derived($router.currentPage);
 </script>
 
-<Toaster theme={currentTheme} />
+<Toaster theme="dark" />
 <main class="w-full h-full flex flex-col">
   <nav
     class="w-full h-12 bg-black/95 flex items-center pl-4 border-b justify-between fixed"

@@ -1,5 +1,9 @@
 <script lang="ts">
-  import "$lib/api/vrc-osc/avatar-osc";
+  import ChatboxMonacoEditor from "$lib/components/chatbox-monaco-editor.svelte";
+  import { chatboxModules } from "../api/chatbox";
+
+  // @ts-ignore
+  window.chatboxModules = chatboxModules;
 </script>
 
-Chatbox Editor Page
+<ChatboxMonacoEditor />

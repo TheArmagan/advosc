@@ -40,10 +40,17 @@ let cachedTypes: Record<string, "Float" | "Int" | "Bool"> = {};
 let lastAvatarId: string | null = null;
 let lastUserId: string | null = null;
 
+let allLastParameters: Record<string, any[]> = {};
+
+let onParameterChangeCallbacks: ((address: string, value: number) => void)[] = [];
+
 export const avatarOSC = {
   parameters: parametersStore,
   schema: schemaStore,
   lockedParameterAddresses,
+  get allLastParameters() {
+    return allLastParameters;
+  },
   getParameterType(address: string): "Float" | "Int" | "Bool" | null {
     if (cachedTypes[address]) return cachedTypes[address];
     const schema = get(schemaStore);
@@ -71,6 +78,12 @@ export const avatarOSC = {
   get lastUserId() {
     return lastUserId;
   },
+  onParameterChange(callback: (address: string, value: number) => void) {
+    onParameterChangeCallbacks.push(callback);
+    return () => {
+      onParameterChangeCallbacks = onParameterChangeCallbacks.filter(cb => cb !== callback);
+    };
+  },
   updateOSCSchema,
 }
 
@@ -79,6 +92,9 @@ let lastMessageUpdates: Record<string, number> = {};
 
 const updateLastestUpdates = _.throttle(() => {
   const existingParameters = get(parametersStore);
+  for (const [address, value] of Object.entries(lastMessageUpdates)) {
+    onParameterChangeCallbacks.forEach(cb => cb(address, value));
+  }
   parametersStore.set({ ...existingParameters, ...lastMessageUpdates });
   lastMessageUpdates = {};
 }, 50);
@@ -86,6 +102,8 @@ const updateLastestUpdates = _.throttle(() => {
 let pauseUntil = 0;
 
 window.ADVOSCNative.osc.onMessage((message) => {
+  allLastParameters[message.address] = message.args;
+
   if (message.address === "/avatar/change") {
     const avatarId = message.args[0];
     console.log("Avatar changed:", avatarId);
@@ -95,6 +113,9 @@ window.ADVOSCNative.osc.onMessage((message) => {
     lockedParameters = {};
     lockedParameterAddresses.set([]);
     cachedTypes = {};
+    allLastParameters = {
+      [message.address]: message.args
+    };
     updateLastestUpdates();
     pauseUntil = Date.now() + 1000; // pause updates for 500ms to allow file writes
     updateOSCSchema();
@@ -110,9 +131,9 @@ window.ADVOSCNative.osc.onMessage((message) => {
 
     let type = avatarOSC.getParameterType(message.address);
 
-    let estimatedType: "Float" | "Int" | "Bool" | null = null;
+    let estimatedType: "Float" | "Int" | "Bool" | null = type;
     if (!estimatedType) {
-      if (value > 0 && value < 1 && (Number(value) === value && value % 1 !== 0)) {
+      if (value >= 0 && value <= 1 && (Number(value) === value && value % 1 !== 0)) {
         estimatedType = "Float";
       } else if (value === 0 || value === 1) {
         estimatedType = "Bool";
@@ -128,7 +149,7 @@ window.ADVOSCNative.osc.onMessage((message) => {
       case "Int": value = Math.floor(value); break;
       case "Float":
         if (value <= 0) value = 0.0001;
-        if (value > 1) value = 1;
+        if (value > 1) value = 0.9999;
         break;
     }
 
@@ -152,7 +173,6 @@ async function updateOSCSchema() {
   );
   const oscData = await window.ADVOSCNative.files.readJSON(oscFilePath);
   if (!oscData) return;
-  cachedTypes = {};
   schemaStore.set(oscData as AvatarOSCSchema);
   console.log("Avatar OSC schema loaded from existing file:", oscData);
 }
