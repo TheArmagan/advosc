@@ -26,39 +26,86 @@
   ) => {
     const placeholders = chatboxModules.getExamplePlaceholders();
 
-    // {{ için autocomplete
-    if (textUntilPosition.match(/{{$/)) {
+    // {{ için autocomplete - başlangıç veya devamı
+    const normalPlaceholderMatch = textUntilPosition.match(/{{([^}]*)$/);
+    if (normalPlaceholderMatch) {
       const lineContent = model.getLineContent(position.lineNumber);
       const textAfterPosition = lineContent.substring(position.column - 1);
       const needsClosing = !textAfterPosition.includes("}}");
 
-      return placeholders.map((placeholder) => ({
-        label: `${placeholder.params.join(", ")}`,
-        kind: monaco.languages.CompletionItemKind.Field,
-        insertText: needsClosing
-          ? `${placeholder.params.join(";")}}}`
-          : `${placeholder.params.join(";")}`,
-        detail: placeholder.description,
-        documentation: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
-      }));
+      const currentText = normalPlaceholderMatch[1]; // {{ sonrası yazılan text
+      const parts = currentText.split(";");
+      const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
+
+      // {{ 'nin başladığı kolon
+      const placeholderStartColumn = position.column - currentText.length;
+
+      return placeholders
+        .filter((placeholder) => {
+          // Eğer henüz bir şey yazılmadıysa hepsini göster
+          if (!lastPart) return true;
+          // Son yazılan kısım ile eşleşenleri göster
+          return placeholder.params.some((param) =>
+            param.toLowerCase().includes(lastPart)
+          );
+        })
+        .map((placeholder) => ({
+          label: `${placeholder.params.join(";")}`,
+          kind: monaco.languages.CompletionItemKind.Field,
+          insertText: needsClosing
+            ? `${placeholder.params.join(";")}}}`
+            : `${placeholder.params.join(";")}`,
+          detail: placeholder.description,
+          documentation: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+          range: {
+            startLineNumber: position.lineNumber,
+            startColumn: placeholderStartColumn,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          },
+        }));
     }
 
-    // [[ için autocomplete
-    if (textUntilPosition.match(/\[\[$/)) {
+    // [[ için autocomplete - başlangıç veya devamı
+    const innerPlaceholderMatch = textUntilPosition.match(/\[\[([^\]]*)$/);
+    if (innerPlaceholderMatch) {
       const lineContent = model.getLineContent(position.lineNumber);
       const textAfterPosition = lineContent.substring(position.column - 1);
       const needsClosing = !textAfterPosition.includes("]]");
 
-      return placeholders.map((placeholder) => ({
-        label: `${placeholder.params.join(", ")}`,
-        kind: monaco.languages.CompletionItemKind.Field,
-        insertText: needsClosing
-          ? `${placeholder.params.join(":")}]]`
-          : `${placeholder.params.join(":")}`,
-        detail: placeholder.description,
-        documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
-      }));
+      const currentText = innerPlaceholderMatch[1]; // [[ sonrası yazılan text
+      const parts = currentText.split(":");
+      const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
+
+      // [[ 'nin başladığı kolon
+      const placeholderStartColumn = position.column - currentText.length;
+
+      return placeholders
+        .filter((placeholder) => {
+          // Eğer henüz bir şey yazılmadıysa hepsini göster
+          if (!lastPart) return true;
+          // Son yazılan kısım ile eşleşenleri göster
+          return placeholder.params.some((param) =>
+            param.toLowerCase().includes(lastPart)
+          );
+        })
+        .map((placeholder) => ({
+          label: `${placeholder.params.join(";")}`,
+          kind: monaco.languages.CompletionItemKind.Field,
+          insertText: needsClosing
+            ? `${placeholder.params.join(":")}]]`
+            : `${placeholder.params.join(":")}`,
+          detail: placeholder.description,
+          documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+          range: {
+            startLineNumber: position.lineNumber,
+            startColumn: placeholderStartColumn,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          },
+        }));
     }
+
     return [];
   };
 
@@ -82,12 +129,9 @@
       if (cursorColumn >= startCol && cursorColumn <= endCol) {
         const placeholderText = match[1];
         const parts = placeholderText.split(";");
-        const moduleId = parts[0]?.trim();
 
         const placeholder = examplePlaceholders.find((p) =>
-          p.params.some(
-            (param) => param.toLowerCase() === moduleId?.toLowerCase()
-          )
+          p.params.every((param) => parts.includes(param))
         );
 
         if (placeholder) {
@@ -108,12 +152,9 @@
       if (cursorColumn >= startCol && cursorColumn <= endCol) {
         const placeholderText = match[1];
         const parts = placeholderText.split(":");
-        const moduleId = parts[0]?.trim();
 
         const placeholder = examplePlaceholders.find((p) =>
-          p.params.some(
-            (param) => param.toLowerCase() === moduleId?.toLowerCase()
-          )
+          p.params.every((param) => parts.includes(param))
         );
 
         if (placeholder) {
@@ -180,10 +221,10 @@
 </script>
 
 <div
-  style="width: 100%; height: 500px; display: flex; flex-direction: column; position: relative;"
+  style="width: 900px; height: 400px; display: flex; flex-direction: column; position: relative;"
 >
   <div
-    style="width: 100%; height: 500px; flex: 1;"
+    style="width: 900px; height: 400px; flex: 1;"
     bind:this={editorContainer}
   ></div>
 </div>

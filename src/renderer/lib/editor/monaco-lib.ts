@@ -17,6 +17,12 @@ export interface DynamicAutocompleteSuggestion {
   detail?: string;
   documentation?: string;
   kind?: monaco.languages.CompletionItemKind;
+  range?: {
+    startLineNumber: number;
+    startColumn: number;
+    endLineNumber: number;
+    endColumn: number;
+  };
 }
 
 export interface HoverInfo {
@@ -141,7 +147,7 @@ export function registerDynamicAutocomplete(
             documentation: suggestion.documentation
               ? { value: suggestion.documentation, isTrusted: true }
               : undefined,
-            range: range,
+            range: suggestion.range ?? range, // Custom range veya default range
           })
         );
 
