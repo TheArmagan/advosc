@@ -93,7 +93,6 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
     if (!this.lastMediaInfo?.position) return undefined;
     if (this.lastMediaInfo.playbackStatus !== "Playing") return this.lastMediaInfo.position;
     const elapsed = (Date.now() - this.lastPositionUpdatedAt) / 1000;
-    console.log("Estimated Position:", this.lastMediaInfo.position / 1000 + elapsed, this.lastMediaInfo.position, this.lastPositionUpdatedAt, Date.now());
     return (this.lastMediaInfo.position / 1000) + elapsed;
   }
 
@@ -112,7 +111,7 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
     if (!this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "NoLyrics";
     if (!lyric || !lyric.parsedSyncedLyrics) return "NoLyrics";
     if (lyric.insturmental) return "Instrumental";
-    const currentTime = this.getEstimatedPosition()!;
+    const currentTime = this.getEstimatedPosition()! * 1000;
     const currentLine = lyric.parsedSyncedLyrics.find(
       (l) => l.at >= currentTime
     );

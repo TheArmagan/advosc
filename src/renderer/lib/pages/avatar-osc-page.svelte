@@ -57,8 +57,8 @@
     yoyo: false,
   });
 
-  let linkedProperties = $state<Record<string, string>>({});
-  let targetLinkedProperty = $state({
+  let linkedParameters = $state<Record<string, string>>({});
+  let targetLinkedParameter = $state({
     drawerOpen: false,
     fromAddress: "",
     toAddress: "",
@@ -68,8 +68,8 @@
     inputParameters = { ...$parameters };
 
     const unsubParams = avatarOSC.onParameterChange((address, value) => {
-      if (linkedProperties[address]) {
-        const linkedAddress = linkedProperties[address];
+      if (linkedParameters[address]) {
+        const linkedAddress = linkedParameters[address];
         inputParameters[linkedAddress] = value;
         avatarOSC.setParameter(linkedAddress, value, false);
       }
@@ -199,7 +199,7 @@
                   ? 'border border-red-500'
                   : ''} {gsapTimelines[key]
                   ? 'bg-green-500/10'
-                  : ''} {linkedProperties[key]
+                  : ''} {linkedParameters[key]
                   ? 'border border-orange-500'
                   : ''}"
                 variant="muted"
@@ -343,13 +343,13 @@
                               </DropdownMenu.Item>
                               <DropdownMenu.Item
                                 onclick={() => {
-                                  targetLinkedProperty.fromAddress = key;
-                                  targetLinkedProperty.toAddress = "";
-                                  targetLinkedProperty.drawerOpen = true;
+                                  targetLinkedParameter.fromAddress = key;
+                                  targetLinkedParameter.toAddress = "";
+                                  targetLinkedParameter.drawerOpen = true;
                                 }}
                               >
                                 <EqualIcon />
-                                Link Property
+                                Link Parameter
                               </DropdownMenu.Item>
                             </DropdownMenu.Group>
                           </DropdownMenu.Content>
@@ -671,8 +671,8 @@
   </Drawer.Content>
 </Drawer.Root>
 <Drawer.Root
-  open={targetLinkedProperty.drawerOpen}
-  onOpenChange={(v) => (targetLinkedProperty.drawerOpen = v)}
+  open={targetLinkedParameter.drawerOpen}
+  onOpenChange={(v) => (targetLinkedParameter.drawerOpen = v)}
 >
   <Drawer.Content class="flex items-center justify-center">
     <div class="w-96 flex flex-col gap-4 p-4">
@@ -682,7 +682,7 @@
           <div
             class="font-mono w-fit text-sm bg-black/50 px-2 py-1 rounded truncate text-center"
           >
-            {targetLinkedProperty.fromAddress}
+            {targetLinkedParameter.fromAddress}
           </div>
         </Drawer.Description>
       </Drawer.Header>
@@ -691,21 +691,21 @@
           <Label>To Address</Label>
           <Select.Root
             type="single"
-            value={targetLinkedProperty.toAddress}
+            value={targetLinkedParameter.toAddress}
             onValueChange={(v) => {
-              targetLinkedProperty.toAddress = v as string;
+              targetLinkedParameter.toAddress = v as string;
             }}
           >
             <Select.Trigger class="w-full">
               <div class="w-full items-center flex gap-1">
                 <span class="font-medium">
-                  {targetLinkedProperty.toAddress}
+                  {targetLinkedParameter.toAddress}
                 </span>
               </div>
             </Select.Trigger>
             <Select.Content>
               {#each Object.keys($parameters) as paramAddress}
-                {#if paramAddress !== targetLinkedProperty.fromAddress}
+                {#if paramAddress !== targetLinkedParameter.fromAddress}
                   <Select.Item
                     value={paramAddress}
                     class="flex items-center gap-2"
@@ -731,14 +731,14 @@
           <Button
             variant="destructive"
             size="icon"
-            disabled={!linkedProperties[targetLinkedProperty.fromAddress]}
+            disabled={!linkedParameters[targetLinkedParameter.fromAddress]}
             onclick={() => {
-              const fromAddress = targetLinkedProperty.fromAddress;
-              if (linkedProperties[fromAddress]) {
-                delete linkedProperties[fromAddress];
+              const fromAddress = targetLinkedParameter.fromAddress;
+              if (linkedParameters[fromAddress]) {
+                delete linkedParameters[fromAddress];
                 toast.success("Properties Unlinked");
               }
-              targetLinkedProperty.drawerOpen = false;
+              targetLinkedParameter.drawerOpen = false;
             }}
           >
             <UnlinkIcon />
@@ -746,14 +746,14 @@
           <Button
             variant="secondary"
             size="icon"
-            disabled={!!linkedProperties[targetLinkedProperty.fromAddress]}
+            disabled={!!linkedParameters[targetLinkedParameter.fromAddress]}
             onclick={() => {
-              const { fromAddress, toAddress } = targetLinkedProperty;
+              const { fromAddress, toAddress } = targetLinkedParameter;
               if (!fromAddress || !toAddress) return;
 
-              linkedProperties[fromAddress] = toAddress;
+              linkedParameters[fromAddress] = toAddress;
               toast.success("Properties Linked");
-              targetLinkedProperty.drawerOpen = false;
+              targetLinkedParameter.drawerOpen = false;
             }}
           >
             <LinkIcon />
