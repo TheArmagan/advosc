@@ -4,6 +4,7 @@ import tailwind from '@tailwindcss/vite';
 import path from 'node:path';
 
 export default defineConfig({
+  base: './',
   plugins: [
     svelte({
       compilerOptions: {

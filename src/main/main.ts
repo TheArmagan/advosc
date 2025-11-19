@@ -59,8 +59,12 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // After Vite build, index.html is emitted to dist next to main.js
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    // In production, try unpacked directory first (for asar.unpack), then fall back to regular path
+    const unpackedPath = path.join(__dirname, '..', 'app.asar.unpacked', 'dist', 'index.html');
+    const regularPath = path.join(__dirname, 'index.html');
+
+    const indexPath = fs.existsSync(unpackedPath) ? unpackedPath : regularPath;
+    mainWindow.loadFile(indexPath);
   }
 
   mainWindow.on('closed', () => {

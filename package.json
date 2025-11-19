@@ -1,18 +1,20 @@
 {
   "name": "advosc",
-  "version": "1.0.0",
-  "description": "Electron app with Svelte 5 and shadcn-svelte",
+  "version": "0.0.1",
+  "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
     "build:main": "vite build --config vite.main.config.ts && vite build --config vite.preload.config.ts",
     "build:renderer": "vite build",
-    "build": "npm run build:main && npm run build:renderer",
+    "build": "bun run build:main && bun run build:renderer",
     "dev:main": "concurrently \"vite build --config vite.main.config.ts --watch\" \"vite build --config vite.preload.config.ts --watch\"",
     "dev:renderer": "vite",
-    "dev": "concurrently \"npm run dev:main\" \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=true NODE_ENV=development electron .\"",
+    "dev": "concurrently \"bun run dev:main\" \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=true NODE_ENV=development electron .\"",
     "start": "electron .",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "package": "bun run build && electron-forge package",
+    "make": "bun run build && electron-forge make"
   },
   "keywords": [
     "electron",
@@ -21,8 +23,9 @@
     "esbuild"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "devDependencies": {
+    "@electron-forge/maker-squirrel": "^7.10.2",
     "@internationalized/date": "^3.8.1",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
     "@tailwindcss/forms": "^0.5.10",
@@ -48,6 +51,8 @@
     "wait-on": "^7.0.1"
   },
   "dependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron/packager": "^19.0.1",
     "@lucide/svelte": "^0.544.0",
     "bits-ui": "^2.11.0",
     "chokidar": "^4.0.3",
@@ -59,5 +64,60 @@
     "tailwind-merge": "^3.4.0",
     "tailwind-variants": "^3.1.1",
     "tw-animate-css": "^1.4.0"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "icon": "build/icon",
+        "name": "ADVOSC",
+        "executableName": "ADVOSC",
+        "asar": {
+          "unpack": "*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot}"
+        },
+        "prune": true,
+        "ignore": [
+          "/\\.git($|/)",
+          "/node_modules/\\.cache($|/)",
+          "/\\.vscode($|/)",
+          "/\\.github($|/)",
+          "/\\.gitignore$",
+          "/README\\.md$",
+          "/\\.eslintrc.*$",
+          "/\\.prettierrc.*$",
+          "/tsconfig\\.json$",
+          "/src/.*\\.ts$",
+          "/\\.env.*$",
+          "/docs($|/)",
+          "/test($|/)",
+          "/tests($|/)",
+          "/\\.nyc_output($|/)",
+          "/coverage($|/)",
+          "/\\*\\.log$",
+          "/\\.DS_Store$",
+          "/Thumbs\\.db$"
+        ],
+        "win32metadata": {
+          "CompanyName": "Kıraç Armağan Önal",
+          "FileDescription": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
+          "ProductName": "ADVOSC"
+        }
+      },
+      "rebuildConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "vrckit",
+            "authors": "Kıraç Armağan Önal",
+            "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
+            "setupIcon": "build/icon.ico",
+            "loadingGif": "build/icon.png",
+            "noMsi": true
+          }
+        }
+      ],
+      "publishers": [],
+      "plugins": []
+    }
   }
 }
