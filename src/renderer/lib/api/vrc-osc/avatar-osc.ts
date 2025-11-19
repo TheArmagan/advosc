@@ -108,9 +108,9 @@ window.ADVOSCNative.osc.onMessage((message) => {
       window.ADVOSCNative.osc.send(message.address, value);
     }
 
-    const type = avatarOSC.getParameterType(message.address);
+    let type = avatarOSC.getParameterType(message.address);
 
-    let estimatedType = type;
+    let estimatedType: "Float" | "Int" | "Bool" | null = null;
     if (!estimatedType) {
       if (value > 0 && value < 1 && (Number(value) === value && value % 1 !== 0)) {
         estimatedType = "Float";
@@ -120,6 +120,7 @@ window.ADVOSCNative.osc.onMessage((message) => {
         estimatedType = "Int";
       }
       cachedTypes[message.address] = estimatedType;
+      type = estimatedType;
     }
 
     switch (type) {

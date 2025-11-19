@@ -8,10 +8,21 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import { LockIcon, LockOpenIcon, SearchIcon } from "@lucide/svelte";
+  import {
+    FastForwardIcon,
+    LockIcon,
+    LockOpenIcon,
+    PlayIcon,
+    RotateCcwIcon,
+    SearchIcon,
+    SquareIcon,
+  } from "@lucide/svelte";
   import * as Select from "$lib/components/ui/select/index.js";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import gsap from "gsap";
+  import * as Drawer from "$lib/components/ui/drawer/index.js";
 
   const schema = avatarOSC.schema;
   const parameters = avatarOSC.parameters;
@@ -26,8 +37,30 @@
   let rawInputAddress = $state("");
   let rawInputValue = $state("0");
 
+  let gsapTimelines = $state<Record<string, GSAPTimeline | undefined>>({});
+  let targetTimelineData = $state({
+    drawerOpen: false,
+    address: "",
+    from: 0,
+    to: 0,
+    duration: 1,
+    repeat: 0,
+    ease: "none" as
+      | "none"
+      | "power1.inOut"
+      | "power2.inOut"
+      | "power3.inOut"
+      | "bounce.inOut",
+    yoyo: false,
+  });
+
   onMount(() => {
     inputParameters = { ...$parameters };
+
+    return () => {
+      // Cleanup GSAP timelines on unmount
+      Object.values(gsapTimelines).forEach((tl) => tl?.kill());
+    };
   });
 </script>
 
@@ -140,7 +173,14 @@
               searchQuery === type}
 
             {#if matchesSearch && (showOnlyDefined ? !!paramSchema?.name : true)}
-              <Item.Root class="p-2 border rounded-md" variant="muted">
+              <Item.Root
+                class="p-2 border rounded-md {$lockedParameterAddresses.includes(
+                  key
+                )
+                  ? 'border border-red-500'
+                  : ''} {gsapTimelines[key] ? 'bg-green-500/10' : ''}"
+                variant="muted"
+              >
                 <div class="flex justify-between items-center w-full">
                   <div class="flex flex-col gap-2">
                     <div class="flex items-center gap-2">
@@ -236,6 +276,7 @@
                               );
                               toast.success("Parameter Unlocked");
                             }}
+                            class="text-red-500"
                           >
                             <LockIcon />
                           </InputGroup.Button>
@@ -255,6 +296,31 @@
                             <LockOpenIcon />
                           </InputGroup.Button>
                         {/if}
+                      </InputGroup.Addon>
+                      <InputGroup.Addon align="inline-end">
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger>
+                            <InputGroup.Button>⋮</InputGroup.Button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content align="end">
+                            <DropdownMenu.Group>
+                              <DropdownMenu.Item
+                                onclick={() => {
+                                  targetTimelineData.address = key;
+                                  targetTimelineData.from = $parameters[key];
+                                  targetTimelineData.to = $parameters[key];
+                                  targetTimelineData.duration = 1;
+                                  targetTimelineData.repeat = 0;
+                                  targetTimelineData.yoyo = false;
+                                  targetTimelineData.drawerOpen = true;
+                                }}
+                              >
+                                <FastForwardIcon />
+                                Animate Parameter
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Group>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
                       </InputGroup.Addon>
                     </InputGroup.Root>
                   </div>
@@ -408,3 +474,166 @@
     </Tabs.Content>
   </Tabs.Root>
 </div>
+<Drawer.Root
+  open={targetTimelineData.drawerOpen}
+  onOpenChange={(v) => (targetTimelineData.drawerOpen = v)}
+>
+  <Drawer.Content class="flex items-center justify-center">
+    <div class="w-96 flex flex-col gap-4 p-4">
+      <Drawer.Header class="flex items-center flex-col gap-2">
+        <Drawer.Title class="text-center">Animate Parameter</Drawer.Title>
+        <Drawer.Description>
+          <div
+            class="font-mono w-fit text-sm bg-black/50 px-2 py-1 rounded truncate text-center"
+          >
+            {targetTimelineData.address}
+          </div>
+        </Drawer.Description>
+      </Drawer.Header>
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-1">
+          <Label>From Value</Label>
+          <InputGroup.Root>
+            <InputGroup.Input
+              type="number"
+              step="0.0001"
+              bind:value={targetTimelineData.from}
+            />
+          </InputGroup.Root>
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label>To Value</Label>
+          <InputGroup.Root>
+            <InputGroup.Input
+              type="number"
+              step="0.0001"
+              bind:value={targetTimelineData.to}
+            />
+          </InputGroup.Root>
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label>Duration (seconds)</Label>
+          <InputGroup.Root>
+            <InputGroup.Input
+              type="number"
+              step="0.1"
+              min="0.1"
+              bind:value={targetTimelineData.duration}
+            />
+          </InputGroup.Root>
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label>Repeat Count (-1 for infinite)</Label>
+          <InputGroup.Root>
+            <InputGroup.Input
+              type="number"
+              step="1"
+              min="-1"
+              bind:value={targetTimelineData.repeat}
+            />
+          </InputGroup.Root>
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label>Ease</Label>
+          <Select.Root
+            type="single"
+            value={targetTimelineData.ease}
+            onValueChange={(v) => {
+              targetTimelineData.ease = v as
+                | "none"
+                | "power1.inOut"
+                | "power2.inOut"
+                | "power3.inOut"
+                | "bounce.inOut";
+            }}
+          >
+            <Select.Trigger class="w-full">
+              <div class="w-full items-center flex gap-1">
+                <span class="font-medium">
+                  {targetTimelineData.ease}
+                </span>
+              </div>
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="none">none</Select.Item>
+              <Select.Item value="power1.inOut">power1.inOut</Select.Item>
+              <Select.Item value="power2.inOut">power2.inOut</Select.Item>
+              <Select.Item value="power3.inOut">power3.inOut</Select.Item>
+              <Select.Item value="bounce.inOut">bounce.inOut</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="flex items-center gap-2">
+          <Checkbox
+            id="yoyo-checkbox"
+            checked={targetTimelineData.yoyo}
+            onCheckedChange={(v) => (targetTimelineData.yoyo = v)}
+          />
+          <Label for="yoyo-checkbox">Yoyo</Label>
+        </div>
+      </div>
+      <Drawer.Footer class="flex items-center justify-between">
+        <div class="flex gap-2 items-center">
+          <Button
+            variant="destructive"
+            size="icon"
+            disabled={!gsapTimelines[targetTimelineData.address]}
+            onclick={() => {
+              const address = targetTimelineData.address;
+              if (gsapTimelines[address]) {
+                gsapTimelines[address]?.kill();
+                delete gsapTimelines[address];
+                toast.success("Animation Stopped");
+              }
+              targetTimelineData.drawerOpen = false;
+            }}
+          >
+            <SquareIcon />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            disabled={!!gsapTimelines[targetTimelineData.address]}
+            onclick={() => {
+              const { address, from, to, duration, repeat, yoyo } =
+                targetTimelineData;
+              if (!address) return;
+
+              // Kill existing timeline if any
+              if (gsapTimelines[address]) {
+                gsapTimelines[address].kill();
+              }
+
+              const tl = gsap.timeline({ repeat, yoyo });
+              tl.to(
+                {},
+                {
+                  duration,
+                  onUpdate: () => {
+                    const progress = tl.progress();
+                    const newValue = from + (to - from) * progress;
+                    avatarOSC.setParameter(address, newValue);
+                  },
+                  onComplete: () => {
+                    if (repeat === -1) return;
+                    gsapTimelines[address]?.kill();
+                    delete gsapTimelines[address];
+                  },
+                }
+              );
+
+              gsapTimelines[address] = tl;
+              toast.success("Animation Started");
+              targetTimelineData.drawerOpen = false;
+            }}
+          >
+            <PlayIcon />
+          </Button>
+        </div>
+        <Drawer.Close>
+          <Button variant="outline">Close</Button>
+        </Drawer.Close>
+      </Drawer.Footer>
+    </div>
+  </Drawer.Content>
+</Drawer.Root>
