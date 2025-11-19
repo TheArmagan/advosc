@@ -97,7 +97,7 @@ const updateLastestUpdates = _.throttle(() => {
   }
   parametersStore.set({ ...existingParameters, ...lastMessageUpdates });
   lastMessageUpdates = {};
-}, 50);
+}, 20);
 
 let pauseUntil = 0;
 
