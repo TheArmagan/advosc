@@ -3,6 +3,7 @@ import { Component } from "svelte";
 type PlaceholdersRecord = Record<string, {
   value: string;
   description: string;
+  fillText?: string;
 }>;
 export interface ChatboxModuleOptions {
   id: string;

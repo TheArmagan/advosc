@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChatboxAdvancedEditorTab from "$lib/components/chatbox-editor/chatbox-advanced-editor-tab.svelte";
+  import ChatboxSettingsTab from "$lib/components/chatbox-editor/chatbox-settings-tab.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
 </script>
@@ -18,6 +19,10 @@
         <ChatboxAdvancedEditorTab />
       </Card.Root>
     </Tabs.Content>
-    <Tabs.Content value="modules"></Tabs.Content>
+    <Tabs.Content value="settings">
+      <Card.Root class="p-1 bg-transparent border">
+        <ChatboxSettingsTab />
+      </Card.Root>
+    </Tabs.Content>
   </Tabs.Root>
 </div>

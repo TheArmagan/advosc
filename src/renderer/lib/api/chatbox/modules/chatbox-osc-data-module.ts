@@ -10,7 +10,8 @@ export class ChatboxOSCDataModule extends ChatboxModule {
       examplePlaceholders: {
         "/avatar/parameters/SomeParameter": {
           value: "1",
-          description: "The value of the OSC parameter at address /avatar/parameters/SomeParameter."
+          description: "The value of the OSC parameter at address /avatar/parameters/SomeParameter.",
+          fillText: "${0:/avatar/parameters/SomeParameter};${1:optionalIndex}"
         }
       }
     });

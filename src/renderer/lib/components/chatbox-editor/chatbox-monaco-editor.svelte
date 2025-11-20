@@ -18,8 +18,10 @@
 
   const {
     onLoad,
+    onChange,
   }: {
     onLoad?: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
+    onChange?: (value: string) => void;
   } = $props();
 
   // Örnek dinamik/live autocomplete fonksiyonu
@@ -57,8 +59,8 @@
           label: `${placeholder.params.join(";")}`,
           kind: monaco.languages.CompletionItemKind.Field,
           insertText: needsClosing
-            ? `${placeholder.params.join(";")}}}`
-            : `${placeholder.params.join(";")}`,
+            ? `${placeholder.fillText ?? placeholder.params.join(";")}}}`
+            : `${placeholder.fillText ?? placeholder.params.join(";")}`,
           detail: placeholder.description,
           documentation: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
           range: {
@@ -97,8 +99,8 @@
           label: `${placeholder.params.join(";")}`,
           kind: monaco.languages.CompletionItemKind.Field,
           insertText: needsClosing
-            ? `${placeholder.params.join(":")}]]`
-            : `${placeholder.params.join(":")}`,
+            ? `${placeholder.fillText?.replaceAll(";", ":") ?? placeholder.params.join(":")}]]`
+            : `${placeholder.fillText?.replaceAll(";", ":") ?? placeholder.params.join(":")}`,
           detail: placeholder.description,
           documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
           range: {
@@ -216,6 +218,11 @@
     );
 
     onLoad?.(editor);
+
+    editor.onDidChangeModelContent(() => {
+      const value = editor.getValue();
+      onChange?.(value);
+    });
   });
 
   onDestroy(() => {

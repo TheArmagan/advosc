@@ -6,6 +6,7 @@ import { ChatboxOSCDataModule } from "./modules/chatbox-osc-data-module";
 import { localData } from "../local-data";
 import { get, writable } from "svelte/store";
 import { chatboxOSC } from "../vrc-osc";
+import { ChatboxConditionModule } from "./modules/chatbox-condition-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -110,25 +111,31 @@ function getPlaceholders() {
         params: [m.options.id, ...key.split(";")],
         value: val.value,
         description: val.description,
+        fillText: val.fillText
       });
     });
     return acc;
-  }, [] as { params: string[], value: string, description: string }[]);
+  }, [] as { params: string[], value: string, description: string, fillText?: string }[]);
 }
 
-function cleanComments(text: string) {
-  return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "");
+function cleanTempalte(text: string) {
+  return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "").trim();
 }
 
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxOSCDataModule());
+registerChatboxModule(new ChatboxConditionModule());
+
+let renderedTempalteText = writable<string>("");
 
 export const chatbox = {
   fillTemplate,
   fillTemplates,
   modules: chatboxList,
+  settings,
   getPlaceholders,
-  cleanComments,
+  cleanTempalte,
+  renderedTempalteText
 };
 
 let sending = false;
@@ -137,9 +144,10 @@ setInterval(async () => {
   sending = true;
   const s = get(settings);
   if (s.autoSend) {
-    let template = cleanComments(s.template);
+    let template = cleanTempalte(s.template);
     template = await fillTemplate(template, "{{;}}");
     chatboxOSC.send(template, s.eggMode);
+    renderedTempalteText.set(template);
   }
   sending = false;
 }, 2200);
