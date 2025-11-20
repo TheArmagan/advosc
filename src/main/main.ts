@@ -285,9 +285,13 @@ app.whenReady().then(async () => {
     });
   });
 
-  port.on("message", (message: OSCMessage) => {
+  port.on("message", (message) => {
     if (!message || !message.address) return;
-    BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('osc:message', message));
+    const msg = {
+      address: message.address,
+      args: message.args.map((arg: any) => arg.value)
+    }
+    BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('osc:message', msg));
   });
 
   ipcMain.on('frame:minimize', () => {
