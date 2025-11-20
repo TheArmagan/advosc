@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
   "type": "module",
-  "main": "dist/main.js",
+  "main": "dist/main.cjs",
   "scripts": {
     "build:main": "vite build --config vite.main.config.ts && vite build --config vite.preload.config.ts",
     "build:renderer": "vite build",
@@ -60,7 +60,6 @@
     "gsap": "^3.13.0",
     "lodash": "^4.17.21",
     "monaco-editor": "^0.54.0",
-    "osc": "^2.4.5",
     "simple-eval": "^2.0.0",
     "stuffs": "^0.1.43",
     "svelte-sonner": "^1.0.6",
@@ -75,7 +74,7 @@
         "name": "ADVOSC",
         "executableName": "ADVOSC",
         "asar": {
-          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},screenshots/**/*,src/**/*}"
+          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},screenshots/**/*,src/**/*,node_modules/**/*}"
         },
         "prune": true,
         "ignore": [

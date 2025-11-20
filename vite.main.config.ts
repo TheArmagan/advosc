@@ -10,12 +10,12 @@ export default defineConfig({
     rollupOptions: {
       input: path.resolve(__dirname, 'src/main/main.ts'),
       external: [
-        'electron', 'path', 'fs', 'url', 'os', 'module',
+        'electron', 'path', 'fs', 'url', 'os', 'module', 'child_process', 'dgram', 'net', 'events',
         'chokidar', 'osc'
       ],
       output: {
-        entryFileNames: 'main.js',
-        format: 'esm',
+        entryFileNames: 'main.cjs',
+        format: 'cjs',
       },
     },
   },

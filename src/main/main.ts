@@ -2,24 +2,12 @@ import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
-import { fileURLToPath } from 'url';
 import { spawn, type ChildProcess } from 'child_process';
-// @ts-ignore
-import OSCReq from "osc";
+import { OSC } from './lib/osc';
 
-// ESM __dirname shim
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-
-const VRChatReceiverPort = 9001;
-const VRChatSenderPort = 9000;
-
-const port = new OSCReq.UDPPort({
-  localAddress: "127.0.0.1",
-  localPort: VRChatReceiverPort,
-  remoteAddress: "127.0.0.1",
-  remotePort: VRChatSenderPort,
+const port = new OSC({
+  local: { address: '0.0.0.0', port: 9001 },
+  remote: { address: '0.0.0.0', port: 9000 }
 });
 
 type MediaCommand = 'skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
@@ -46,7 +34,7 @@ function createWindow() {
     minHeight: 800,
     resizable: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
       backgroundThrottling: false,
@@ -164,7 +152,7 @@ async function executeMediaCommand(command: MediaCommand): Promise<{ success: bo
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
   const exePath = isDev
     ? path.join(__dirname, '..', 'natives', 'win-media-info.exe')
-    : path.join(process.resourcesPath, 'app.asar.unpacked', '..', 'dist', 'natives', 'win-media-info.exe');
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
 
   if (!fs.existsSync(exePath)) {
     return { success: false, command, error: 'win-media-info.exe not found' };
@@ -292,8 +280,8 @@ app.whenReady().then(async () => {
         if (jsType === "number" && (Number(arg) === arg && arg % 1 === 0)) return { type: "i", value: arg };
         if (jsType === "number" && (Number(arg) === arg && arg % 1 !== 0)) return { type: "f", value: arg };
         if (jsType === "string") return { type: "s", value: arg };
-        if (jsType === "boolean") return { type: arg ? "T" : "F", value: arg };
-      })
+        if (jsType === "boolean") return { type: arg ? "T" : "F" };
+      }).filter(arg => arg) as any[]
     });
   });
 

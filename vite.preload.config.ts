@@ -11,7 +11,7 @@ export default defineConfig({
       input: path.resolve(__dirname, 'src/main/preload.ts'),
       external: ['electron', 'path', 'fs', 'url'],
       output: {
-        entryFileNames: 'preload.js',
+        entryFileNames: 'preload.cjs',
         format: 'cjs',
       },
     },
