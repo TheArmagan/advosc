@@ -75,7 +75,7 @@
         "name": "ADVOSC",
         "executableName": "ADVOSC",
         "asar": {
-          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},node_modules/**/*,screenshots/**/*,src/**/*}"
+          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},screenshots/**/*,src/**/*}"
         },
         "prune": true,
         "ignore": [
