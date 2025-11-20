@@ -19,8 +19,8 @@ let ignoreSet: Set<string> = new Set();
 
 const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
   localData.get("Chatbox;Settings", {
-    template: "",
-    autoSend: false,
+    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] by [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
+    autoSend: true,
     eggMode: false,
   })
 );
@@ -145,11 +145,13 @@ async function renderTemplate() {
   if (renderingTemplate) return;
   renderingTemplate = true;
   const s = get(settings);
+
+  let template = cleanTempalte(s.template);
+  template = await fillTemplate(template, "{{;}}");
+  renderedTempalteText.set(template);
+
   if (s.autoSend) {
-    let template = cleanTempalte(s.template);
-    template = await fillTemplate(template, "{{;}}");
     chatboxOSC.send(template, s.eggMode);
-    renderedTempalteText.set(template);
   }
   renderingTemplate = false;
 }

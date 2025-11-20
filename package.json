@@ -1,22 +1,20 @@
 {
   "name": "advosc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
     "build:main": "vite build --config vite.main.config.ts && vite build --config vite.preload.config.ts",
     "build:renderer": "vite build",
-    "copy:static": "xcopy /E /I /Y static dist\\static",
-    "copy:natives": "if not exist dist\\natives mkdir dist\\natives && copy /Y src\\natives\\win-media-info\\target\\release\\win-media-info.exe dist\\natives\\",
-    "build": "bun run copy:static && bun run copy:natives && bun run build:main && bun run build:renderer",
+    "copy:natives": "xcopy /E /I /Y natives dist\\\\natives",
+    "build": "bun run copy:natives && bun run build:main && bun run build:renderer",
     "dev:main": "concurrently \"vite build --config vite.main.config.ts --watch\" \"vite build --config vite.preload.config.ts --watch\"",
     "dev:renderer": "vite",
     "dev": "concurrently \"bun run dev:main\" \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=true NODE_ENV=development electron .\"",
     "start": "electron .",
     "postinstall": "electron-builder install-app-deps",
-    "package": "bun run build && electron-forge package",
-    "make": "bun run build && electron-forge make"
+    "package": "bun run build && electron-forge package"
   },
   "keywords": [
     "electron",
@@ -77,12 +75,14 @@
         "name": "ADVOSC",
         "executableName": "ADVOSC",
         "asar": {
-          "unpack": "*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot}"
+          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},node_modules/**/*,screenshots/**/*,src/**/*}"
         },
         "prune": true,
         "ignore": [
           "/\\.git($|/)",
-          "/node_modules/\\.cache($|/)",
+          "/node_modules",
+          "/screenshots",
+          "/src",
           "/\\.vscode($|/)",
           "/\\.github($|/)",
           "/\\.gitignore$",

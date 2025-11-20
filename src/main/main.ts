@@ -81,7 +81,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     // In production, try unpacked directory first (for asar.unpack), then fall back to regular path
-    const unpackedPath = path.join(__dirname, '..', 'app.asar.unpacked', 'dist', 'index.html');
+    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'index.html');
     mainWindow.loadFile(unpackedPath);
   }
 
@@ -97,7 +97,7 @@ function startMediaMonitor() {
 
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
   const exePath = isDev
-    ? path.join(__dirname, '..', 'static', 'win-media-info.exe')
+    ? path.join(__dirname, '..', 'natives', 'win-media-info.exe')
     : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
 
   if (!fs.existsSync(exePath)) {
@@ -162,8 +162,8 @@ function stopMediaMonitor() {
 async function executeMediaCommand(command: MediaCommand): Promise<{ success: boolean; command: string; error?: string }> {
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
   const exePath = isDev
-    ? path.join(__dirname, '..', 'static', 'win-media-info.exe')
-    : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
+    ? path.join(__dirname, '..', 'natives', 'win-media-info.exe')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', '..', 'dist', 'natives', 'win-media-info.exe');
 
   if (!fs.existsSync(exePath)) {
     return { success: false, command, error: 'win-media-info.exe not found' };
