@@ -1,4 +1,5 @@
 import { Component } from "svelte";
+import { localData } from "../local-data";
 
 type PlaceholdersRecord = Record<string, {
   value: string;
@@ -17,10 +18,15 @@ export interface ChatboxModuleOptions {
 export class ChatboxModule {
   values: Record<string, any> = {};
 
-  constructor(public options: ChatboxModuleOptions) { }
+  constructor(public options: ChatboxModuleOptions) {
+    this.values = localData.get(`ChatboxModuleValues;${this.options.id}`, {});
+  }
 
   handleValueChange(key: string, value: any) {
-    this.values[key] = value;
+    this.values = value;
+    localData.update(`ChatboxModuleValues;${this.options.id}`, (val) => {
+      return { ...(val || {}), [key]: value };
+    });
   }
 
   getPlaceholderValue(...params: string[]): Promise<string> | string {
