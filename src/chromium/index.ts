@@ -1,0 +1,1 @@
+console.log('This is the Chromium specific index file.');
