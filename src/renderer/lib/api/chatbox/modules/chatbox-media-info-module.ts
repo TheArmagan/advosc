@@ -108,15 +108,15 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
   async getCurrentLyricLine() {
     if (!this.lastMediaInfo) return null;
     const lyric = await this.fetchCurrentLyric();
-    if (!this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "NoLyrics";
-    if (!lyric || !lyric.parsedSyncedLyrics) return "NoLyrics";
-    if (lyric.insturmental) return "Instrumental";
+    if (!this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "";
+    if (!lyric || !lyric.parsedSyncedLyrics) return "";
+    if (lyric.insturmental) return "";
     const currentTime = this.getEstimatedPosition()! * 1000;
     const currentLine = lyric.parsedSyncedLyrics.find(
       (l) => l.at >= currentTime
     );
-    if (!currentLine) return "ClearLine";
-    return currentLine.text || "ClearLine";
+    if (!currentLine) return "";
+    return currentLine.text || "";
   }
 
   async fetchLyrics(trackName: string, artistName: string, duration: number): Promise<LyricData | null> {

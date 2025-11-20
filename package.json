@@ -63,6 +63,7 @@
     "lodash": "^4.17.21",
     "monaco-editor": "^0.54.0",
     "osc": "^2.4.5",
+    "simple-eval": "^2.0.0",
     "stuffs": "^0.1.43",
     "svelte-sonner": "^1.0.6",
     "tailwind-merge": "^3.4.0",

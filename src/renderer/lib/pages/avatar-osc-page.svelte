@@ -9,6 +9,7 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
   import {
+    CopyIcon,
     EqualIcon,
     FastForwardIcon,
     LinkIcon,
@@ -207,11 +208,11 @@
                 >
                   <div class="flex justify-between items-center w-full">
                     <div class="flex flex-col gap-2">
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 max-w-[400px]">
                         <div class="px-2 py-1 border w-12 text-center rounded">
                           {type}
                         </div>
-                        <div class="font-medium">
+                        <div class="font-medium truncate">
                           {displayName}
                         </div>
                         {#if displayName != keyCleaned}
@@ -351,6 +352,17 @@
                                 >
                                   <EqualIcon />
                                   Link Parameter
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Item
+                                  onclick={() => {
+                                    navigator.clipboard.writeText(key);
+                                    toast.success(
+                                      "Address Copied to Clipboard"
+                                    );
+                                  }}
+                                >
+                                  <CopyIcon />
+                                  Copy Address
                                 </DropdownMenu.Item>
                               </DropdownMenu.Group>
                             </DropdownMenu.Content>

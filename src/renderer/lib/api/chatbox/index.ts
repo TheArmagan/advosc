@@ -1,12 +1,13 @@
 import { toast } from "svelte-sonner";
-import { ChatboxMediaInfoModule } from "./modules/chatbox-media-info-module";
 import mapReplace from "stuffs/lib/mapReplace";
 import { ChatboxModule } from "./chatbox-module";
 import { ChatboxOSCDataModule } from "./modules/chatbox-osc-data-module";
+import { ChatboxMediaInfoModule } from "./modules/chatbox-media-info-module";
+import { ChatboxExpressionModule } from "./modules/chatbox-expr-module";
 import { localData } from "../local-data";
 import { get, writable } from "svelte/store";
 import { chatboxOSC } from "../vrc-osc";
-import { ChatboxConditionModule } from "./modules/chatbox-condition-module";
+import { ChatboxTextModule } from "./modules/chatbox-text-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -124,7 +125,8 @@ function cleanTempalte(text: string) {
 
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxOSCDataModule());
-registerChatboxModule(new ChatboxConditionModule());
+registerChatboxModule(new ChatboxExpressionModule());
+registerChatboxModule(new ChatboxTextModule());
 
 let renderedTempalteText = writable<string>("");
 
@@ -138,10 +140,10 @@ export const chatbox = {
   renderedTempalteText
 };
 
-let sending = false;
-setInterval(async () => {
-  if (sending) return;
-  sending = true;
+let renderingTemplate = false;
+async function renderTemplate() {
+  if (renderingTemplate) return;
+  renderingTemplate = true;
   const s = get(settings);
   if (s.autoSend) {
     let template = cleanTempalte(s.template);
@@ -149,8 +151,10 @@ setInterval(async () => {
     chatboxOSC.send(template, s.eggMode);
     renderedTempalteText.set(template);
   }
-  sending = false;
-}, 2200);
+  renderingTemplate = false;
+}
+setInterval(renderTemplate, 2200);
+renderTemplate();
 
 settings.subscribe((value) => {
   localData.set("Chatbox;Settings", value);

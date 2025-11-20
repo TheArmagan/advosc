@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChatboxAdvancedEditorTab from "$lib/components/chatbox-editor/chatbox-advanced-editor-tab.svelte";
+  // @ts-expect-error
   import ChatboxSettingsTab from "$lib/components/chatbox-editor/chatbox-settings-tab.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
