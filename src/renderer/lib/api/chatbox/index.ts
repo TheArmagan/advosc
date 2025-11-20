@@ -19,7 +19,7 @@ let ignoreSet: Set<string> = new Set();
 
 const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
   localData.get("Chatbox;Settings", {
-    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] by [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
+    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
     autoSend: true,
     eggMode: false,
   })
