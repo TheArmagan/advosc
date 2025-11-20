@@ -80,7 +80,6 @@
         "prune": true,
         "ignore": [
           "/\\.git($|/)",
-          "/node_modules",
           "/screenshots",
           "/src",
           "/\\.vscode($|/)",
