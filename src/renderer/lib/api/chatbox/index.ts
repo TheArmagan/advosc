@@ -3,14 +3,25 @@ import { ChatboxMediaInfoModule } from "./modules/chatbox-media-info-module";
 import mapReplace from "stuffs/lib/mapReplace";
 import { ChatboxModule } from "./chatbox-module";
 import { ChatboxOSCDataModule } from "./modules/chatbox-osc-data-module";
+import { localData } from "../local-data";
+import { get, writable } from "svelte/store";
+import { chatboxOSC } from "../vrc-osc";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
 
-const chatboxModulesList = new Map<string, ChatboxModule>();
+const chatboxList = new Map<string, ChatboxModule>();
 
 let callsMadeMap: Map<string, number> = new Map();
 let ignoreSet: Set<string> = new Set();
+
+const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
+  localData.get("Chatbox;Settings", {
+    template: "",
+    autoSend: false,
+    eggMode: false,
+  })
+);
 
 setInterval(() => {
   callsMadeMap.clear();
@@ -61,7 +72,7 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", ign
         return;
       }
 
-      const m = chatboxModulesList.get(moduleId);
+      const m = chatboxList.get(moduleId);
       if (m) {
         const content = await m.getPlaceholderValue(...params);
         if (content !== null) {
@@ -86,14 +97,17 @@ async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}",
 }
 
 function registerChatboxModule(m: ChatboxModule) {
-  chatboxModulesList.set(m.options.id, m);
+  chatboxList.set(m.options.id, m);
 }
 
-function getExamplePlaceholders() {
-  return [...chatboxModulesList.values()].reduce((acc, module) => {
-    Object.entries(module.options.examplePlaceholders).forEach(([key, val]) => {
+function getPlaceholders() {
+  return [...chatboxList.values()].reduce((acc, m) => {
+    Object.entries({
+      ...m.options.examplePlaceholders,
+      ...m.getPreCalculatedPlaceholders()
+    }).forEach(([key, val]) => {
       acc.push({
-        params: [module.options.id, ...key.split("|")],
+        params: [m.options.id, ...key.split(";")],
         value: val.value,
         description: val.description,
       });
@@ -109,10 +123,27 @@ function cleanComments(text: string) {
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 
-export const chatboxModules = {
+export const chatbox = {
   fillTemplate,
   fillTemplates,
-  modules: chatboxModulesList,
-  getExamplePlaceholders,
+  modules: chatboxList,
+  getPlaceholders,
   cleanComments,
 };
+
+let sending = false;
+setInterval(async () => {
+  if (sending) return;
+  sending = true;
+  const s = get(settings);
+  if (s.autoSend) {
+    let template = cleanComments(s.template);
+    template = await fillTemplate(template, "{{;}}");
+    chatboxOSC.send(template, s.eggMode);
+  }
+  sending = false;
+}, 2200);
+
+settings.subscribe((value) => {
+  localData.set("Chatbox;Settings", value);
+});

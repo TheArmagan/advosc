@@ -174,194 +174,200 @@
     </div>
     <Tabs.Content value="parameters" class="flex flex-col gap-1">
       <Card.Root class="p-1 bg-transparent border">
-        <div class="flex flex-col gap-1">
-          {#each Object.entries($parameters) as [key, paramValue]}
-            {@const keyCleaned = key.replace("/avatar/parameters/", "")}
-            {@const paramSchema = $schema?.parameters.find((i) => {
-              return (
-                i.input?.address.includes(keyCleaned) ||
-                i.output?.address.includes(keyCleaned)
-              );
-            })}
-            {@const displayName = paramSchema?.name || keyCleaned}
-            {@const type = avatarOSC.getParameterType(key) || "Unk"}
-            {@const matchesSearch =
-              searchQuery.trim().length === 0 ||
-              displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              keyCleaned.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              searchQuery === type}
+        {#if Object.keys($parameters).length !== 0}
+          <div class="flex flex-col gap-1">
+            {#each Object.entries($parameters) as [key, paramValue]}
+              {@const keyCleaned = key.replace("/avatar/parameters/", "")}
+              {@const paramSchema = $schema?.parameters.find((i) => {
+                return (
+                  i.input?.address.includes(keyCleaned) ||
+                  i.output?.address.includes(keyCleaned)
+                );
+              })}
+              {@const displayName = paramSchema?.name || keyCleaned}
+              {@const type = avatarOSC.getParameterType(key) || "Unk"}
+              {@const matchesSearch =
+                searchQuery.trim().length === 0 ||
+                displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                keyCleaned.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                searchQuery === type}
 
-            {#if matchesSearch && (showOnlyDefined ? !!paramSchema?.name : true)}
-              <Item.Root
-                class="p-2 border rounded-md {$lockedParameterAddresses.includes(
-                  key
-                )
-                  ? 'border border-red-500'
-                  : ''} {gsapTimelines[key]
-                  ? 'bg-green-500/10'
-                  : ''} {linkedParameters[key]
-                  ? 'border border-orange-500'
-                  : ''}"
-                variant="muted"
-              >
-                <div class="flex justify-between items-center w-full">
-                  <div class="flex flex-col gap-2">
-                    <div class="flex items-center gap-2">
-                      <div class="px-2 py-1 border w-12 text-center rounded">
-                        {type}
-                      </div>
-                      <div class="font-medium">
-                        {displayName}
-                      </div>
-                      {#if displayName != keyCleaned}
-                        <div
-                          class="font-mono text-xs bg-black/50 px-2 py-1 rounded text-foreground/70 truncate"
-                        >
-                          {keyCleaned}
+              {#if matchesSearch && (showOnlyDefined ? !!paramSchema?.name : true)}
+                <Item.Root
+                  class="p-2 border rounded-md {$lockedParameterAddresses.includes(
+                    key
+                  )
+                    ? 'border border-red-500'
+                    : ''} {gsapTimelines[key]
+                    ? 'bg-green-500/10'
+                    : ''} {linkedParameters[key]
+                    ? 'border border-orange-500'
+                    : ''}"
+                  variant="muted"
+                >
+                  <div class="flex justify-between items-center w-full">
+                    <div class="flex flex-col gap-2">
+                      <div class="flex items-center gap-2">
+                        <div class="px-2 py-1 border w-12 text-center rounded">
+                          {type}
                         </div>
-                      {/if}
-                    </div>
-                    <div
-                      class="text-sm text-muted-foreground flex-col flex gap-1 w-[200px]"
-                    >
-                      <Progress
-                        value={type !== "Int" ? paramValue * 255 : paramValue}
-                        min={0}
-                        max={255}
-                        transitionDuration={50}
-                      />
-                      <span
-                        class="font-mono text-xs bg-black/50 px-2 py-1 rounded w-full truncate"
-                      >
-                        {paramValue}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <InputGroup.Root>
-                      {#if type === "Bool"}
-                        <Checkbox
-                          checked={inputParameters[key] === 1}
-                          onCheckedChange={(v) => {
-                            inputParameters[key] = v ? 1 : 0;
-                          }}
-                        />
-                      {:else if type === "Int"}
-                        <InputGroup.Input
-                          type="number"
-                          min="0"
-                          max="255"
-                          step="1"
-                          class="w-24 text-xs font-mono text-center"
-                          bind:value={inputParameters[key]}
-                        />
-                      {:else}
-                        <InputGroup.Input
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          class="w-24 text-xs font-mono text-center"
-                          bind:value={inputParameters[key]}
-                        />
-                      {/if}
-                      <InputGroup.Addon align="inline-start">
-                        <InputGroup.Button
-                          onclick={() => {
-                            inputParameters[key] = $parameters[key];
-                            toast.success("Parameter Refreshed");
-                          }}>Refresh</InputGroup.Button
-                        >
-                      </InputGroup.Addon>
-                      <InputGroup.Addon align="inline-end">
-                        <InputGroup.Button
-                          onclick={() => {
-                            if (inputParameters[key] === undefined)
-                              inputParameters[key] = 0;
-                            avatarOSC.setParameter(
-                              key,
-                              inputParameters[key] || 0
-                            );
-                            toast.success("Parameter Updated");
-                          }}>Update</InputGroup.Button
-                        >
-                      </InputGroup.Addon>
-                      <InputGroup.Addon align="inline-end">
-                        {#if $lockedParameterAddresses.includes(key)}
-                          <InputGroup.Button
-                            onclick={() => {
-                              if (inputParameters[key] === undefined)
-                                inputParameters[key] = 0;
-                              avatarOSC.setParameter(
-                                key,
-                                inputParameters[key] || 0,
-                                false
-                              );
-                              toast.success("Parameter Unlocked");
-                            }}
-                            class="text-red-500"
+                        <div class="font-medium">
+                          {displayName}
+                        </div>
+                        {#if displayName != keyCleaned}
+                          <div
+                            class="font-mono text-xs bg-black/50 px-2 py-1 rounded text-foreground/70 truncate"
                           >
-                            <LockIcon />
-                          </InputGroup.Button>
-                        {:else}
-                          <InputGroup.Button
-                            onclick={() => {
-                              if (inputParameters[key] === undefined)
-                                inputParameters[key] = 0;
-                              avatarOSC.setParameter(
-                                key,
-                                inputParameters[key] || 0,
-                                true
-                              );
-                              toast.success("Parameter Locked");
-                            }}
-                          >
-                            <LockOpenIcon />
-                          </InputGroup.Button>
+                            {keyCleaned}
+                          </div>
                         {/if}
-                      </InputGroup.Addon>
-                      <InputGroup.Addon align="inline-end">
-                        <DropdownMenu.Root>
-                          <DropdownMenu.Trigger>
-                            <InputGroup.Button>⋮</InputGroup.Button>
-                          </DropdownMenu.Trigger>
-                          <DropdownMenu.Content align="end">
-                            <DropdownMenu.Group>
-                              <DropdownMenu.Item
-                                onclick={() => {
-                                  targetTimelineData.address = key;
-                                  targetTimelineData.from = $parameters[key];
-                                  targetTimelineData.to = $parameters[key];
-                                  targetTimelineData.duration = 1;
-                                  targetTimelineData.repeat = 0;
-                                  targetTimelineData.yoyo = false;
-                                  targetTimelineData.drawerOpen = true;
-                                }}
-                              >
-                                <FastForwardIcon />
-                                Animate Parameter
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Item
-                                onclick={() => {
-                                  targetLinkedParameter.fromAddress = key;
-                                  targetLinkedParameter.toAddress = "";
-                                  targetLinkedParameter.drawerOpen = true;
-                                }}
-                              >
-                                <EqualIcon />
-                                Link Parameter
-                              </DropdownMenu.Item>
-                            </DropdownMenu.Group>
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Root>
-                      </InputGroup.Addon>
-                    </InputGroup.Root>
+                      </div>
+                      <div
+                        class="text-sm text-muted-foreground flex-col flex gap-1 w-[200px]"
+                      >
+                        <Progress
+                          value={type !== "Int" ? paramValue * 255 : paramValue}
+                          min={0}
+                          max={255}
+                          transitionDuration={50}
+                        />
+                        <span
+                          class="font-mono text-xs bg-black/50 px-2 py-1 rounded w-full truncate"
+                        >
+                          {paramValue}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <InputGroup.Root>
+                        {#if type === "Bool"}
+                          <Checkbox
+                            checked={inputParameters[key] === 1}
+                            onCheckedChange={(v) => {
+                              inputParameters[key] = v ? 1 : 0;
+                            }}
+                          />
+                        {:else if type === "Int"}
+                          <InputGroup.Input
+                            type="number"
+                            min="0"
+                            max="255"
+                            step="1"
+                            class="w-24 text-xs font-mono text-center"
+                            bind:value={inputParameters[key]}
+                          />
+                        {:else}
+                          <InputGroup.Input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            class="w-24 text-xs font-mono text-center"
+                            bind:value={inputParameters[key]}
+                          />
+                        {/if}
+                        <InputGroup.Addon align="inline-start">
+                          <InputGroup.Button
+                            onclick={() => {
+                              inputParameters[key] = $parameters[key];
+                              toast.success("Parameter Refreshed");
+                            }}>Refresh</InputGroup.Button
+                          >
+                        </InputGroup.Addon>
+                        <InputGroup.Addon align="inline-end">
+                          <InputGroup.Button
+                            onclick={() => {
+                              if (inputParameters[key] === undefined)
+                                inputParameters[key] = 0;
+                              avatarOSC.setParameter(
+                                key,
+                                inputParameters[key] || 0
+                              );
+                              toast.success("Parameter Updated");
+                            }}>Update</InputGroup.Button
+                          >
+                        </InputGroup.Addon>
+                        <InputGroup.Addon align="inline-end">
+                          {#if $lockedParameterAddresses.includes(key)}
+                            <InputGroup.Button
+                              onclick={() => {
+                                if (inputParameters[key] === undefined)
+                                  inputParameters[key] = 0;
+                                avatarOSC.setParameter(
+                                  key,
+                                  inputParameters[key] || 0,
+                                  false
+                                );
+                                toast.success("Parameter Unlocked");
+                              }}
+                              class="text-red-500"
+                            >
+                              <LockIcon />
+                            </InputGroup.Button>
+                          {:else}
+                            <InputGroup.Button
+                              onclick={() => {
+                                if (inputParameters[key] === undefined)
+                                  inputParameters[key] = 0;
+                                avatarOSC.setParameter(
+                                  key,
+                                  inputParameters[key] || 0,
+                                  true
+                                );
+                                toast.success("Parameter Locked");
+                              }}
+                            >
+                              <LockOpenIcon />
+                            </InputGroup.Button>
+                          {/if}
+                        </InputGroup.Addon>
+                        <InputGroup.Addon align="inline-end">
+                          <DropdownMenu.Root>
+                            <DropdownMenu.Trigger>
+                              <InputGroup.Button>⋮</InputGroup.Button>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Content align="end">
+                              <DropdownMenu.Group>
+                                <DropdownMenu.Item
+                                  onclick={() => {
+                                    targetTimelineData.address = key;
+                                    targetTimelineData.from = $parameters[key];
+                                    targetTimelineData.to = $parameters[key];
+                                    targetTimelineData.duration = 1;
+                                    targetTimelineData.repeat = 0;
+                                    targetTimelineData.yoyo = false;
+                                    targetTimelineData.drawerOpen = true;
+                                  }}
+                                >
+                                  <FastForwardIcon />
+                                  Animate Parameter
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Item
+                                  onclick={() => {
+                                    targetLinkedParameter.fromAddress = key;
+                                    targetLinkedParameter.toAddress = "";
+                                    targetLinkedParameter.drawerOpen = true;
+                                  }}
+                                >
+                                  <EqualIcon />
+                                  Link Parameter
+                                </DropdownMenu.Item>
+                              </DropdownMenu.Group>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Root>
+                        </InputGroup.Addon>
+                      </InputGroup.Root>
+                    </div>
                   </div>
-                </div>
-              </Item.Root>
-            {/if}
-          {/each}
-        </div>
+                </Item.Root>
+              {/if}
+            {/each}
+          </div>
+        {:else}
+          <div class="p-4 text-center text-muted-foreground">
+            No parameters available.
+          </div>
+        {/if}
       </Card.Root>
     </Tabs.Content>
     <Tabs.Content value="schema" class="flex flex-col gap-1">

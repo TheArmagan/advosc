@@ -2,15 +2,13 @@
   import { onDestroy, onMount } from "svelte";
   import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api";
   import {
-    registerRegexAutocomplete,
     registerDynamicAutocomplete,
     registerRegexHighlighting,
-    type RegexAutocompleteSuggestion,
     type GetCompletionsFunction,
     type GetHoverInfoFunction,
     type RegexHighlightRule,
-  } from "../editor/monaco-lib";
-  import { chatboxModules } from "$lib/api/chatbox";
+  } from "../../editor/monaco-lib";
+  import { chatbox } from "$lib/api/chatbox";
 
   let editor: Monaco.editor.IStandaloneCodeEditor;
   let monaco: typeof Monaco;
@@ -18,13 +16,19 @@
   let dynamicAutocompleteDisposable: Monaco.IDisposable | null = null;
   let highlightDisposable: Monaco.IDisposable | null = null;
 
+  const {
+    onLoad,
+  }: {
+    onLoad?: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
+  } = $props();
+
   // Örnek dinamik/live autocomplete fonksiyonu
   const getCompletions: GetCompletionsFunction = async (
     textUntilPosition,
     position,
     model
   ) => {
-    const placeholders = chatboxModules.getExamplePlaceholders();
+    const placeholders = chatbox.getPlaceholders();
 
     // {{ için autocomplete - başlangıç veya devamı
     const normalPlaceholderMatch = textUntilPosition.match(/{{([^}]*)$/);
@@ -111,7 +115,7 @@
 
   // Hover bilgisi döndüren fonksiyon
   const getHoverInfo: GetHoverInfoFunction = async (word, position, model) => {
-    const examplePlaceholders = chatboxModules.getExamplePlaceholders();
+    const placeholders = chatbox.getPlaceholders();
 
     // Cursor'un bulunduğu satırı al
     const lineContent = model.getLineContent(position.lineNumber);
@@ -130,7 +134,7 @@
         const placeholderText = match[1];
         const parts = placeholderText.split(";");
 
-        const placeholder = examplePlaceholders.find((p) =>
+        const placeholder = placeholders.find((p) =>
           p.params.every((param) => parts.includes(param))
         );
 
@@ -153,7 +157,7 @@
         const placeholderText = match[1];
         const parts = placeholderText.split(":");
 
-        const placeholder = examplePlaceholders.find((p) =>
+        const placeholder = placeholders.find((p) =>
           p.params.every((param) => parts.includes(param))
         );
 
@@ -181,9 +185,9 @@
 
   onMount(async () => {
     // monaco-worker'ı yükle (worker setup için)
-    await import("../editor/monaco-worker");
+    await import("../../editor/monaco-worker");
     // monaco-lib'den monaco'yu al
-    monaco = (await import("../editor/monaco-lib")).default;
+    monaco = (await import("../../editor/monaco-lib")).default;
 
     // Highlighting'i kaydet (editor oluşturmadan önce)
     highlightDisposable = registerRegexHighlighting(
@@ -210,6 +214,8 @@
       getCompletions,
       getHoverInfo
     );
+
+    onLoad?.(editor);
   });
 
   onDestroy(() => {
@@ -221,7 +227,7 @@
 </script>
 
 <div
-  style="width: 900px; height: 400px; display: flex; flex-direction: column; position: relative;"
+  class="w-[900px] h-[400px] flex flex-col relative contain-content overflow-hidden rounded-lg"
 >
   <div
     style="width: 900px; height: 400px; flex: 1;"

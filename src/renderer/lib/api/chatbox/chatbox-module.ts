@@ -1,13 +1,14 @@
 import { Component } from "svelte";
 
+type PlaceholdersRecord = Record<string, {
+  value: string;
+  description: string;
+}>;
 export interface ChatboxModuleOptions {
   id: string;
   name: string;
   description: string;
-  examplePlaceholders: Record<string, {
-    value: string;
-    description: string;
-  }>;
+  examplePlaceholders: PlaceholdersRecord;
   editorComponent?: Component;
   constants?: Record<string, any>;
 }
@@ -23,5 +24,9 @@ export class ChatboxModule {
 
   getPlaceholderValue(...params: string[]): Promise<string> | string {
     return "";
+  }
+
+  getPreCalculatedPlaceholders(): PlaceholdersRecord {
+    return {};
   }
 }
