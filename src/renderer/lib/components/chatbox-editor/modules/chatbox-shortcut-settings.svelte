@@ -10,6 +10,8 @@
     Trash2Icon,
     DownloadIcon,
     UploadIcon,
+    EyeOffIcon,
+    EyeIcon,
   } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
@@ -31,7 +33,12 @@
   let bulkImportValue = $state("");
 
   function handleBulkExport() {
-    const shortcuts = $values.shortcuts || {};
+    const shortcuts = { ...($values.shortcuts || {}) };
+    $values.secrets.forEach((secretKey: string) => {
+      if (shortcuts.hasOwnProperty(secretKey)) {
+        shortcuts[secretKey] = "";
+      }
+    });
     const json = JSON.stringify(shortcuts, null, 2);
     navigator.clipboard.writeText(json);
     toast.success("Shortcuts exported to clipboard!");
@@ -168,6 +175,7 @@
         <InputGroup.Input
           placeholder="Shortcut goes here."
           class="w-full"
+          type={$values.secrets?.includes(key) ? "password" : "text"}
           readonly
           {value}
         />
@@ -216,6 +224,28 @@
                 >
                   <Trash2Icon />
                   Delete Shortcut
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onclick={() => {
+                    const secrets = $values.secrets || [];
+                    if (!secrets.includes(key)) {
+                      secrets.push(key);
+                    } else {
+                      const index = secrets.indexOf(key);
+                      if (index > -1) {
+                        secrets.splice(index, 1);
+                      }
+                    }
+                    $values.secrets = secrets;
+                  }}
+                >
+                  {#if !$values.secrets?.includes(key)}
+                    <EyeOffIcon />
+                    Hide Shortcut
+                  {:else}
+                    <EyeIcon />
+                    Unhide Shortcut
+                  {/if}
                 </DropdownMenu.Item>
               </DropdownMenu.Group>
             </DropdownMenu.Content>

@@ -20,6 +20,7 @@
     SearchIcon,
     SquareIcon,
     UnlinkIcon,
+    XIcon,
   } from "@lucide/svelte";
   import * as Select from "$lib/components/ui/select/index.js";
   import { onMount } from "svelte";
@@ -58,7 +59,7 @@
     yoyo: false,
   });
 
-  let linkedParameters = $state<Record<string, string>>({});
+  let linkedParameters = $state<Record<string, string[]>>({});
   let targetLinkedParameter = $state({
     drawerOpen: false,
     fromAddress: "",
@@ -70,9 +71,10 @@
 
     const unsubParams = avatarOSC.onParameterChange((address, value) => {
       if (linkedParameters[address]) {
-        const linkedAddress = linkedParameters[address];
-        inputParameters[linkedAddress] = value;
-        avatarOSC.setParameter(linkedAddress, value, false);
+        linkedParameters[address].forEach((linkedAddress) => {
+          inputParameters[linkedAddress] = value;
+          avatarOSC.setParameter(linkedAddress, value, false);
+        });
       }
     });
 
@@ -201,7 +203,7 @@
                     ? 'border border-red-500'
                     : ''} {gsapTimelines[key]
                     ? 'bg-green-500/10'
-                    : ''} {linkedParameters[key]
+                    : ''} {linkedParameters[key]?.length
                     ? 'border border-orange-500'
                     : ''}"
                   variant="muted"
@@ -716,7 +718,7 @@
           >
             <Select.Trigger class="w-full">
               <div class="w-full items-center flex gap-1">
-                <span class="font-medium">
+                <span class="font-medium truncate">
                   {targetLinkedParameter.toAddress}
                 </span>
               </div>
@@ -743,6 +745,46 @@
             </Select.Content>
           </Select.Root>
         </div>
+        {#if linkedParameters[targetLinkedParameter.fromAddress]?.length}
+          <div class="flex flex-col gap-1">
+            <Label>Linked Addresses</Label>
+            <div
+              class="flex flex-col gap-1 max-h-32 overflow-y-auto border rounded p-1"
+            >
+              {#each linkedParameters[targetLinkedParameter.fromAddress] as linkedAddr}
+                <div
+                  class="flex items-center justify-between text-xs p-1 rounded-lg gap-1"
+                >
+                  <span
+                    class="font-mono text-[12px] bg-black/50 px-1 py-0.5 rounded text-foreground/70 truncate"
+                    >{linkedAddr}</span
+                  >
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    class="size-5"
+                    onclick={() => {
+                      linkedParameters[targetLinkedParameter.fromAddress] =
+                        linkedParameters[
+                          targetLinkedParameter.fromAddress
+                        ].filter((a) => a !== linkedAddr);
+                      if (
+                        linkedParameters[targetLinkedParameter.fromAddress]
+                          .length === 0
+                      ) {
+                        delete linkedParameters[
+                          targetLinkedParameter.fromAddress
+                        ];
+                      }
+                    }}
+                  >
+                    <XIcon class="size-3" />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
       <Drawer.Footer class="flex items-center justify-between">
         <div class="flex gap-2 items-center">
@@ -754,7 +796,7 @@
               const fromAddress = targetLinkedParameter.fromAddress;
               if (linkedParameters[fromAddress]) {
                 delete linkedParameters[fromAddress];
-                toast.success("Properties Unlinked");
+                toast.success("All Properties Unlinked");
               }
               targetLinkedParameter.drawerOpen = false;
             }}
@@ -764,14 +806,19 @@
           <Button
             variant="secondary"
             size="icon"
-            disabled={!!linkedParameters[targetLinkedParameter.fromAddress]}
             onclick={() => {
               const { fromAddress, toAddress } = targetLinkedParameter;
               if (!fromAddress || !toAddress) return;
 
-              linkedParameters[fromAddress] = toAddress;
-              toast.success("Properties Linked");
-              targetLinkedParameter.drawerOpen = false;
+              if (!linkedParameters[fromAddress]) {
+                linkedParameters[fromAddress] = [];
+              }
+              if (!linkedParameters[fromAddress].includes(toAddress)) {
+                linkedParameters[fromAddress].push(toAddress);
+                toast.success("Properties Linked");
+              } else {
+                toast.info("Already Linked");
+              }
             }}
           >
             <LinkIcon />

@@ -9,17 +9,18 @@ export class ChatboxExpressionModule extends ChatboxModule {
       name: "Expression",
       description: "Allows evaluating basic expressions and conditions.",
       examplePlaceholders: {
-        "AnyExpression": {
+        "Expression": {
           value: "True",
-          description: "Evaluates the given expression and returns the corresponding value.",
+          description: "Evaluates the given expression and returns the corresponding value. Example: '5 > 3' or '[[Number;RandomInt;1;100]] >= 50'.",
           fillText: "Expr;${1:expression};${2:trueValue};${3:falseValue}"
         }
       }
     });
   }
 
-  async getPlaceholderValue(...params: string[]): Promise<string> {
-    const [expr, trueValue = "", falseValue = ""] = (await chatbox.fillTemplates(params, "[[:]]"));
+  async getPlaceholderValue(expr: string, ...params: string[]): Promise<string> {
+    expr = await chatbox.fillTemplate(expr, "[[:]]", true);
+    const [trueValue = "", falseValue = ""] = (await chatbox.fillTemplates(params, "[[:]]"));
 
     try {
       return simpleEval(expr) ? trueValue : falseValue;

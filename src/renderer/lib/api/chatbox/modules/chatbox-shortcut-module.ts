@@ -32,4 +32,14 @@ export class ChatboxShortcutModule extends ChatboxModule {
       }];
     }));
   }
+
+  getCleanValues(): Record<string, any> {
+    const values = this.getValues();
+    values.secrets.forEach((secretKey: string) => {
+      delete values.shortcuts[secretKey];
+    });
+    return {
+      shortcuts: values.shortcuts
+    };
+  }
 }

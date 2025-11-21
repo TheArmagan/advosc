@@ -7,6 +7,7 @@
         "@electron-forge/cli": "^7.10.2",
         "@electron/packager": "^19.0.1",
         "@lucide/svelte": "^0.544.0",
+        "@pulsoid/socket": "1.1.6",
         "bits-ui": "^2.11.0",
         "chokidar": "^4.0.3",
         "clsx": "^2.1.1",
@@ -238,6 +239,8 @@
     "@npmcli/move-file": ["@npmcli/move-file@2.0.1", "", { "dependencies": { "mkdirp": "^1.0.4", "rimraf": "^3.0.2" } }, "sha512-mJd2Z5TjYWq/ttPLLGqArdtnC74J6bOzg4rMDnN+p1xTacZ2yPRCk2y0oSWQtygLR9YVQXgOcONrwtnk3JupxQ=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
+
+    "@pulsoid/socket": ["@pulsoid/socket@1.1.6", "", {}, "sha512-IItw+2cq6Lw9XbUjUxTr36oY9DDD/773izhmI7FWKULbnQxFbHcnTO5+jADomRwUlRIRxt8GOuV/hOJYvluiZw=="],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.53.2", "", { "os": "android", "cpu": "arm" }, "sha512-yDPzwsgiFO26RJA4nZo8I+xqzh7sJTZIWQOxn+/XOdPE31lAvLIYCKqjV+lNH/vxE2L2iH3plKxDCRK6i+CwhA=="],
 

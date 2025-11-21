@@ -59,48 +59,51 @@ export class ChatboxTextModule extends ChatboxModule {
     });
   }
 
-  async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
+  async getPlaceholderValue(...params: string[]): Promise<string> {
+    params = await chatbox.fillTemplates(params, "[[:]]");
+    const key = params.shift();
+    
     switch (key) {
       case "Upper": {
-        const text = (await chatbox.fillTemplates(params, "[[:]]")).join(";");
+        const text = params.join(";");
         return text.toUpperCase();
       }
       case "Lower": {
-        const text = (await chatbox.fillTemplates(params, "[[:]]")).join(";");
+        const text = params.join(";");
         return text.toLowerCase();
       }
       case "Title": {
-        const text = (await chatbox.fillTemplates(params, "[[:]]")).join(";");
+        const text = params.join(";");
         return text.replace(
           /\w\S*/g,
           (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
         );
       }
       case "Length": {
-        const text = (await chatbox.fillTemplates(params, "[[:]]")).join(";");
+        const text = params.join(";");
         return text.length.toString();
       }
       case "Reverse": {
-        const text = (await chatbox.fillTemplates(params, "[[:]]")).join(";");
+        const text = params.join(";");
         return text.split("").reverse().join("");
       }
       case "Repeat": {
-        const [count, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
+        const [count, ...texts] = params;
         const cnt = Math.max(0, parseInt(count, 10) || 0);
         return texts.join(";").repeat(cnt);
       }
       case "Slice": {
-        const [startStr, endStr, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
+        const [startStr, endStr, ...texts] = params;
         const start = parseInt(startStr, 10);
         const end = endStr ? parseInt(endStr, 10) : undefined;
         return texts.join(";").slice(start, end);
       }
       case "Format": {
-        const [formatKey, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
+        const [formatKey, ...texts] = params;
         return mapReplace(texts.join(";").toLowerCase(), textFormats[formatKey as keyof typeof textFormats] ?? {});
       }
       case "Truncate": {
-        const [lengthStr, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
+        const [lengthStr, ...texts] = params;
         const length = Math.max(0, parseInt(lengthStr, 10) || 0);
         const text = texts.join(";");
         if (text.length <= length) return text;

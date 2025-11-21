@@ -1,4 +1,5 @@
 import { avatarOSC } from "$lib/api/vrc-osc";
+import { chatbox } from "..";
 import { ChatboxModule } from "../chatbox-module";
 
 export class ChatboxOSCDataModule extends ChatboxModule {
@@ -17,7 +18,8 @@ export class ChatboxOSCDataModule extends ChatboxModule {
     });
   }
 
-  getPlaceholderValue(...params: string[]): string {
+  async getPlaceholderValue(...params: string[]): Promise<string> {
+    params = await chatbox.fillTemplates(params, "[[:]]");
     const address = params[0];
     const idx = params[1] ? parseInt(params[1], 10) : 0;
     if (isNaN(idx) || idx < 0) {

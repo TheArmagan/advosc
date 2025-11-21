@@ -37,6 +37,10 @@ export class ChatboxModule {
     return currentValues!;
   }
 
+  getCleanValues(): Record<string, any> {
+    return {}
+  }
+
   getPlaceholderValue(...params: string[]): Promise<string> | string {
     return "";
   }

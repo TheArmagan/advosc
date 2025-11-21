@@ -56,6 +56,7 @@
     "@electron-forge/cli": "^7.10.2",
     "@electron/packager": "^19.0.1",
     "@lucide/svelte": "^0.544.0",
+    "@pulsoid/socket": "1.1.6",
     "bits-ui": "^2.11.0",
     "chokidar": "^4.0.3",
     "clsx": "^2.1.1",
@@ -78,7 +79,7 @@
         "name": "ADVOSC",
         "executableName": "ADVOSC",
         "asar": {
-          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},screenshots/**/*,src/**/*}"
+          "unpack": "{*.{html,css,js,map,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot,exe},screenshots/**/*,src/**/*,node_modules/**/*}"
         },
         "prune": true,
         "ignore": [

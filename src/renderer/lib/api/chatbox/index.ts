@@ -10,6 +10,8 @@ import { chatboxOSC } from "../vrc-osc";
 import { ChatboxTextModule } from "./modules/chatbox-text-module";
 import { ChatboxTimeModule } from "./modules/chatbox-time-module";
 import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
+import { register } from "module";
+import { ChatboxPulsoidModule } from "./modules/chatbox-pulsoid-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -46,7 +48,7 @@ let ignoreSet: Set<string> = new Set();
 
 const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
   localData.get("Chatbox;Settings", {
-    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Format;[[Time:Now]];HH:mm}}\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
+    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Format;[[Time:Now]];HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
     autoSend: true,
     eggMode: false,
   })
@@ -76,28 +78,41 @@ async function incrementCallCount(moduleId: string, ...params: string[]) {
   }
 }
 
-async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", ignored: { moduleId: string, param0: string, return?: string }[] = []): Promise<string> {
+async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false): Promise<string> {
   const matches = [...text.matchAll(type === "{{;}}" ? PlaceholderRegex1 : PlaceholderRegex2)];
   const results: Record<string, string> = {};
+  const processValue = (val: string) => {
+    if (stringify) {
+      switch (val) {
+        case "null": return "null";
+        case "undefined": return "undefined";
+        case "true": return "true";
+        case "false": return "false";
+        default:
+          if (!isNaN(Number(val))) {
+            return val;
+          } else {
+            return JSON.stringify(val);
+          }
+      }
+    } else {
+      return val;
+    }
+  };
   results["\\n"] = "\n";
   await Promise.all(matches.map(async (match) => {
     if (results[match[0]]) return;
     try {
       const params = splitParams(match[1], type === "{{;}}" ? ";" : ":");
       const moduleId = params.shift()!;
-      const ignoredMatch = ignored.find(i => i.moduleId === moduleId && i.param0 === params[0]);
-      if (ignoredMatch) {
-        results[match[0]] = ignoredMatch.return ?? match[0];
-        return;
-      }
 
       if (ignoreSet.has(params[0])) {
-        results[match[0]] = `(Ignored: ${match[0]})`;
+        results[match[0]] = processValue(`(Ignored: ${match[0]})`);
         return;
       }
       await incrementCallCount(moduleId, ...params);
       if (ignoreSet.has(params[0])) {
-        results[match[0]] = `(Ignored: ${match[0]})`;
+        results[match[0]] = processValue(`(Ignored: ${match[0]})`);
         return;
       }
 
@@ -105,9 +120,9 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", ign
       if (m) {
         const content = await m.getPlaceholderValue(...params);
         if (content !== null) {
-          results[match[0]] = content;
+          results[match[0]] = processValue(content);
         } else {
-          results[match[0]] = `(Missing: ${match[0]})`;
+          results[match[0]] = processValue(`(No value for ${match[0]})`);
         }
       }
     } catch (e) {
@@ -121,8 +136,8 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", ign
   return mapReplace(text, results);
 }
 
-async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}", ignored: { moduleId: string, param0: string, return?: string }[] = []): Promise<string[]> {
-  return (await fillTemplate(texts.join("䡁"), type, ignored)).split("䡁");
+async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false): Promise<string[]> {
+  return (await fillTemplate(texts.join("䡁"), type, stringify)).split("䡁");
 }
 
 function registerChatboxModule(m: ChatboxModule) {
@@ -163,12 +178,32 @@ function updatePlaceholders() {
 }
 
 registerChatboxModule(new ChatboxShortcutModule());
+registerChatboxModule(new ChatboxPulsoidModule());
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxTimeModule());
 registerChatboxModule(new ChatboxTextModule());
 registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 updatePlaceholders();
+
+function getAllValues() {
+  const allValues: Record<string, any> = {};
+  chatboxList.forEach((module, moduleId) => {
+    const values = module.getCleanValues();
+    if (Object.keys(values).length > 0) {
+      allValues[moduleId] = values;
+    }
+  });
+  return allValues;
+}
+
+function setAllValues(values: Record<string, any>) {
+  chatboxList.forEach((module, moduleId) => {
+    if (values[moduleId]) {
+      module.values.set(values[moduleId]);
+    }
+  });
+}
 
 export const chatbox = {
   fillTemplate,
@@ -181,6 +216,8 @@ export const chatbox = {
   splitParams,
   placeholders,
   updatePlaceholders,
+  getAllValues,
+  setAllValues
 };
 
 let sentClear = false;
