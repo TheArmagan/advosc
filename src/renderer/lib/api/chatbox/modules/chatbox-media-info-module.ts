@@ -112,9 +112,12 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
     if (!lyric || !lyric.parsedSyncedLyrics) return "";
     if (lyric.insturmental) return "";
     const currentTime = this.getEstimatedPosition()! * 1000;
-    const currentLine = lyric.parsedSyncedLyrics.find(
+    const currentLineIndex = lyric.parsedSyncedLyrics.findIndex(
       (l) => l.at >= currentTime
     );
+    const currentLine = lyric.parsedSyncedLyrics[
+      currentLineIndex === -1 ? lyric.parsedSyncedLyrics.length - 1 : Math.max(0, currentLineIndex - 1)
+    ];
     if (!currentLine) return "";
     return currentLine.text || "";
   }
