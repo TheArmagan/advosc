@@ -161,6 +161,11 @@
 
   // Hover bilgisi döndüren fonksiyon
   const getHoverInfo: GetHoverInfoFunction = async (word, position, model) => {
+    // Sadece bu editörün modeli için çalış
+    if (editor && model.uri.toString() !== editor.getModel()?.uri.toString()) {
+      return null;
+    }
+
     const placeholders = chatbox.getPlaceholders();
 
     // Cursor'un bulunduğu satırı al

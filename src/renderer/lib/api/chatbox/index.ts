@@ -48,7 +48,7 @@ let ignoreSet: Set<string> = new Set();
 
 const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
   localData.get("Chatbox;Settings", {
-    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Format;[[Time:Now]];HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
+    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Now;HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
     autoSend: true,
     eggMode: false,
   })
@@ -186,23 +186,32 @@ registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 updatePlaceholders();
 
+export type AllValues = {
+  modules: Record<string, any>;
+  settings: { template: string; autoSend: boolean, eggMode: boolean };
+};
+
 function getAllValues() {
-  const allValues: Record<string, any> = {};
+  const moduleValues: Record<string, any> = {};
   chatboxList.forEach((module, moduleId) => {
     const values = module.getCleanValues();
     if (Object.keys(values).length > 0) {
-      allValues[moduleId] = values;
+      moduleValues[moduleId] = values;
     }
   });
-  return allValues;
+  return {
+    modules: moduleValues,
+    settings: get(settings),
+  };
 }
 
-function setAllValues(values: Record<string, any>) {
+function setAllValues(values: AllValues) {
   chatboxList.forEach((module, moduleId) => {
-    if (values[moduleId]) {
-      module.values.set(values[moduleId]);
+    if (values.modules[moduleId]) {
+      module.values.set(values.modules[moduleId]);
     }
   });
+  settings.set(values.settings);
 }
 
 export const chatbox = {

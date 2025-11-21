@@ -33,12 +33,7 @@
   let bulkImportValue = $state("");
 
   function handleBulkExport() {
-    const shortcuts = { ...($values.shortcuts || {}) };
-    $values.secrets.forEach((secretKey: string) => {
-      if (shortcuts.hasOwnProperty(secretKey)) {
-        shortcuts[secretKey] = "";
-      }
-    });
+    const shortcuts = module.getCleanValues().shortcuts;
     const json = JSON.stringify(shortcuts, null, 2);
     navigator.clipboard.writeText(json);
     toast.success("Shortcuts exported to clipboard!");
@@ -134,6 +129,7 @@
           <ChatboxMonacoEditor
             width={Math.floor(window.innerWidth * 0.98)}
             height={250}
+            language="json"
             onLoad={(editor) => {
               editor.setValue(bulkImportValue);
             }}
