@@ -49,6 +49,11 @@ export class ChatboxTextModule extends ChatboxModule {
           value: "ⓡⓞⓤⓝⓓⓔⓓ ⓣⓔⓧⓣ",
           description: "Formats the input text based on predefined formats (SuperScript, SmallCaps, Rounded).",
           fillText: "Text;Format;${1:SuperScript|SmallCaps|Rounded};${2:inputText}"
+        },
+        "Truncate": {
+          value: "This is a ve...",
+          description: "Truncates the input text to a specified length and appends ellipsis if necessary.",
+          fillText: "Text;Truncate;${1:length};${2:inputText}"
         }
       }
     });
@@ -93,6 +98,13 @@ export class ChatboxTextModule extends ChatboxModule {
       case "Format": {
         const [formatKey, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
         return mapReplace(texts.join(";").toLowerCase(), textFormats[formatKey as keyof typeof textFormats] ?? {});
+      }
+      case "Truncate": {
+        const [lengthStr, ...texts] = await chatbox.fillTemplates(params, "[[:]]");
+        const length = Math.max(0, parseInt(lengthStr, 10) || 0);
+        const text = texts.join(";");
+        if (text.length <= length) return text;
+        return text.slice(0, length) + "...";
       }
     }
     return "";
