@@ -37,12 +37,12 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
           description: "The current playback status of the media (Playing, Paused, Stopped, Unknown)."
         },
         "Position": {
-          value: "120",
-          description: "The current position of the media in seconds."
+          value: "120000",
+          description: "The current position of the media in milliseconds."
         },
         "Duration": {
-          value: "300",
-          description: "The total duration of the media in seconds."
+          value: "300000",
+          description: "The total duration of the media in milliseconds."
         },
         "AppName": {
           value: "Spotify",
@@ -168,10 +168,10 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
         return this.lastMediaInfo.playbackStatus;
       case "Position": {
         const pos = this.getEstimatedPosition();
-        return pos !== undefined ? Math.floor(pos).toString() : "";
+        return pos !== undefined ? Math.floor(pos * 1000).toString() : "";
       }
       case "Duration":
-        return this.lastMediaInfo.duration !== undefined ? Math.floor(this.lastMediaInfo.duration / 1000).toString() : "0";
+        return this.lastMediaInfo.duration !== undefined ? Math.floor(this.lastMediaInfo.duration).toString() : "0";
       case "AppName":
         return (this.lastMediaInfo.appName || "")?.replace(/\.exe$/i, "");
       case "Artist":

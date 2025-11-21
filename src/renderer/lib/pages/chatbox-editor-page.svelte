@@ -8,15 +8,14 @@
 </script>
 
 <div class="p-4 w-full">
-  <Tabs.Root value="advanced">
+  <Tabs.Root value="editor">
     <Tabs.List>
-      <Tabs.Trigger value="simple">Simple Editor</Tabs.Trigger>
-      <Tabs.Trigger value="advanced">Advanced Editor</Tabs.Trigger>
+      <Tabs.Trigger value="editor">Editor</Tabs.Trigger>
       <Tabs.Trigger value="modules">Modules</Tabs.Trigger>
       <Tabs.Trigger value="settings">Settings</Tabs.Trigger>
     </Tabs.List>
     <Tabs.Content value="simple"></Tabs.Content>
-    <Tabs.Content value="advanced">
+    <Tabs.Content value="editor">
       <Card.Root class="p-1 bg-transparent border">
         <ChatboxAdvancedEditorTab />
       </Card.Root>

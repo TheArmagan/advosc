@@ -223,10 +223,7 @@
 
   // Örnek highlighting kuralları
   const highlightRules: RegexHighlightRule[] = [
-    { pattern: /"[^"]*"/, token: "string" },
-    { pattern: /'[^']*'/, token: "string" },
     { pattern: /\/\/.*$/, token: "comment" },
-    { pattern: /\b\d+\b/, token: "number" },
     { pattern: /{{[^}]*}}/, token: "advosc.placeholder" },
     { pattern: /\[\[[^\]]*\]\]/, token: "advosc.innerPlaceholder" },
   ];

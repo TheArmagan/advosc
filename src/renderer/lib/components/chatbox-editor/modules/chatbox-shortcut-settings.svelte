@@ -3,7 +3,14 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import { CopyIcon, PenIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import {
+    CopyIcon,
+    PenIcon,
+    PlusIcon,
+    Trash2Icon,
+    DownloadIcon,
+    UploadIcon,
+  } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -20,54 +27,124 @@
   const values = module.values;
 
   let shortcutAddKey = $state("");
+  let bulkImportOpen = $state(false);
+  let bulkImportValue = $state("");
+
+  function handleBulkExport() {
+    const shortcuts = $values.shortcuts || {};
+    const json = JSON.stringify(shortcuts, null, 2);
+    navigator.clipboard.writeText(json);
+    toast.success("Shortcuts exported to clipboard!");
+  }
+
+  function handleBulkImport() {
+    try {
+      const parsed = JSON.parse(bulkImportValue);
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
+        toast.error("Invalid JSON format. Expected an object.");
+        return;
+      }
+      $values.shortcuts = {
+        ...($values.shortcuts || {}),
+        ...parsed,
+      };
+      toast.success("Shortcuts imported successfully!");
+      bulkImportOpen = false;
+      bulkImportValue = "";
+    } catch (error) {
+      toast.error("Invalid JSON: " + (error as Error).message);
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-2 items-start justify-start">
-  <Drawer.Root>
-    <Drawer.Trigger>
-      <Button
-        variant="outline"
-        onclick={() => {
-          shortcutAddKey = `Cut${Object.keys($values.shortcuts || {}).length + 1}`;
-        }}
-      >
-        <PlusIcon />
-        Add Shortcut
-      </Button>
-    </Drawer.Trigger>
-    <Drawer.Content class="flex items-center justify-center w-full">
-      <div class="w-96 flex flex-col gap-4 p-4">
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col gap-1">
-            <Label>Shortcut Key</Label>
-            <Input
-              bind:value={shortcutAddKey}
-              placeholder="Shortcut key (e.g., Shortcut1)"
-            />
+  <div class="flex gap-2">
+    <Drawer.Root>
+      <Drawer.Trigger>
+        <Button
+          variant="outline"
+          onclick={() => {
+            shortcutAddKey = `Cut${Object.keys($values.shortcuts || {}).length + 1}`;
+          }}
+        >
+          <PlusIcon />
+          Add Shortcut
+        </Button>
+      </Drawer.Trigger>
+      <Drawer.Content class="flex items-center justify-center w-full">
+        <div class="w-96 flex flex-col gap-4 p-4">
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-1">
+              <Label>Shortcut Key</Label>
+              <Input
+                bind:value={shortcutAddKey}
+                placeholder="Shortcut key (e.g., Shortcut1)"
+              />
+            </div>
           </div>
+          <Drawer.Footer>
+            <Drawer.Close>
+              <Button
+                disabled={!shortcutAddKey.trim()}
+                onclick={() => {
+                  $values.shortcuts = {
+                    ...($values.shortcuts || {}),
+                    [shortcutAddKey.trim()]: "",
+                  };
+                  toast.success("Shortcut added.");
+                  shortcutAddKey = "";
+                }}
+              >
+                <PlusIcon />
+                Add Shortcut
+              </Button>
+            </Drawer.Close>
+            <Drawer.Close>Cancel</Drawer.Close>
+          </Drawer.Footer>
+        </div>
+      </Drawer.Content>
+    </Drawer.Root>
+
+    <Button variant="outline" onclick={handleBulkExport}>
+      <DownloadIcon />
+      Bulk Export
+    </Button>
+
+    <Drawer.Root bind:open={bulkImportOpen}>
+      <Drawer.Trigger>
+        <Button variant="outline">
+          <UploadIcon />
+          Bulk Import
+        </Button>
+      </Drawer.Trigger>
+      <Drawer.Content class="flex flex-col gap-2 w-full p-2">
+        <Label class="text-lg">Bulk Import Shortcuts (JSON)</Label>
+        <div class="flex w-full items-center justify-center">
+          <ChatboxMonacoEditor
+            width={Math.floor(window.innerWidth * 0.98)}
+            height={250}
+            onLoad={(editor) => {
+              editor.setValue(bulkImportValue);
+            }}
+            onChange={(newValue) => {
+              bulkImportValue = newValue;
+            }}
+          />
         </div>
         <Drawer.Footer>
-          <Drawer.Close>
-            <Button
-              disabled={!shortcutAddKey.trim()}
-              onclick={() => {
-                $values.shortcuts = {
-                  ...($values.shortcuts || {}),
-                  [shortcutAddKey.trim()]: "",
-                };
-                toast.success("Shortcut added.");
-                shortcutAddKey = "";
-              }}
-            >
-              <PlusIcon />
-              Add Shortcut
-            </Button>
-          </Drawer.Close>
+          <Button onclick={handleBulkImport}>
+            <UploadIcon />
+            Import
+          </Button>
           <Drawer.Close>Cancel</Drawer.Close>
         </Drawer.Footer>
-      </div>
-    </Drawer.Content>
-  </Drawer.Root>
+      </Drawer.Content>
+    </Drawer.Root>
+  </div>
   {#each Object.entries($values.shortcuts || {}) as [key, value]}
     <Item.Root class="w-full p-0">
       <InputGroup.Root>
