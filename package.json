@@ -59,6 +59,8 @@
     "bits-ui": "^2.11.0",
     "chokidar": "^4.0.3",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "gsap": "^3.13.0",
     "lodash": "^4.17.21",
     "monaco-editor": "^0.54.0",

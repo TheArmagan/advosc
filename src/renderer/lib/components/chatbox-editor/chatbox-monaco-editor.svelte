@@ -32,7 +32,50 @@
   ) => {
     const placeholders = chatbox.getPlaceholders();
 
-    // {{ için autocomplete - başlangıç veya devamı
+    // ÖNCELİK 1: [[ için autocomplete - inner placeholder ({{ içinde bile olsa)
+    const innerPlaceholderMatch = textUntilPosition.match(/\[\[([^\]]*)$/);
+    if (innerPlaceholderMatch) {
+      const lineContent = model.getLineContent(position.lineNumber);
+      const textAfterPosition = lineContent.substring(position.column - 1);
+      const needsClosing = !textAfterPosition.includes("]]");
+
+      const currentText = innerPlaceholderMatch[1]; // [[ sonrası yazılan text
+      const parts = chatbox.splitParams(currentText, ":");
+      const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
+
+      // [[ 'nin başladığı kolon
+      const placeholderStartColumn = position.column - currentText.length;
+
+      return placeholders
+        .filter((placeholder) => {
+          // Eğer henüz bir şey yazılmadıysa hepsini göster
+          if (!lastPart) return true;
+          // Son yazılan kısım ile eşleşenleri göster
+          return placeholder.params.some((param) =>
+            param.toLowerCase().includes(lastPart)
+          );
+        })
+        .map((placeholder) => {
+          const insertBase = placeholder.fillText
+            ? chatbox.splitParams(placeholder.fillText, ";").join(":")
+            : placeholder.params.join(":");
+          return {
+            label: `${placeholder.params.join(";")}`,
+            kind: monaco.languages.CompletionItemKind.Field,
+            insertText: needsClosing ? `${insertBase}]]` : `${insertBase}`,
+            detail: placeholder.description,
+            documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: placeholderStartColumn,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+          };
+        });
+    }
+
+    // ÖNCELİK 2: {{ için autocomplete - normal placeholder
     const normalPlaceholderMatch = textUntilPosition.match(/{{([^}]*)$/);
     if (normalPlaceholderMatch) {
       const lineContent = model.getLineContent(position.lineNumber);
@@ -40,7 +83,7 @@
       const needsClosing = !textAfterPosition.includes("}}");
 
       const currentText = normalPlaceholderMatch[1]; // {{ sonrası yazılan text
-      const parts = currentText.split(";");
+      const parts = chatbox.splitParams(currentText, ";");
       const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
 
       // {{ 'nin başladığı kolon
@@ -72,46 +115,6 @@
         }));
     }
 
-    // [[ için autocomplete - başlangıç veya devamı
-    const innerPlaceholderMatch = textUntilPosition.match(/\[\[([^\]]*)$/);
-    if (innerPlaceholderMatch) {
-      const lineContent = model.getLineContent(position.lineNumber);
-      const textAfterPosition = lineContent.substring(position.column - 1);
-      const needsClosing = !textAfterPosition.includes("]]");
-
-      const currentText = innerPlaceholderMatch[1]; // [[ sonrası yazılan text
-      const parts = currentText.split(":");
-      const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
-
-      // [[ 'nin başladığı kolon
-      const placeholderStartColumn = position.column - currentText.length;
-
-      return placeholders
-        .filter((placeholder) => {
-          // Eğer henüz bir şey yazılmadıysa hepsini göster
-          if (!lastPart) return true;
-          // Son yazılan kısım ile eşleşenleri göster
-          return placeholder.params.some((param) =>
-            param.toLowerCase().includes(lastPart)
-          );
-        })
-        .map((placeholder) => ({
-          label: `${placeholder.params.join(";")}`,
-          kind: monaco.languages.CompletionItemKind.Field,
-          insertText: needsClosing
-            ? `${placeholder.fillText?.replaceAll(";", ":") ?? placeholder.params.join(":")}]]`
-            : `${placeholder.fillText?.replaceAll(";", ":") ?? placeholder.params.join(":")}`,
-          detail: placeholder.description,
-          documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
-          range: {
-            startLineNumber: position.lineNumber,
-            startColumn: placeholderStartColumn,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column,
-          },
-        }));
-    }
-
     return [];
   };
 
@@ -125,29 +128,7 @@
     // {{ }} veya [[ ]] içinde mi kontrol et
     const cursorColumn = position.column;
 
-    // Normal placeholder {{...}} kontrolü
-    const normalPlaceholderRegex = /{{([^}]*)}}/g;
     let match;
-    while ((match = normalPlaceholderRegex.exec(lineContent)) !== null) {
-      const startCol = match.index + 1;
-      const endCol = match.index + match[0].length + 1;
-
-      if (cursorColumn >= startCol && cursorColumn <= endCol) {
-        const placeholderText = match[1];
-        const parts = placeholderText.split(";");
-
-        const placeholder = placeholders.find((p) =>
-          p.params.every((param) => parts.includes(param))
-        );
-
-        if (placeholder) {
-          return {
-            value: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
-            isTrusted: true,
-          };
-        }
-      }
-    }
 
     // Inner placeholder [[...]] kontrolü
     const innerPlaceholderRegex = /\[\[([^\]]*)\]\]/g;
@@ -157,7 +138,7 @@
 
       if (cursorColumn >= startCol && cursorColumn <= endCol) {
         const placeholderText = match[1];
-        const parts = placeholderText.split(":");
+        const parts = chatbox.splitParams(placeholderText, ":");
 
         const placeholder = placeholders.find((p) =>
           p.params.every((param) => parts.includes(param))
@@ -166,6 +147,30 @@
         if (placeholder) {
           return {
             value: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+            isTrusted: true,
+          };
+        }
+      }
+    }
+
+    // Normal placeholder {{...}} kontrolü
+    const normalPlaceholderRegex = /{{([^}]*)}}/g;
+
+    while ((match = normalPlaceholderRegex.exec(lineContent)) !== null) {
+      const startCol = match.index + 1;
+      const endCol = match.index + match[0].length + 1;
+
+      if (cursorColumn >= startCol && cursorColumn <= endCol) {
+        const placeholderText = match[1];
+        const parts = chatbox.splitParams(placeholderText, ";");
+
+        const placeholder = placeholders.find((p) =>
+          p.params.every((param) => parts.includes(param))
+        );
+
+        if (placeholder) {
+          return {
+            value: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
             isTrusted: true,
           };
         }

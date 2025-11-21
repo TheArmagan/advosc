@@ -8,9 +8,35 @@ import { localData } from "../local-data";
 import { get, writable } from "svelte/store";
 import { chatboxOSC } from "../vrc-osc";
 import { ChatboxTextModule } from "./modules/chatbox-text-module";
+import { ChatboxTimeModule } from "./modules/chatbox-time-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
+
+function splitParams(text: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+    } else if (char === "\\") {
+      escaped = true;
+    } else if (char === delimiter) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current);
+  return result;
+}
 
 const chatboxList = new Map<string, ChatboxModule>();
 
@@ -19,7 +45,7 @@ let ignoreSet: Set<string> = new Set();
 
 const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
   localData.get("Chatbox;Settings", {
-    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
+    template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Format;[[Time:Now]];HH:mm}}\n{{Expr;'[[MediaInfo:Status]]'=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
     autoSend: true,
     eggMode: false,
   })
@@ -56,7 +82,7 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", ign
   await Promise.all(matches.map(async (match) => {
     if (results[match[0]]) return;
     try {
-      const params = match[1].split(type === "{{;}}" ? ";" : ":");
+      const params = splitParams(match[1], type === "{{;}}" ? ";" : ":");
       const moduleId = params.shift()!;
       const ignoredMatch = ignored.find(i => i.moduleId === moduleId && i.param0 === params[0]);
       if (ignoredMatch) {
@@ -127,6 +153,7 @@ registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxTextModule());
+registerChatboxModule(new ChatboxTimeModule());
 
 let renderedTempalteText = writable<string>("");
 
@@ -137,9 +164,11 @@ export const chatbox = {
   settings,
   getPlaceholders,
   cleanTempalte,
-  renderedTempalteText
+  renderedTempalteText,
+  splitParams,
 };
 
+let sentClear = false;
 let renderingTemplate = false;
 async function renderTemplate() {
   if (renderingTemplate) return;
@@ -148,10 +177,17 @@ async function renderTemplate() {
 
   let template = cleanTempalte(s.template);
   template = await fillTemplate(template, "{{;}}");
+  template = template.trim();
   renderedTempalteText.set(template);
 
-  if (s.autoSend) {
+  if (s.autoSend && template) {
+    sentClear = false
     chatboxOSC.send(template, s.eggMode);
+  } else {
+    if (!sentClear) {
+      chatboxOSC.send("", false);
+      sentClear = true;
+    }
   }
   renderingTemplate = false;
 }

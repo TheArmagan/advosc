@@ -48,7 +48,7 @@ export class ChatboxTextModule extends ChatboxModule {
         "Format": {
           value: "ⓡⓞⓤⓝⓓⓔⓓ ⓣⓔⓧⓣ",
           description: "Formats the input text based on predefined formats (SuperScript, SmallCaps, Rounded).",
-          fillText: "Text;Format;${1:formatKey};${2:inputText}"
+          fillText: "Text;Format;${1:SuperScript|SmallCaps|Rounded};${2:inputText}"
         }
       }
     });
