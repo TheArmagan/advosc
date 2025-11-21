@@ -9,6 +9,7 @@ import { get, writable } from "svelte/store";
 import { chatboxOSC } from "../vrc-osc";
 import { ChatboxTextModule } from "./modules/chatbox-text-module";
 import { ChatboxTimeModule } from "./modules/chatbox-time-module";
+import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -126,6 +127,9 @@ async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}",
 
 function registerChatboxModule(m: ChatboxModule) {
   chatboxList.set(m.options.id, m);
+  m.onValuesChanged = () => {
+    updatePlaceholders();
+  };
 }
 
 function getPlaceholders() {
@@ -146,16 +150,25 @@ function getPlaceholders() {
 }
 
 function cleanTempalte(text: string) {
-  return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "").trim();
+  return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "").split("\n").filter(i => i.trim()).join("\n").trim();
 }
 
-registerChatboxModule(new ChatboxMediaInfoModule());
-registerChatboxModule(new ChatboxOSCDataModule());
-registerChatboxModule(new ChatboxExpressionModule());
-registerChatboxModule(new ChatboxTextModule());
-registerChatboxModule(new ChatboxTimeModule());
+
 
 let renderedTempalteText = writable<string>("");
+let placeholders = writable<{ params: string[], value: string, description: string, fillText?: string }[]>([]);
+
+function updatePlaceholders() {
+  placeholders.set(getPlaceholders());
+}
+
+registerChatboxModule(new ChatboxShortcutModule());
+registerChatboxModule(new ChatboxMediaInfoModule());
+registerChatboxModule(new ChatboxTimeModule());
+registerChatboxModule(new ChatboxTextModule());
+registerChatboxModule(new ChatboxExpressionModule());
+registerChatboxModule(new ChatboxOSCDataModule());
+updatePlaceholders();
 
 export const chatbox = {
   fillTemplate,
@@ -166,6 +179,8 @@ export const chatbox = {
   cleanTempalte,
   renderedTempalteText,
   splitParams,
+  placeholders,
+  updatePlaceholders,
 };
 
 let sentClear = false;
@@ -177,7 +192,7 @@ async function renderTemplate() {
 
   let template = cleanTempalte(s.template);
   template = await fillTemplate(template, "{{;}}");
-  template = template.trim();
+  template = cleanTempalte(template);
   renderedTempalteText.set(template);
 
   if (s.autoSend && template) {

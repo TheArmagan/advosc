@@ -14,6 +14,7 @@
 
   const settings = chatbox.settings;
   const renderedTempalteText = chatbox.renderedTempalteText;
+  const placeholders = chatbox.placeholders;
 </script>
 
 <div class="flex flex-col gap-2">
@@ -23,7 +24,7 @@
     >
       <Card.Title>Insert Placeholders</Card.Title>
       <div class="flex flex-col gap-1 overflow-auto">
-        {#each chatbox.getPlaceholders() as ph}
+        {#each $placeholders as ph}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger class="w-full">
               <Tooltip.Provider>

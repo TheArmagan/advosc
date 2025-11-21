@@ -13,15 +13,27 @@
   let editor: Monaco.editor.IStandaloneCodeEditor;
   let monaco: typeof Monaco;
   let editorContainer: HTMLElement;
-  let dynamicAutocompleteDisposable: Monaco.IDisposable | null = null;
   let highlightDisposable: Monaco.IDisposable | null = null;
+  let isHighlightingRegistered = false;
+  let modelId = `model-${Math.random().toString(36).substring(7)}`;
+
+  // Global provider kaydı için flag (tüm instance'lar için tek bir provider)
+  let isProviderRegistered = false;
 
   const {
     onLoad,
     onChange,
+    width = 900,
+    height = 400,
+    initialValue = `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`,
+    language = "advosc-placeholders",
   }: {
     onLoad?: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
     onChange?: (value: string) => void;
+    width?: number;
+    height?: number;
+    initialValue?: string;
+    language?: string;
   } = $props();
 
   // Örnek dinamik/live autocomplete fonksiyonu
@@ -30,6 +42,11 @@
     position,
     model
   ) => {
+    // Sadece bu editörün modeli için çalış
+    if (editor && model.uri.toString() !== editor.getModel()?.uri.toString()) {
+      return [];
+    }
+
     const placeholders = chatbox.getPlaceholders();
 
     // ÖNCELİK 1: [[ için autocomplete - inner placeholder ({{ içinde bile olsa)
@@ -46,6 +63,9 @@
       // [[ 'nin başladığı kolon
       const placeholderStartColumn = position.column - currentText.length;
 
+      // Params'a göre dedupe
+      const seenParams = new Set<string>();
+
       return placeholders
         .filter((placeholder) => {
           // Eğer henüz bir şey yazılmadıysa hepsini göster
@@ -54,6 +74,15 @@
           return placeholder.params.some((param) =>
             param.toLowerCase().includes(lastPart)
           );
+        })
+        .filter((placeholder) => {
+          // Params kombinasyonuna göre dedupe
+          const paramsKey = placeholder.params.join(";");
+          if (seenParams.has(paramsKey)) {
+            return false;
+          }
+          seenParams.add(paramsKey);
+          return true;
         })
         .map((placeholder) => {
           const insertBase = placeholder.fillText
@@ -89,6 +118,9 @@
       // {{ 'nin başladığı kolon
       const placeholderStartColumn = position.column - currentText.length;
 
+      // Params'a göre dedupe
+      const seenParams = new Set<string>();
+
       return placeholders
         .filter((placeholder) => {
           // Eğer henüz bir şey yazılmadıysa hepsini göster
@@ -97,6 +129,15 @@
           return placeholder.params.some((param) =>
             param.toLowerCase().includes(lastPart)
           );
+        })
+        .filter((placeholder) => {
+          // Params kombinasyonuna göre dedupe
+          const paramsKey = placeholder.params.join(";");
+          if (seenParams.has(paramsKey)) {
+            return false;
+          }
+          seenParams.add(paramsKey);
+          return true;
         })
         .map((placeholder) => ({
           label: `${placeholder.params.join(";")}`,
@@ -196,11 +237,23 @@
     // monaco-lib'den monaco'yu al
     monaco = (await import("../../editor/monaco-lib")).default;
 
-    // Highlighting'i kaydet (editor oluşturmadan önce)
-    highlightDisposable = registerRegexHighlighting(
-      "advosc-placeholders",
-      highlightRules
-    );
+    // Highlighting'i kaydet (sadece ilk instance için, tekrar kayıt yapmamak için kontrol et)
+    try {
+      const languages = monaco.languages.getLanguages();
+      isHighlightingRegistered = languages.some(
+        (lang) => lang.id === "advosc-placeholders"
+      );
+
+      if (!isHighlightingRegistered) {
+        highlightDisposable = registerRegexHighlighting(
+          "advosc-placeholders",
+          highlightRules
+        );
+        isHighlightingRegistered = true;
+      }
+    } catch (e) {
+      // Dil zaten kayıtlıysa hata vermez, devam eder
+    }
 
     editor = monaco.editor.create(editorContainer, {
       quickSuggestions: true,
@@ -208,19 +261,20 @@
       theme: "advosc-theme",
       minimap: { enabled: false },
     });
+
     const model = monaco.editor.createModel(
-      `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`,
-      "advosc-placeholders"
+      initialValue,
+      language,
+      monaco.Uri.parse(`inmemory://${modelId}`)
     );
 
     editor.setModel(model);
 
-    // Dinamik autocomplete'i kaydet (hover ile birlikte)
-    dynamicAutocompleteDisposable = registerDynamicAutocomplete(
-      "advosc-placeholders",
-      getCompletions,
-      getHoverInfo
-    );
+    // Provider'ı global olarak sadece bir kere kaydet (tüm editörler için)
+    if (!isProviderRegistered) {
+      registerDynamicAutocomplete(language, getCompletions, getHoverInfo);
+      isProviderRegistered = true;
+    }
 
     onLoad?.(editor);
 
@@ -231,18 +285,22 @@
   });
 
   onDestroy(() => {
-    dynamicAutocompleteDisposable?.dispose();
-    highlightDisposable?.dispose();
-    monaco?.editor.getModels().forEach((model) => model.dispose());
+    // Highlighting'i sadece bu instance kaydettiyse dispose et
+    if (highlightDisposable && isHighlightingRegistered) {
+      highlightDisposable?.dispose();
+    }
+    // Sadece bu editöre ait modeli dispose et
+    editor?.getModel()?.dispose();
     editor?.dispose();
   });
 </script>
 
 <div
-  class="w-[900px] h-[400px] flex flex-col relative contain-content overflow-hidden rounded-lg"
+  class="flex flex-col relative"
+  style="width: {width}px; height: {height}px;"
 >
   <div
-    style="width: 900px; height: 400px; flex: 1;"
+    style="width: {width}px; height: {height}px; flex: 1;"
     bind:this={editorContainer}
   ></div>
 </div>

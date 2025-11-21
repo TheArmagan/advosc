@@ -82,7 +82,6 @@ export class ChatboxTimeModule extends ChatboxModule {
           const formatStr = params[1] || "yyyy-MM-dd HH:mm:ssXXX";
           const timeZone = params[2] || Intl.DateTimeFormat().resolvedOptions().timeZone;
           const date = dateStr ? new Date(dateStr) : new Date();
-          console.log("Formatting date:", date, "with format:", formatStr, "and timeZone:", timeZone);
           if (isNaN(date.getTime())) return "(Invalid date)";
           return format(date, formatStr, { timeZone });
         }
