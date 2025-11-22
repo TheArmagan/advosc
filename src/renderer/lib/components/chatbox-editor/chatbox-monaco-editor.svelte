@@ -20,19 +20,21 @@
   // Global provider kaydı için flag (tüm instance'lar için tek bir provider)
   let isProviderRegistered = false;
 
-  const {
+  let {
     onLoad,
     onChange,
     width = 900,
     height = 400,
-    initialValue = `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`,
+    value = $bindable(
+      `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`
+    ),
     language = "advosc-placeholders",
   }: {
     onLoad?: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
     onChange?: (value: string) => void;
     width?: number;
     height?: number;
-    initialValue?: string;
+    value?: string;
     language?: string;
   } = $props();
 
@@ -309,6 +311,17 @@
     { pattern: /\[\[[^\]]*\]\]/, token: "advosc.innerPlaceholder" },
   ];
 
+  // value prop değiştiğinde editor'ı güncelle
+  $effect(() => {
+    if (editor && value !== editor.getValue()) {
+      const position = editor.getPosition();
+      editor.setValue(value);
+      if (position) {
+        editor.setPosition(position);
+      }
+    }
+  });
+
   onMount(async () => {
     // monaco-worker'ı yükle (worker setup için)
     await import("../../editor/monaco-worker");
@@ -341,7 +354,7 @@
     });
 
     const model = monaco.editor.createModel(
-      initialValue,
+      value,
       language,
       monaco.Uri.parse(`inmemory://${modelId}`)
     );
@@ -357,8 +370,9 @@
     onLoad?.(editor);
 
     editor.onDidChangeModelContent(() => {
-      const value = editor.getValue();
-      onChange?.(value);
+      const newValue = editor.getValue();
+      value = newValue;
+      onChange?.(newValue);
     });
   });
 

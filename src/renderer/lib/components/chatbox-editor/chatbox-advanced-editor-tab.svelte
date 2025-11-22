@@ -10,6 +10,7 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
 
   let insertText = (text: string) => {};
+  let setText = (text: string) => {};
 
   const settings = chatbox.settings;
   const renderedTempalteText = chatbox.renderedTempalteText;
@@ -92,6 +93,10 @@
 
     return `<div class="flex flex-col gap-0.5">${items}</div>`;
   };
+
+  $effect(() => {
+    setText($settings.template);
+  });
 </script>
 
 <div class="flex flex-col gap-2">
@@ -146,8 +151,7 @@
             <DropdownMenu.Content>
               <DropdownMenu.Group>
                 <DropdownMenu.Item
-                  onclick={() =>
-                    insertText(`{{${ph.params.join(";")}}}`)}
+                  onclick={() => insertText(`{{${ph.params.join(";")}}}`)}
                 >
                   <BracesIcon />
                   Normal Placeholder
@@ -187,10 +191,17 @@
               editor.focus();
             }
           };
-          editor.setValue($settings.template);
+          setText = (text: string) => {
+            if (text && text.trim() !== editor.getValue().trim()) {
+              editor.setValue(text);
+            }
+          };
+          setText($settings.template);
         }}
         onChange={(value) => {
-          $settings.template = value;
+          if ($settings.template !== value) {
+            $settings.template = value;
+          }
         }}
       />
     </div>
