@@ -159,7 +159,7 @@
             label: `${placeholder.params.join(";")}`,
             kind: monaco.languages.CompletionItemKind.Field,
             insertText: needsClosing
-              ? `${placeholder.fillText ?? placeholder.params.join(";")}}`
+              ? `${placeholder.fillText ?? placeholder.params.join(";")}}}`
               : `${placeholder.fillText ?? placeholder.params.join(";")}`,
             detail: placeholder.description,
             documentation,
