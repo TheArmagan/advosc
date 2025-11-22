@@ -27,7 +27,7 @@ export class ChatboxShortcutModule extends ChatboxModule {
       const maxParams: number = (shortcuts[key].match(/\$(\d+)/g)?.map((m: string) => parseInt(m.slice(1), 10)).reduce((a: number, b: number) => Math.max(a, b), 0)) || 0;
       return [key, {
         value: shortcuts[key],
-        description: `User-defined shortcut for: ${shortcuts[key]}`,
+        description: `User-defined shortcut.`,
         fillText: `Shortcut;${key}${maxParams ? ";" : ""}${[...Array(maxParams).keys()].map(i => `\${${i + 1}:param${i + 1}}`).join(";")}`
       }];
     }));

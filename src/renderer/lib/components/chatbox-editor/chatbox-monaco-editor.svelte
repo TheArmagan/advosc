@@ -88,12 +88,20 @@
           const insertBase = placeholder.fillText
             ? chatbox.splitParams(placeholder.fillText, ";").join(":")
             : placeholder.params.join(":");
+
+          let documentation = `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``;
+
+          if (placeholder.fillText) {
+            const formatted = formatFillText(placeholder.fillText, ":");
+            documentation += `\n\n${formatted}`;
+          }
+
           return {
             label: `${placeholder.params.join(";")}`,
             kind: monaco.languages.CompletionItemKind.Field,
             insertText: needsClosing ? `${insertBase}]]` : `${insertBase}`,
             detail: placeholder.description,
-            documentation: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+            documentation,
             range: {
               startLineNumber: position.lineNumber,
               startColumn: placeholderStartColumn,
@@ -139,24 +147,78 @@
           seenParams.add(paramsKey);
           return true;
         })
-        .map((placeholder) => ({
-          label: `${placeholder.params.join(";")}`,
-          kind: monaco.languages.CompletionItemKind.Field,
-          insertText: needsClosing
-            ? `${placeholder.fillText ?? placeholder.params.join(";")}}}`
-            : `${placeholder.fillText ?? placeholder.params.join(";")}`,
-          detail: placeholder.description,
-          documentation: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
-          range: {
-            startLineNumber: position.lineNumber,
-            startColumn: placeholderStartColumn,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column,
-          },
-        }));
+        .map((placeholder) => {
+          let documentation = `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``;
+
+          if (placeholder.fillText) {
+            const formatted = formatFillText(placeholder.fillText, ";");
+            documentation += `\n\n${formatted}`;
+          }
+
+          return {
+            label: `${placeholder.params.join(";")}`,
+            kind: monaco.languages.CompletionItemKind.Field,
+            insertText: needsClosing
+              ? `${placeholder.fillText ?? placeholder.params.join(";")}}`
+              : `${placeholder.fillText ?? placeholder.params.join(";")}`,
+            detail: placeholder.description,
+            documentation,
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: placeholderStartColumn,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+          };
+        });
     }
 
     return [];
+  };
+
+  // fillText'i parse edip formatla - her argümanı alt alta listele
+  const formatFillText = (
+    fillText: string,
+    separator: string = ";"
+  ): string => {
+    // Text;Animate;Marquee;${1:inputText};${2:Left|Right};${3:maxLength}
+    const parts = chatbox.splitParams(fillText, separator);
+
+    let result = "**Arguments:**\n";
+
+    parts.forEach((part, index) => {
+      // ${1:inputText} formatını parse et
+      const placeholderMatch = part.match(/\$\{(\d+):([^}]+)\}/);
+
+      if (placeholderMatch) {
+        const [_, paramIndex, content] = placeholderMatch;
+
+        // ... ile biten parametreler (variadic)
+        if (content.endsWith("...")) {
+          const paramName = content.slice(0, -3); // "..." kısmını çıkar
+
+          // Left|Right|... gibi seçenekli variadic
+          if (paramName.includes("|")) {
+            const options = paramName.split("|");
+            result += `\n${index + 1}. **${options[0]}...** (Options: ${options.join(", ")}) *(repeatable)*`;
+          } else {
+            result += `\n${index + 1}. **${paramName}...** *(repeatable)*`;
+          }
+        }
+        // Left|Right gibi seçenekleri ayır
+        else if (content.includes("|")) {
+          const options = content.split("|");
+          result += `\n${index + 1}. **${content.split("|")[0]}** (Options: ${options.join(", ")})`;
+        } else {
+          result += `\n${index + 1}. **${content}**`;
+        }
+      } else {
+        // Normal parametre (sabit değer)
+        result += `\n${index + 1}. \`${part}\` (fixed)`;
+      }
+    });
+
+    return result;
   };
 
   // Hover bilgisi döndüren fonksiyon
@@ -191,8 +253,15 @@
         );
 
         if (placeholder) {
+          let hoverText = `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``;
+
+          if (placeholder.fillText) {
+            const formatted = formatFillText(placeholder.fillText, ":");
+            hoverText += `\n\n${formatted}`;
+          }
+
           return {
-            value: `**Inner Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+            value: hoverText,
             isTrusted: true,
           };
         }
@@ -215,8 +284,15 @@
         );
 
         if (placeholder) {
+          let hoverText = `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``;
+
+          if (placeholder.fillText) {
+            const formatted = formatFillText(placeholder.fillText, ";");
+            hoverText += `\n\n${formatted}`;
+          }
+
           return {
-            value: `**Normal Placeholder**\n\n${placeholder.description}\n\n**Example:** \`${placeholder.value}\`\n\n**Params:** \`${placeholder.params.join(", ")}\``,
+            value: hoverText,
             isTrusted: true,
           };
         }

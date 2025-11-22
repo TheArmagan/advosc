@@ -88,6 +88,7 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
         case "undefined": return "undefined";
         case "true": return "true";
         case "false": return "false";
+        case "": return '""';
         default:
           if (!isNaN(Number(val))) {
             return val;

@@ -25,6 +25,6 @@ export class ChatboxOSCDataModule extends ChatboxModule {
     if (isNaN(idx) || idx < 0) {
       return `(Invalid index: ${params[1]})`;
     }
-    return avatarOSC.allLastParameters[address]?.[idx]?.toString() ?? `(No data: ${address})`;
+    return avatarOSC.allLastParameters[address]?.[idx]?.toString() ?? '0';
   }
 }

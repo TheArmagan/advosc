@@ -109,6 +109,6 @@ export class ChatboxNumberModule extends ChatboxModule {
       }
     }
 
-    return "(Invalid parameters)";
+    return "";
   }
 }

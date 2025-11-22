@@ -72,7 +72,7 @@ export class ChatboxTimeModule extends ChatboxModule {
         }
         case "Timestamp": {
           const timestamp = parseInt(params[0] || "");
-          if (isNaN(timestamp)) return "(Invalid timestamp)";
+          if (isNaN(timestamp)) return "";
           const formatStr = params[1] || "yyyy-MM-dd HH:mm:ssXXX";
           const timeZone = params[2] || Intl.DateTimeFormat().resolvedOptions().timeZone;
           return format(new Date(timestamp), formatStr, { timeZone });
@@ -98,7 +98,7 @@ export class ChatboxTimeModule extends ChatboxModule {
         }
         case "FromNowMilis": {
           const futureTimestamp = parseInt(params[0] || "");
-          if (isNaN(futureTimestamp)) return "(Invalid timestamp)";
+          if (isNaN(futureTimestamp)) return "";
           const now = Date.now();
           return (futureTimestamp - now).toString();
         }
@@ -107,7 +107,7 @@ export class ChatboxTimeModule extends ChatboxModule {
           const format = params[1] || "Short" as "Long" | "Short" | "Colon";
           const delimiter = params[2] || (format === "Long" ? ", " : "");
 
-          if (isNaN(millis)) return "(Invalid duration)";
+          if (isNaN(millis)) return "";
 
           const absMillis = Math.abs(millis);
           const seconds = Math.floor((absMillis / 1000) % 60);
@@ -132,7 +132,7 @@ export class ChatboxTimeModule extends ChatboxModule {
         }
         case "ElapsedMillis": {
           const startTimestamp = parseInt(params[0] || "");
-          if (isNaN(startTimestamp)) return "(Invalid timestamp)";
+          if (isNaN(startTimestamp)) return "";
           const now = Date.now();
           return (now - startTimestamp).toString();
         }

@@ -25,7 +25,8 @@ export class ChatboxExpressionModule extends ChatboxModule {
     try {
       return simpleEval(expr) ? trueValue : falseValue;
     } catch (e) {
-      return `(Error evaluating expression: ${e})`;
+      console.error("Chatbox", "Failed to evaluate expression", expr, e);
+      return '';
     }
   }
 }

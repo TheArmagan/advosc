@@ -8,13 +8,90 @@
   import { BracesIcon, BracketsIcon } from "@lucide/svelte";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import Label from "../ui/label/label.svelte";
 
   let insertText = (text: string) => {};
 
   const settings = chatbox.settings;
   const renderedTempalteText = chatbox.renderedTempalteText;
   const placeholders = chatbox.placeholders;
+
+  // fillText'i parse edip HTML formatla - compact ve beyaz tooltip için
+  const formatFillTextHTML = (
+    fillText: string,
+    separator: string = ";"
+  ): string => {
+    const parts = chatbox.splitParams(fillText, separator);
+
+    let items = "";
+
+    parts.forEach((part, index) => {
+      // ${1:inputText} formatını parse et
+      const placeholderMatch = part.match(/\$\{(\d+):([^}]+)\}/);
+
+      if (placeholderMatch) {
+        const [_, paramIndex, content] = placeholderMatch;
+
+        // ... ile biten parametreler (variadic)
+        if (content.endsWith("...")) {
+          const paramName = content.slice(0, -3); // "..." kısmını çıkar
+
+          // Left|Right|... gibi seçenekli variadic
+          if (paramName.includes("|")) {
+            const options = paramName.split("|");
+            items += `
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-gray-500 font-mono">${index + 1}.</span>
+                <span class="font-semibold text-gray-900">${options[0]}...</span>
+                <div class="flex gap-0.5">
+                  ${options.map((opt) => `<span class="bg-gray-100 px-1 py-0.5 rounded text-[10px]">${opt}</span>`).join("")}
+                </div>
+                <span class="text-gray-400 italic text-[10px]">repeat</span>
+              </div>
+            `;
+          } else {
+            items += `
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-gray-500 font-mono">${index + 1}.</span>
+                <span class="font-semibold text-gray-900">${paramName}...</span>
+                <span class="text-gray-400 italic text-[10px]">repeat</span>
+              </div>
+            `;
+          }
+        }
+        // Left|Right gibi seçenekleri ayır
+        else if (content.includes("|")) {
+          const options = content.split("|");
+          items += `
+            <div class="flex items-center gap-1.5 text-xs">
+              <span class="text-gray-500 font-mono">${index + 1}.</span>
+              <span class="font-semibold text-gray-900">${options[0]}</span>
+              <div class="flex gap-0.5">
+                ${options.map((opt) => `<span class="bg-gray-100 px-1 py-0.5 rounded text-[10px]">${opt}</span>`).join("")}
+              </div>
+            </div>
+          `;
+        } else {
+          items += `
+            <div class="flex items-center gap-1.5 text-xs">
+              <span class="text-gray-500 font-mono">${index + 1}.</span>
+              <span class="font-semibold text-gray-900">${content}</span>
+            </div>
+          `;
+        }
+      } else {
+        // Normal parametre (sabit değer)
+        items += `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-gray-500 font-mono">${index + 1}.</span>
+            <code class="bg-gray-100 px-1 py-0.5 rounded text-[11px] font-mono text-gray-700">${part}</code>
+            <span class="text-gray-400 text-[10px]">fixed</span>
+          </div>
+        `;
+      }
+    });
+
+    return `<div class="flex flex-col gap-0.5">${items}</div>`;
+  };
 </script>
 
 <div class="flex flex-col gap-2">
@@ -37,8 +114,31 @@
                       >
                     </Button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content>
-                    <p>{ph.description}</p>
+                  <Tooltip.Content class="max-w-md">
+                    <div class="flex flex-col gap-1.5">
+                      <p class="font-semibold text-sm text-gray-900">
+                        {ph.description}
+                      </p>
+                      {#if ph.value}
+                        <div class="text-xs flex items-center gap-1">
+                          <span class="text-gray-500">Example:</span>
+                          <code
+                            class="bg-gray-100 px-1 py-0.5 rounded font-mono text-gray-700"
+                            >{ph.value}</code
+                          >
+                        </div>
+                      {/if}
+                      {#if ph.fillText}
+                        <div class="text-xs mt-0.5">
+                          <p
+                            class="font-medium mb-1 text-gray-600 text-[10px] uppercase tracking-wide"
+                          >
+                            Arguments
+                          </p>
+                          {@html formatFillTextHTML(ph.fillText, ";")}
+                        </div>
+                      {/if}
+                    </div>
                   </Tooltip.Content>
                 </Tooltip.Root>
               </Tooltip.Provider>
@@ -46,13 +146,16 @@
             <DropdownMenu.Content>
               <DropdownMenu.Group>
                 <DropdownMenu.Item
-                  onclick={() => insertText(`{{${ph.params.join(";")}}}`)}
+                  onclick={() =>
+                    insertText(`{{${ph.params.join(";")}}}`)}
                 >
                   <BracesIcon />
                   Normal Placeholder
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  onclick={() => insertText(`[[${ph.params.join(":")}]]`)}
+                  onclick={() => {
+                    insertText(`[[${ph.params.join(":")}]]`);
+                  }}
                 >
                   <BracketsIcon />
                   Inner Placeholder

@@ -4,6 +4,8 @@ import * as textFormats from "$lib/data/text-formats.json";
 import mapReplace from "stuffs/lib/mapReplace";
 
 export class ChatboxTextModule extends ChatboxModule {
+  animationData: Map<string, { at: number, index: number, last: string }> = new Map();
+
   constructor() {
     super({
       id: "Text",
@@ -54,15 +56,33 @@ export class ChatboxTextModule extends ChatboxModule {
           value: "This is a ve...",
           description: "Truncates the input text to a specified length and appends ellipsis if necessary.",
           fillText: "Text;Truncate;${1:length};${2:inputText}"
+        },
+        "Animate;Marquee": {
+          value: "Hello World Hello World ",
+          description: "Creates a marquee animation effect for the input text. Specify direction (Left or Right), and maximum visible length. Default is NoPadding mode.",
+          fillText: "Text;Animate;Marquee;${1:inputText};${2:Left|Right};${3:maxLength}"
+        },
+        "Animate;EachOne": {
+          value: "Hello",
+          description: "Animates list of texts by displaying each one sequentially.",
+          fillText: "Text;Animate;EachOne;${3:inputText};${4:inputText...}"
         }
       }
     });
+
+    setInterval(() => {
+      this.animationData.forEach((data, key) => {
+        if (Date.now() - data.at > 60000) this.animationData.delete(key);
+      });
+    }, 60000);
   }
+
+
 
   async getPlaceholderValue(...params: string[]): Promise<string> {
     params = await chatbox.fillTemplates(params, "[[:]]");
     const key = params.shift();
-    
+
     switch (key) {
       case "Upper": {
         const text = params.join(";");
@@ -108,6 +128,77 @@ export class ChatboxTextModule extends ChatboxModule {
         const text = texts.join(";");
         if (text.length <= length) return text;
         return text.slice(0, length) + "...";
+      }
+      case "Animate": {
+        const [animationType, ...args] = params;
+        const dataKey = params.join(";");
+        let data = this.animationData.get(dataKey);
+        if (!data) {
+          data = { at: Date.now(), index: 0, last: "" };
+          this.animationData.set(dataKey, data);
+        }
+        switch (animationType) {
+          case "Marquee": {
+            const [text, direction, maxLengthStr, paddingFlag] = args;
+            const speed = 2200;
+            const maxLength = maxLengthStr ? Math.max(1, parseInt(maxLengthStr, 10) || text.length) : text.length;
+            const noPadding = paddingFlag !== "Padding";
+            const now = Date.now();
+
+            if (data.last !== text) {
+              data.at = now;
+              data.index = 0;
+              data.last = text;
+            }
+
+            const elapsed = now - data.at;
+            const step = Math.floor(elapsed / speed);
+            const cycleLength = noPadding ? text.length : text.length + maxLength;
+            const currentIndex = step % cycleLength;
+
+            let displayText = "";
+
+            if (noPadding) {
+              // Seamless loop without padding
+              const doubledText = text.repeat(2);
+              displayText = doubledText.slice(currentIndex, currentIndex + maxLength);
+            } else {
+              // With padding animation
+              if (direction === "Left") {
+                if (currentIndex < maxLength) {
+                  // Padding phase
+                  const padding = " ".repeat(currentIndex);
+                  displayText = padding;
+                } else {
+                  // Text reveal phase
+                  const textStartIdx = currentIndex - maxLength;
+                  const textEndIdx = Math.min(textStartIdx + maxLength, text.length);
+                  displayText = text.slice(textStartIdx, textEndIdx);
+                }
+              } else {
+                // Right direction
+                if (currentIndex < maxLength) {
+                  // Padding phase
+                  const padding = " ".repeat(currentIndex);
+                  displayText = padding;
+                } else {
+                  // Text reveal phase
+                  const textEndIdx = text.length - (currentIndex - maxLength);
+                  const textStartIdx = Math.max(0, textEndIdx - maxLength);
+                  displayText = text.slice(textStartIdx, textEndIdx);
+                }
+              }
+            }
+
+            return displayText;
+          }
+          case "EachOne": {
+            const parts = args;
+            data.index = (data.index + 1) % parts.length;
+            data.at = Date.now();
+            return parts[data.index];
+          }
+        }
       }
     }
     return "";
