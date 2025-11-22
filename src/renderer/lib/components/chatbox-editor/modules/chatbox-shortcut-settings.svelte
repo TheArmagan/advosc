@@ -213,10 +213,10 @@
                 <DropdownMenu.Item
                   onclick={() => {
                     const { [key]: _, ...rest } = $values.shortcuts || {};
-                    module.values = {
+                    module.values.set({
                       ...$values,
                       shortcuts: rest,
-                    };
+                    });
                     toast.success("Shortcut deleted.");
                   }}
                   class="text-destructive"
