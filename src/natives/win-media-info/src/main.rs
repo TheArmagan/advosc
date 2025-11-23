@@ -1,14 +1,9 @@
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use std::fs;
-use tokio::time;
 use clap::{Parser, Subcommand};
-use windows::{
-    core::*,
-    Media::Control::*,
-    Storage::Streams::*,
-    Win32::Foundation::*,
-};
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::time::Duration;
+use tokio::time;
+use windows::{core::*, Media::Control::*, Storage::Streams::*, Win32::Foundation::*};
 
 #[derive(Parser)]
 #[command(name = "win-media-info")]
@@ -16,7 +11,7 @@ use windows::{
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
-    
+
     /// Enable saving album artwork to current_album_artwork.png
     #[arg(long, default_value_t = false)]
     enable_artwork: bool,
@@ -68,14 +63,16 @@ impl Default for MediaInfo {
 async fn save_album_artwork(thumbnail: &IRandomAccessStreamReference) -> Result<()> {
     let stream = thumbnail.OpenReadAsync()?.await?;
     let size = stream.Size()? as usize;
-    
+
     if size == 0 {
         return Err(windows::core::Error::from_hresult(E_FAIL));
     }
 
     let buffer = Buffer::Create(size as u32)?;
-    let bytes_read = stream.ReadAsync(&buffer, size as u32, InputStreamOptions::None)?.await?;
-    
+    let bytes_read = stream
+        .ReadAsync(&buffer, size as u32, InputStreamOptions::None)?
+        .await?;
+
     if bytes_read.Length()? == 0 {
         return Err(windows::core::Error::from_hresult(E_FAIL));
     }
@@ -90,13 +87,14 @@ async fn save_album_artwork(thumbnail: &IRandomAccessStreamReference) -> Result<
     data_reader.ReadBytes(&mut bytes)?;
 
     fs::write(&artwork_path, &bytes).map_err(|e| windows::core::Error::from(e))?;
-    
+
     Ok(())
 }
 
-async fn get_media_info(enable_artwork: bool) -> Result<MediaInfo> {
-    let session_manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.await?;
-    
+async fn get_media_info(
+    session_manager: &GlobalSystemMediaTransportControlsSessionManager,
+    enable_artwork: bool,
+) -> Result<MediaInfo> {
     // Try to get current session, return default if none exists
     let current_session = match session_manager.GetCurrentSession() {
         Ok(session) => session,
@@ -109,9 +107,13 @@ async fn get_media_info(enable_artwork: bool) -> Result<MediaInfo> {
     if let Ok(playback_info) = current_session.GetPlaybackInfo() {
         let status = playback_info.PlaybackStatus()?;
         media_info.playback_status = match status {
-            GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => "Playing".to_string(),
+            GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => {
+                "Playing".to_string()
+            }
             GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => "Paused".to_string(),
-            GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => "Stopped".to_string(),
+            GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => {
+                "Stopped".to_string()
+            }
             _ => "Unknown".to_string(),
         };
     }
@@ -166,7 +168,7 @@ async fn get_media_info(enable_artwork: bool) -> Result<MediaInfo> {
 
 async fn execute_media_control(command: &Commands) -> Result<()> {
     let session_manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.await?;
-    
+
     let current_session = match session_manager.GetCurrentSession() {
         Ok(session) => session,
         Err(_) => {
@@ -176,30 +178,23 @@ async fn execute_media_control(command: &Commands) -> Result<()> {
     };
 
     let result = match command {
-        Commands::SkipTrack => {
-            current_session.TrySkipNextAsync()?.await
-        }
-        Commands::PreviousTrack => {
-            current_session.TrySkipPreviousAsync()?.await
-        }
-        Commands::TogglePlayPause => {
-            current_session.TryTogglePlayPauseAsync()?.await
-        }
-        Commands::Pause => {
-            current_session.TryPauseAsync()?.await
-        }
-        Commands::Resume => {
-            current_session.TryPlayAsync()?.await
-        }
+        Commands::SkipTrack => current_session.TrySkipNextAsync()?.await,
+        Commands::PreviousTrack => current_session.TrySkipPreviousAsync()?.await,
+        Commands::TogglePlayPause => current_session.TryTogglePlayPauseAsync()?.await,
+        Commands::Pause => current_session.TryPauseAsync()?.await,
+        Commands::Resume => current_session.TryPlayAsync()?.await,
         Commands::Monitor => return Ok(()), // This shouldn't happen but just in case
     };
 
     match result {
         Ok(success) => {
             if success {
-                println!("{{\"success\": true, \"command\": \"{:?}\"}}",  command);
+                println!("{{\"success\": true, \"command\": \"{:?}\"}}", command);
             } else {
-                println!("{{\"success\": false, \"command\": \"{:?}\", \"error\": \"Command failed\"}}",  command);
+                println!(
+                    "{{\"success\": false, \"command\": \"{:?}\", \"error\": \"Command failed\"}}",
+                    command
+                );
             }
         }
         Err(_) => {
@@ -229,9 +224,10 @@ async fn main() -> Result<()> {
 
     // Default behavior: monitor media info
     let mut last_media_info: Option<MediaInfo> = None;
+    let session_manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.await?;
 
     loop {
-        match get_media_info(cli.enable_artwork).await {
+        match get_media_info(&session_manager, cli.enable_artwork).await {
             Ok(media_info) => {
                 // Only print if media info has changed or if this is the first time
                 let should_print = match &last_media_info {
@@ -253,7 +249,8 @@ async fn main() -> Result<()> {
                 };
 
                 if should_print {
-                    let json_output = serde_json::to_string(&media_info).unwrap_or_else(|_| "{}".to_string());
+                    let json_output =
+                        serde_json::to_string(&media_info).unwrap_or_else(|_| "{}".to_string());
                     println!("{}", json_output);
                     last_media_info = Some(media_info);
                 }
@@ -262,7 +259,8 @@ async fn main() -> Result<()> {
                 // If we can't get media info, only print if we previously had valid info
                 if last_media_info.is_some() {
                     let empty_info = MediaInfo::default();
-                    let json_output = serde_json::to_string(&empty_info).unwrap_or_else(|_| "{}".to_string());
+                    let json_output =
+                        serde_json::to_string(&empty_info).unwrap_or_else(|_| "{}".to_string());
                     println!("{}", json_output);
                     last_media_info = None;
                 }
