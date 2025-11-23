@@ -72,6 +72,11 @@ export const avatarOSC = {
     lockedParameterAddresses.set(Object.keys(lockedParameters));
     window.ADVOSCNative.osc.send(address, value);
   },
+  setAllParameters(params: Record<string, number>) {
+    for (const address in params) {
+      this.setParameter(address, params[address]);
+    }
+  },
   get lastAvatarId() {
     return lastAvatarId;
   },
@@ -90,14 +95,30 @@ export const avatarOSC = {
 
 let lastMessageUpdates: Record<string, number> = {};
 
-const updateLastestUpdates = _.throttle(() => {
-  const existingParameters = get(parametersStore);
-  for (const [address, value] of Object.entries(lastMessageUpdates)) {
-    onParameterChangeCallbacks.forEach(cb => cb(address, value));
+const updateLastestUpdates = () => { };
+
+setInterval(() => {
+  const updates = lastMessageUpdates;
+  let hasUpdates = false;
+  for (const _ in updates) {
+    hasUpdates = true;
+    break;
   }
-  parametersStore.set({ ...existingParameters, ...lastMessageUpdates });
+  if (!hasUpdates) return;
+
   lastMessageUpdates = {};
-}, 20);
+
+  if (onParameterChangeCallbacks.length > 0) {
+    for (const address in updates) {
+      const value = updates[address];
+      for (const cb of onParameterChangeCallbacks) {
+        cb(address, value);
+      }
+    }
+  }
+
+  parametersStore.update((existingParameters) => ({ ...existingParameters, ...updates }));
+}, 33);
 
 let pauseUntil = 0;
 

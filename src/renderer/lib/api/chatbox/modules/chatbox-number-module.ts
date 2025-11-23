@@ -7,7 +7,7 @@ export class ChatboxNumberModule extends ChatboxModule {
     super({
       id: "Number",
       name: "Number",
-      description: "",
+      description: "Provides various number manipulation functions.",
       examplePlaceholders: {
         "Random;Int;Min;Max": {
           value: "42",
