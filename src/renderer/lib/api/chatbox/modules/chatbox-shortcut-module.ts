@@ -17,14 +17,14 @@ export class ChatboxShortcutModule extends ChatboxModule {
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
     const shortcuts = this.getValues().shortcuts || {};
     if (!shortcuts[key]) return key;
-    params = await chatbox.fillTemplates(params, "{{;}}");
+    params = await chatbox.fillTemplates(params, "[[:]]");
     return await chatbox.fillTemplate((shortcuts[key] || "").replace(/\$(\d+)/g, (itself: unknown, index: number) => params[index] || itself), "{{;}}");
   }
 
   getPreCalculatedPlaceholders(): PlaceholdersRecord {
     const shortcuts = this.getValues().shortcuts || {};
     return Object.fromEntries(Object.keys(shortcuts).map((key) => {
-      const maxParams: number = (shortcuts[key].match(/\$(\d+)/g)?.map((m: string) => parseInt(m.slice(1), 10)).reduce((a: number, b: number) => Math.max(a, b), 0)) || 0;
+      const maxParams: number = (shortcuts[key].match(/\$(\d+)/g)?.map((m: string) => parseInt(m.slice(1), 10) + 1).reduce((a: number, b: number) => Math.max(a, b), 0)) || 0;
       return [key, {
         value: shortcuts[key],
         description: `User-defined shortcut.`,
