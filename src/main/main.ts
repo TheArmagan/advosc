@@ -47,7 +47,12 @@ function createWindow() {
 
   const allowList = [
     "https://lrclib.net",
-    "https://cdn.jsdelivr.net"
+    "https://cdn.jsdelivr.net",
+    "https://pulsoid.net",
+    "wss://pulsoid.net",
+    "https://api.pulsoid.net",
+    "https://dev.pulsoid.net",
+    "wss://dev.pulsoid.net",
   ]
 
   // Set CSP for both dev and production

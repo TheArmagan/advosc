@@ -2,6 +2,8 @@ import { chatbox } from "..";
 import { ChatboxModule } from "../chatbox-module";
 import PulsoidSocket from '@pulsoid/socket';
 
+const UUIDRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class ChatboxPulsoidModule extends ChatboxModule {
   sockets = new Map<string, PulsoidSocket>();
   lastHeartRates = new Map<string, number>();
@@ -32,6 +34,7 @@ export class ChatboxPulsoidModule extends ChatboxModule {
       const socket = new PulsoidSocket(authToken);
 
       socket.on('heart-rate', (data) => {
+        this.isOnlineMap.set(authToken, true);
         this.lastHeartRates.set(authToken, data.heartRate);
       });
 
@@ -63,7 +66,7 @@ export class ChatboxPulsoidModule extends ChatboxModule {
   async getPlaceholderValue(authToken: string, key: string): Promise<string> {
     [authToken, key] = await chatbox.fillTemplates([authToken, key], "[[:]]");
 
-    if (!authToken) {
+    if (!authToken || !UUIDRegex.test(authToken)) {
       return "(No auth token provided)";
     }
 
