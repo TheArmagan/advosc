@@ -30,9 +30,6 @@ export class ChatboxExpressionModule extends ChatboxModule {
     try {
       const result = await simpleEval(expr, {
         Math,
-        Number,
-        String,
-        Boolean,
         parseInt,
         parseFloat,
         isNaN,
