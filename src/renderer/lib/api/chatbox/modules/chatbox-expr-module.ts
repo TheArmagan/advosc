@@ -29,7 +29,14 @@ export class ChatboxExpressionModule extends ChatboxModule {
 
     try {
       const result = await simpleEval(expr, {
-        Math
+        Math,
+        Number,
+        String,
+        Boolean,
+        parseInt,
+        parseFloat,
+        isNaN,
+        isFinite
       });
       return result ? (trueValue || String(result)) : (falseValue || String(result));
     } catch (e) {
