@@ -35,7 +35,7 @@ export class ChatboxExpressionModule extends ChatboxModule {
         isNaN,
         isFinite
       });
-      return result ? (trueValue || String(result)) : (falseValue || String(result));
+      return result ? (trueValue || String(result)) : falseValue;
     } catch (e) {
       console.error("Chatbox", "Failed to evaluate expression", expr, e);
       return '';
