@@ -1,3 +1,4 @@
+import { toast } from "svelte-sonner";
 import { chatbox } from "..";
 import { ChatboxModule } from "../chatbox-module";
 import simpleEval from 'simple-eval';
@@ -38,6 +39,12 @@ export class ChatboxExpressionModule extends ChatboxModule {
       return result ? (trueValue || String(result)) : falseValue;
     } catch (e) {
       console.error("Chatbox", "Failed to evaluate expression", expr, e);
+      if (chatbox.getSettings().debugMode) {
+        toast.error("Chatbox > Expr Module", {
+          description: `Failed to evaluate expression "${expr}": ${(e as Error).message}`,
+          duration: 1000,
+        });
+      }
       return '';
     }
   }

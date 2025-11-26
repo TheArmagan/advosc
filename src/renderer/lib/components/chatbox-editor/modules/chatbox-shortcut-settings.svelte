@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ChatboxModule } from "$lib/api/chatbox/chatbox-module";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
@@ -12,6 +11,7 @@
     UploadIcon,
     EyeOffIcon,
     EyeIcon,
+    HashIcon,
   } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
@@ -19,11 +19,15 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import ChatboxMonacoEditor from "../chatbox-monaco-editor.svelte";
+  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { chatbox } from "$lib/api/chatbox";
+  import { onMount } from "svelte";
+  import { ChatboxShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
 
   const {
     module,
   }: {
-    module: ChatboxModule;
+    module: ChatboxShortcutModule;
   } = $props();
 
   const values = module.values;
@@ -31,6 +35,27 @@
   let shortcutAddKey = $state("");
   let bulkImportOpen = $state(false);
   let bulkImportValue = $state("");
+
+  let openedShortcutKey = $state<string | null>(null);
+  let shortcutRender = $state<string>("");
+  let shortcutParamsCount = $derived(
+    openedShortcutKey ? module.getMaxParamCount(openedShortcutKey) : 0
+  );
+  let placeholderParams = $state<string[]>([]);
+
+  async function updateShortcutRender(key: string) {
+    shortcutRender = await chatbox.fillTemplate(
+      `{{Shortcut;${key}${
+        shortcutParamsCount > 0
+          ? `;${placeholderParams
+              .slice(0, shortcutParamsCount)
+              .map((i) => i.replaceAll(";", "\\;"))
+              .join(";")}`
+          : ""
+      }}}`,
+      "{{;}}"
+    );
+  }
 
   function handleBulkExport() {
     const shortcuts = module.getCleanValues().shortcuts;
@@ -61,6 +86,15 @@
       toast.error("Invalid JSON: " + (error as Error).message);
     }
   }
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      if (openedShortcutKey) {
+        updateShortcutRender(openedShortcutKey);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="flex flex-col gap-2 items-start justify-start">
@@ -80,7 +114,7 @@
       <Drawer.Content class="flex items-center justify-center w-full">
         <div class="w-96 flex flex-col gap-4 p-4">
           <div class="flex flex-col gap-2">
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col gap-2">
               <Label>Shortcut Key</Label>
               <Input
                 bind:value={shortcutAddKey}
@@ -176,7 +210,14 @@
           {value}
         />
         <InputGroup.Addon align="inline-end">
-          <Drawer.Root>
+          <Drawer.Root
+            onOpenChange={(open) => {
+              openedShortcutKey = open ? key : null;
+              if (open) {
+                updateShortcutRender(key);
+              }
+            }}
+          >
             <Drawer.Trigger>
               <InputGroup.Button>
                 <PenIcon />
@@ -198,6 +239,35 @@
                       [key]: newValue,
                     };
                   }}
+                />
+              </div>
+              <div class="flex gap-2 w-full items-center justify-between">
+                {#each Array.from({ length: shortcutParamsCount }) as _, index}
+                  <div class="flex flex-col gap-2">
+                    <InputGroup.Root>
+                      <InputGroup.Addon>
+                        <HashIcon />
+                      </InputGroup.Addon>
+                      <InputGroup.Addon>
+                        <InputGroup.Text>
+                          {index + 1}
+                        </InputGroup.Text>
+                      </InputGroup.Addon>
+                      <InputGroup.Input
+                        placeholder="Param{index + 1} value here!"
+                        bind:value={placeholderParams[index]}
+                      />
+                    </InputGroup.Root>
+                  </div>
+                {/each}
+              </div>
+              <div class="flex gap-2 w-full">
+                <Textarea
+                  id="template-preview"
+                  value={shortcutRender}
+                  class="w-full h-16 font-mono bg-secondary text-foreground text-center"
+                  placeholder="Template preview will appear here..."
+                  readonly
                 />
               </div>
             </Drawer.Content>

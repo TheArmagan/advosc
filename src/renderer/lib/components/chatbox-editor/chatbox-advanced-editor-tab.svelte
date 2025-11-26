@@ -138,7 +138,7 @@
                           <p
                             class="font-medium mb-1 text-gray-600 text-[10px] uppercase tracking-wide"
                           >
-                            Arguments
+                            parameters
                           </p>
                           {@html formatFillTextHTML(ph.fillText, ";")}
                         </div>

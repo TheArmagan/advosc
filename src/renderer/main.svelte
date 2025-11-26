@@ -8,7 +8,7 @@
   const currentPage = $derived($router.currentPage);
 </script>
 
-<Toaster theme="dark" />
+<Toaster />
 <main class="w-full h-full flex flex-col">
   <nav
     class="w-full h-12 bg-black/95 flex items-center pl-4 border-b justify-between fixed"

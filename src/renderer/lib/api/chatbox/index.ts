@@ -47,12 +47,14 @@ const chatboxList = new Map<string, ChatboxModule>();
 let callsMadeMap: Map<string, number> = new Map();
 let ignoreSet: Set<string> = new Set();
 
-const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean }>(
-  localData.get("Chatbox;Settings", {
+const settings = writable<{ template: string; autoSend: boolean, eggMode: boolean, debugMode: boolean }>(
+  {
     template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Now;HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
     autoSend: true,
     eggMode: false,
-  })
+    debugMode: false,
+    ...localData.get("Chatbox;Settings", {})
+  }
 );
 
 setInterval(() => {
@@ -189,7 +191,7 @@ updatePlaceholders();
 
 export type AllValues = {
   modules: Record<string, any>;
-  settings: { template: string; autoSend: boolean, eggMode: boolean };
+  settings: { template: string; autoSend: boolean, eggMode: boolean, debugMode: boolean };
 };
 
 function getAllValues() {
@@ -215,6 +217,10 @@ function setAllValues(values: AllValues) {
   settings.set(values.settings);
 }
 
+function getSettings() {
+  return get(settings);
+}
+
 export const chatbox = {
   fillTemplate,
   fillTemplates,
@@ -227,7 +233,8 @@ export const chatbox = {
   placeholders,
   updatePlaceholders,
   getAllValues,
-  setAllValues
+  setAllValues,
+  getSettings,
 };
 
 let sentClear = false;
