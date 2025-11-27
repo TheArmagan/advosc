@@ -25,6 +25,10 @@ export class ChatboxShortcutModule extends ChatboxModule {
       }
       return `(Requires ${maxParams} parameters, but got ${params.length})`;
     }
+
+    if (chatbox.getSettings().debugMode) {
+      console.log("Chatbox > Shortcut Module", `Filling shortcut "${key}" with params:`, params);
+    }
     return await chatbox.fillTemplate((shortcuts[key] || "").replace(/\$(\d+)/g, (itself: unknown, index: number) => params[index] || itself), "{{;}}");
   }
 

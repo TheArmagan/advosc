@@ -250,11 +250,11 @@
                       </InputGroup.Addon>
                       <InputGroup.Addon>
                         <InputGroup.Text>
-                          {index + 1}
+                          {index}
                         </InputGroup.Text>
                       </InputGroup.Addon>
                       <InputGroup.Input
-                        placeholder="Param{index + 1} value here!"
+                        placeholder="Param{index} value here!"
                         bind:value={placeholderParams[index]}
                       />
                     </InputGroup.Root>

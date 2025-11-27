@@ -161,24 +161,31 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(placeholder: string): Promise<string> {
-    if (!this.lastMediaInfo) return "";
+
 
     switch (placeholder) {
       case "Status":
+        if (!this.lastMediaInfo) return "Unknown";
         return this.lastMediaInfo.playbackStatus;
       case "Position": {
+        if (!this.lastMediaInfo) return "0";
         const pos = this.getEstimatedPosition();
-        return pos !== undefined ? Math.floor(pos * 1000).toString() : "";
+        return pos !== undefined ? Math.floor(pos * 1000).toString() : "0";
       }
       case "Duration":
+        if (!this.lastMediaInfo) return "0";
         return this.lastMediaInfo.duration !== undefined ? Math.floor(this.lastMediaInfo.duration).toString() : "0";
       case "AppName":
+        if (!this.lastMediaInfo) return "";
         return (this.lastMediaInfo.appName || "")?.replace(/\.exe$/i, "");
       case "Artist":
+        if (!this.lastMediaInfo) return "";
         return this.lastMediaInfo.artist || "";
       case "Album":
+        if (!this.lastMediaInfo) return "";
         return this.lastMediaInfo.album || "";
       case "Track":
+        if (!this.lastMediaInfo) return "";
         return this.lastMediaInfo.title || "";
       case "Lyric":
         return await this.getCurrentLyricLine() || "";
