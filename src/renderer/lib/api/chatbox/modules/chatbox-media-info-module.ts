@@ -25,6 +25,7 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
   lastLyricData: LyricData | null = null;
   currentLyric: LyricData | null = null;
   lastLyricKey: string | null = null;
+  lyricFetchQueue: Map<string, Promise<LyricData | null>> = new Map();
 
   constructor() {
     super({
@@ -91,23 +92,48 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
 
   getEstimatedPosition(): number | undefined {
     if (!this.lastMediaInfo?.position) return undefined;
-    if (this.lastMediaInfo.playbackStatus !== "Playing") return this.lastMediaInfo.position;
+    if (this.lastMediaInfo.playbackStatus !== "Playing") return this.lastMediaInfo.position / 1000;
     const elapsed = (Date.now() - this.lastPositionUpdatedAt) / 1000;
     return (this.lastMediaInfo.position / 1000) + elapsed;
   }
 
-  async fetchCurrentLyric() {
+  fetchCurrentLyric(): LyricData | null {
     if (!this.lastMediaInfo) return null;
     const cacheKey = `${this.lastMediaInfo.title};${this.lastMediaInfo.artist};${(this.lastMediaInfo.duration! / 1000).toFixed(2)}`;
+
     if (this.lastLyricKey === cacheKey) return this.currentLyric;
+
+    // Eğer bu key için zaten bir fetch işlemi devam ediyorsa, beklemeden null dön
+    if (this.lyricFetchQueue.has(cacheKey)) {
+      return null;
+    }
+
     this.lastLyricKey = cacheKey;
-    this.currentLyric = await this.fetchLyrics(this.lastMediaInfo.title!, this.lastMediaInfo.artist!, this.lastMediaInfo.duration! / 1000);
-    return this.currentLyric;
+
+    // Fetch işlemini queue'ya ekle
+    const fetchPromise = this.fetchLyrics(
+      this.lastMediaInfo.title!,
+      this.lastMediaInfo.artist!,
+      this.lastMediaInfo.duration! / 1000
+    ).then((result) => {
+      this.currentLyric = result;
+      this.lyricFetchQueue.delete(cacheKey);
+      return result;
+    }).catch((error) => {
+      console.error("Lyric fetch error:", error);
+      this.lyricFetchQueue.delete(cacheKey);
+      return null;
+    });
+
+    this.lyricFetchQueue.set(cacheKey, fetchPromise);
+
+    // Fetch devam ederken null dön
+    return null;
   }
 
-  async getCurrentLyricLine() {
-    if (!this.lastMediaInfo) return null;
-    const lyric = await this.fetchCurrentLyric();
+  getCurrentLyricLine(): string {
+    if (!this.lastMediaInfo) return "";
+    const lyric = this.fetchCurrentLyric();
     if (!this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "";
     if (!lyric || !lyric.parsedSyncedLyrics) return "";
     if (lyric.insturmental) return "";
@@ -188,7 +214,7 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
         if (!this.lastMediaInfo) return "";
         return this.lastMediaInfo.title || "";
       case "Lyric":
-        return await this.getCurrentLyricLine() || "";
+        return this.getCurrentLyricLine();
       default:
         return "";
     }
