@@ -63,13 +63,19 @@ Take full control of your avatar's parameters like never before. We give you the
 ![Parameter Linking](./screenshots/avatar-osc-link-parameter.png)
 ![Parameter Animation](./screenshots/avatar-osc-animate-parameter.png)
 
+### 👗 Avatar Profiles
+Save and restore your avatar's parameter configurations with ease!
+
+- **💾 Save Profiles:** Capture your current avatar parameters (outfits, toggles, props, moods) and save them with a custom name.
+- **⚡ Quick Load:** Instantly restore any saved profile with a single click.
+- **📤 Export & Import:** Share your profiles with friends or back them up as JSON files.
+- **🔍 Search & Filter:** Easily find profiles by name or filter by current avatar.
+
 ## 🚧 Work in Progress (Coming Soon!)
 
 We are constantly working to make ADVOSC better. Here is what we are cooking up in the kitchen right now:
 
-- **👗 Avatar Profiles:** Save your favorite avatar toggle states (outfits, props, moods) and switch between them instantly.
 - **🗣️➡️📝 Speech to Text & Translation:** Speak your mind and let the text flow into your chatbox, automatically translated to your target language.
-- **🗣️➡️🗣️ Speech to Speech & Translation:** Break down language barriers completely with real-time voice translation.
 
 ## 🛠️ Development
 

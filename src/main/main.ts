@@ -315,6 +315,10 @@ app.whenReady().then(async () => {
     mainWindow?.close();
   });
 
+  ipcMain.on('app:version', (event) => {
+    event.returnValue = app.getVersion();
+  });
+
   // Media IPC handlers
   ipcMain.handle('media:execute', async (_event, command: MediaCommand) => {
     return await executeMediaCommand(command);

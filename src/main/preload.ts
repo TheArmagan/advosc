@@ -45,6 +45,7 @@ export interface PreloadElectronAPI {
     ) => () => void;
     findFiles: (dirPath: string) => Promise<string[]>;
   };
+  version: string;
 }
 
 let pathSep: string | null = null;
@@ -108,6 +109,9 @@ const api: PreloadElectronAPI = {
     },
     findFiles: (dirPath: string) => ipcRenderer.invoke('files:findFiles', dirPath) as Promise<string[]>,
   },
+  get version() {
+    return ipcRenderer.sendSync('app:version');
+  }
 };
 
 contextBridge.exposeInMainWorld('ADVOSCNative', api);

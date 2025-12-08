@@ -16,7 +16,6 @@
     LockIcon,
     LockOpenIcon,
     PlayIcon,
-    RotateCcwIcon,
     SearchIcon,
     SquareIcon,
     UnlinkIcon,

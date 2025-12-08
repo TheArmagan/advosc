@@ -17,9 +17,9 @@
       to: "/tools/avatar-osc",
     },
     {
-      name: "Translator",
-      to: "/tools/translator",
-    },
+      name: "Avatar Profiles",
+      to: "/tools/avatar-profiles",
+    }
   ];
 </script>
 
@@ -69,3 +69,6 @@
     <currentPage.component />
   </div>
 </main>
+<code class="absolute bottom-0 right-0 p-2 text-xs text-white/50"
+  >v{window.ADVOSCNative.version}</code
+>

@@ -66,6 +66,11 @@ export class ChatboxTextModule extends ChatboxModule {
           value: "Hello",
           description: "Animates list of texts by displaying each one sequentially.",
           fillText: "Text;Animate;EachOne;${3:inputText};${4:inputText...}"
+        },
+        "Animate;EachOneCustom": {
+          value: "Hello",
+          description: "Animates list of texts by displaying each one sequentially with custom intervals. (interval in int * 2200ms)",
+          fillText: "Text;Animate;EachOneCustom;${3:intervalInt:item1};${4:intervalInt:item2};${5:...}"
         }
       }
     });
@@ -197,6 +202,26 @@ export class ChatboxTextModule extends ChatboxModule {
             data.index = (data.index + 1) % parts.length;
             data.at = Date.now();
             return parts[data.index];
+          }
+          case "EachOneCustom": {
+            const parts = args;
+            let totalInterval = 0;
+            for (let i = 0; i < parts.length; i++) {
+              const [intervalStr, item] = parts[i].split(":");
+              const interval = Math.max(1, parseInt(intervalStr, 10) || 1);
+              totalInterval += interval * 2200;
+              if (Date.now() - data.at < totalInterval) {
+                if (data.index !== i) {
+                  data.index = i;
+                  data.at = Date.now();
+                }
+                return item;
+              }
+            }
+            // If exceeded total interval, reset to first item
+            data.index = 0;
+            data.at = Date.now();
+            return parts[0].split(":")[1];
           }
         }
       }
