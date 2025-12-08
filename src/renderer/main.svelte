@@ -6,6 +6,21 @@
   import { Toaster } from "$lib/components/ui/sonner/index.js";
 
   const currentPage = $derived($router.currentPage);
+
+  const routes = [
+    {
+      name: "Chatbox Editor",
+      to: "/tools/chatbox-editor",
+    },
+    {
+      name: "Avatar OSC",
+      to: "/tools/avatar-osc",
+    },
+    {
+      name: "Translator",
+      to: "/tools/translator",
+    },
+  ];
 </script>
 
 <Toaster />
@@ -17,31 +32,13 @@
     <div class="flex items-center gap-4 h-12">
       <h1 class="text-lg font-semibold">ADVOSC</h1>
       <div class="flex items-center h-12 gap-2">
-        <RouteLink
-          to="/tools/chatbox-editor"
-          class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
-          >Chatbox Editor</RouteLink
-        >
-        <RouteLink
-          to="/tools/avatar-osc"
-          class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
-          >Avatar OSC</RouteLink
-        >
-        <RouteLink
-          to="/tools/avatar-profiles"
-          class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
-          >Avatar Profiles</RouteLink
-        >
-        <RouteLink
-          to="/settings"
-          class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
-          >Settings</RouteLink
-        >
-        <RouteLink
-          to="/about"
-          class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
-          >About</RouteLink
-        >
+        {#each routes as route}
+          <RouteLink
+            to={route.to}
+            class="px-4 hover:bg-white/5 data-[active=true]:bg-white/10 border rounded-md flex items-center h-8 transition-colors"
+            >{route.name}</RouteLink
+          >
+        {/each}
       </div>
     </div>
     <div class="flex h-12">

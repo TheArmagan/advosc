@@ -5,6 +5,7 @@ import AvatarOSCPage from './pages/avatar-osc-page.svelte';
 import AvatarProfilesPage from './pages/avatar-profiles-page.svelte';
 import AboutPage from './pages/about-page.svelte';
 import SettingsPage from './pages/settings-page.svelte';
+import TranslatorPage from './pages/translator-page.svelte';
 
 import type { Component } from 'svelte';
 import { get, writable } from 'svelte/store';
@@ -24,6 +25,7 @@ const initial: RouterState = {
     '/tools/chatbox-editor': ChatboxEditorPage,
     '/tools/avatar-osc': AvatarOSCPage,
     '/tools/avatar-profiles': AvatarProfilesPage,
+    '/tools/translator': TranslatorPage,
     '/about': AboutPage,
     '/settings': SettingsPage,
   },
