@@ -9,8 +9,12 @@ ADVOSC is an Electron + Svelte 5 desktop application for VRChat OSC tools. It fe
 ### Process Separation (Electron Pattern)
 
 - **Main Process** (`src/main/`): Node.js context with system access
-  - `main.ts` - Window management, IPC handlers, OSC communication
+  - `index.ts` - App lifecycle, entry point
+  - `lib/window.ts` - Window creation and management
+  - `lib/media.ts` - Media monitor and commands (spawns Rust binary)
+  - `lib/ipc-handlers.ts` - All IPC handlers (files, theme, OSC, frame controls)
   - `lib/osc.ts` - UDP-based OSC protocol implementation (ports 9000/9001)
+  - `lib/types.ts` - Shared types (MediaInfo, OSCMessage, etc.)
   - `preload.ts` - Secure bridge exposing `window.ADVOSCNative` API
 - **Renderer Process** (`src/renderer/`): Browser context with Svelte 5
   - Access system features only through `window.ADVOSCNative.*` (defined in `global.d.ts`)
@@ -112,7 +116,7 @@ window.ADVOSCNative.media.onMediaInfo((info) => {
   /* ... */
 });
 
-// Main: Handle in main.ts with ipcMain.handle/on
+// Main: Handle in lib/ipc-handlers.ts with ipcMain.handle/on
 ipcMain.handle("osc:send", (_, address, args) => port.send(address, args));
 ```
 

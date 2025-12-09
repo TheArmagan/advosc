@@ -16,6 +16,25 @@ export interface MediaInfo {
   hasArtwork: boolean;
 }
 
+export interface TrackerBattery {
+  deviceIndex: number;
+  serialNumber: string | null;
+  modelNumber: string | null;
+  batteryLevel: number;
+  isCharging: boolean;
+  deviceClass: string;
+}
+
+export interface StartTimeResponse {
+  startTime: number | null;
+  error?: string;
+}
+
+export interface TrackerBatteryResponse {
+  trackers: TrackerBattery[] | null;
+  error?: string;
+}
+
 export interface PreloadElectronAPI {
   env: { get(key: string): string | undefined };
   theme: {
@@ -44,6 +63,10 @@ export interface PreloadElectronAPI {
       options?: { ignoreInitial?: boolean }
     ) => () => void;
     findFiles: (dirPath: string) => Promise<string[]>;
+  };
+  utils: {
+    getStartTime: (processName: string) => Promise<StartTimeResponse>;
+    getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
   };
   version: string;
 }
@@ -108,6 +131,10 @@ const api: PreloadElectronAPI = {
       };
     },
     findFiles: (dirPath: string) => ipcRenderer.invoke('files:findFiles', dirPath) as Promise<string[]>,
+  },
+  utils: {
+    getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
+    getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
   },
   get version() {
     return ipcRenderer.sendSync('app:version');

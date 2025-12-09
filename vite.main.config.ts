@@ -8,7 +8,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: false,
     rollupOptions: {
-      input: path.resolve(__dirname, 'src/main/main.ts'),
+      input: path.resolve(__dirname, 'src/main/index.ts'),
       external: [
         'electron', 'path', 'fs', 'url', 'os', 'module', 'child_process', 'dgram', 'net', 'events',
         'chokidar', 'osc'
