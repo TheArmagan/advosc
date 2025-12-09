@@ -13,6 +13,7 @@ import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
 import { register } from "module";
 import { ChatboxPulsoidModule } from "./modules/chatbox-pulsoid-module";
 import { ChatboxNumberModule } from "./modules/chatbox-number-module";
+import { ChatboxProcessModule } from "./modules/chatbox-process-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -187,6 +188,7 @@ registerChatboxModule(new ChatboxTextModule());
 registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 registerChatboxModule(new ChatboxNumberModule());
+registerChatboxModule(new ChatboxProcessModule());
 updatePlaceholders();
 
 export type AllValues = {

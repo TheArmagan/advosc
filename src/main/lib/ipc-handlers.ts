@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
@@ -148,5 +148,55 @@ export function setupIpcHandlers(port: OSC): void {
 
   ipcMain.handle('utils:openvrTrackers', async () => {
     return await getOpenVRTrackers();
+  });
+
+  // Global shortcuts IPC handlers
+  const shortcutCallbacks = new Map<string, string>(); // accelerator -> callback id
+
+  ipcMain.handle('globalShortcut:register', (_event, accelerator: string, callbackId: string) => {
+    try {
+      // Unregister existing shortcut if it exists
+      if (shortcutCallbacks.has(accelerator)) {
+        globalShortcut.unregister(accelerator);
+      }
+
+      const success = globalShortcut.register(accelerator, () => {
+        BrowserWindow.getAllWindows().forEach((w) => {
+          w.webContents.send('globalShortcut:triggered', callbackId);
+        });
+      });
+
+      if (success) {
+        shortcutCallbacks.set(accelerator, callbackId);
+      }
+
+      return { success, accelerator };
+    } catch (error) {
+      return { success: false, accelerator, error: String(error) };
+    }
+  });
+
+  ipcMain.handle('globalShortcut:unregister', (_event, accelerator: string) => {
+    try {
+      globalShortcut.unregister(accelerator);
+      shortcutCallbacks.delete(accelerator);
+      return { success: true, accelerator };
+    } catch (error) {
+      return { success: false, accelerator, error: String(error) };
+    }
+  });
+
+  ipcMain.handle('globalShortcut:unregisterAll', () => {
+    try {
+      globalShortcut.unregisterAll();
+      shortcutCallbacks.clear();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.handle('globalShortcut:isRegistered', (_event, accelerator: string) => {
+    return globalShortcut.isRegistered(accelerator);
   });
 }

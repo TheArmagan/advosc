@@ -221,7 +221,7 @@ export class ChatboxTextModule extends ChatboxModule {
             // If exceeded total interval, reset to first item
             data.index = 0;
             data.at = Date.now();
-            return parts[0].split(":")[1];
+            return parts[0]?.split(":")?.[1] || "";
           }
         }
       }

@@ -9,7 +9,7 @@ let mediaProcess: ChildProcess | null = null;
 function getMediaExePath(): string {
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
   return isDev
-    ? path.join(__dirname, '..', '..', 'natives', 'win-media-info.exe')
+    ? path.join(__dirname, '..', 'natives', 'win-media-info.exe')
     : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'win-media-info.exe');
 }
 

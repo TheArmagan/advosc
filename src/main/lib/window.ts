@@ -15,7 +15,7 @@ export function createWindow(): BrowserWindow {
     minHeight: 800,
     resizable: false,
     webPreferences: {
-      preload: path.join(__dirname, '..', 'preload.cjs'),
+      preload: path.join(__dirname, 'preload.cjs'), // __dirname becasue of build structure
       nodeIntegration: false,
       contextIsolation: true,
       backgroundThrottling: false,

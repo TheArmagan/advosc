@@ -24,7 +24,7 @@ export interface TrackerBatteryResponse {
 function getUtilsExePath(): string {
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
   return isDev
-    ? path.join(__dirname, '..', '..', 'natives', 'advosc-utils.exe')
+    ? path.join(__dirname, '..', 'natives', 'advosc-utils.exe')
     : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'natives', 'advosc-utils.exe');
 }
 

@@ -123,10 +123,10 @@ export class ChatboxTimeModule extends ChatboxModule {
             parts.push(String(seconds).padStart(2, '0'));
             return parts.join(':');
           } else {
-            if (days > 0) parts.push(`${days} ${format === "Long" ? (days === 1 ? "day" : "days") : "d"}`);
-            if (hours > 0) parts.push(`${hours} ${format === "Long" ? (hours === 1 ? "hour" : "hours") : "h"}`);
-            if (minutes > 0) parts.push(`${minutes} ${format === "Long" ? (minutes === 1 ? "minute" : "minutes") : "m"}`);
-            if (seconds > 0 || parts.length === 0) parts.push(`${seconds} ${format === "Long" ? (seconds === 1 ? "second" : "seconds") : "s"}`);
+            if (days > 0) parts.push(`${days}${format === "Long" ? (days === 1 ? " day" : " days") : "d"}`);
+            if (hours > 0) parts.push(`${hours}${format === "Long" ? (hours === 1 ? " hour" : " hours") : "h"}`);
+            if (minutes > 0) parts.push(`${minutes}${format === "Long" ? (minutes === 1 ? " minute" : " minutes") : "m"}`);
+            if (seconds > 0 || parts.length === 0) parts.push(`${seconds}${format === "Long" ? (seconds === 1 ? " second" : " seconds") : "s"}`);
             return parts.join(delimiter);
           }
         }

@@ -68,6 +68,12 @@ export interface PreloadElectronAPI {
     getStartTime: (processName: string) => Promise<StartTimeResponse>;
     getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
   };
+  globalShortcut: {
+    register: (accelerator: string, callback: () => void) => Promise<{ success: boolean; accelerator: string; error?: string }>;
+    unregister: (accelerator: string) => Promise<{ success: boolean; accelerator: string; error?: string }>;
+    unregisterAll: () => Promise<{ success: boolean; error?: string }>;
+    isRegistered: (accelerator: string) => Promise<boolean>;
+  };
   version: string;
 }
 
@@ -136,6 +142,41 @@ const api: PreloadElectronAPI = {
     getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
     getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
   },
+  globalShortcut: (() => {
+    const callbacks = new Map<string, () => void>();
+
+    // Listen for shortcut triggers from main process
+    ipcRenderer.on('globalShortcut:triggered', (_e: unknown, callbackId: string) => {
+      const callback = callbacks.get(callbackId);
+      if (callback) callback();
+    });
+
+    return {
+      register: async (accelerator: string, callback: () => void) => {
+        const callbackId = `${accelerator}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        callbacks.set(callbackId, callback);
+        const result = await ipcRenderer.invoke('globalShortcut:register', accelerator, callbackId) as { success: boolean; accelerator: string; error?: string };
+        if (!result.success) {
+          callbacks.delete(callbackId);
+        }
+        return result;
+      },
+      unregister: async (accelerator: string) => {
+        // Remove callbacks that match this accelerator
+        for (const [id] of callbacks) {
+          if (id.startsWith(`${accelerator}-`)) {
+            callbacks.delete(id);
+          }
+        }
+        return await ipcRenderer.invoke('globalShortcut:unregister', accelerator) as { success: boolean; accelerator: string; error?: string };
+      },
+      unregisterAll: async () => {
+        callbacks.clear();
+        return await ipcRenderer.invoke('globalShortcut:unregisterAll') as { success: boolean; error?: string };
+      },
+      isRegistered: (accelerator: string) => ipcRenderer.invoke('globalShortcut:isRegistered', accelerator) as Promise<boolean>,
+    };
+  })(),
   get version() {
     return ipcRenderer.sendSync('app:version');
   }
