@@ -1,5 +1,7 @@
 # ADVOSC ✨
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/spfmB7S78n)
+
 Hey there! Welcome to **ADVOSC**, your new best friend for VRChat OSC magic! 🌟
 
 We've built this tool to make your VRChat experience smoother, more expressive, and just plain cooler. Whether you're a chatterbox or an avatar wizard, we've got something for you. It features a sleek, modern UI that's easy on the eyes and a joy to use.
