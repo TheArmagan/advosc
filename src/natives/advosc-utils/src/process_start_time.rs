@@ -1,10 +1,12 @@
 use std::ffi::OsString;
 use std::mem;
 use std::os::windows::ffi::OsStringExt;
+use windows::core::PWSTR;
 use windows::Win32::Foundation::{CloseHandle, FILETIME};
-use windows::Win32::System::ProcessStatus::{EnumProcesses, GetModuleBaseNameW};
+use windows::Win32::System::ProcessStatus::EnumProcesses;
 use windows::Win32::System::Threading::{
-    GetProcessTimes, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    GetProcessTimes, OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
+    PROCESS_QUERY_LIMITED_INFORMATION,
 };
 
 /// Convert Windows FILETIME to Unix timestamp in milliseconds
@@ -52,25 +54,39 @@ pub fn get_process_start_time(process_name: &str) -> Result<u64, String> {
                 continue;
             }
 
-            // Try to open the process
-            let process_handle =
-                match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
-                    Ok(h) => h,
-                    Err(_) => continue,
-                };
+            // Try to open the process with limited query rights (works better with elevated processes)
+            let process_handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
+                Ok(h) => h,
+                Err(_) => continue,
+            };
 
             if process_handle.is_invalid() {
                 continue;
             }
 
-            // Get process name
-            let mut name_buffer: [u16; 260] = [0; 260];
-            let len = GetModuleBaseNameW(process_handle, None, &mut name_buffer);
+            // Get process name using QueryFullProcessImageNameW (works with limited rights)
+            let mut name_buffer: [u16; 512] = [0; 512];
+            let mut size: u32 = name_buffer.len() as u32;
 
-            if len > 0 {
-                let name = OsString::from_wide(&name_buffer[..len as usize])
+            if QueryFullProcessImageNameW(
+                process_handle,
+                PROCESS_NAME_WIN32,
+                PWSTR(name_buffer.as_mut_ptr()),
+                &mut size,
+            )
+            .is_ok()
+                && size > 0
+            {
+                let full_path = OsString::from_wide(&name_buffer[..size as usize])
                     .to_string_lossy()
                     .to_lowercase();
+
+                // Extract just the filename from the full path
+                let name = full_path
+                    .rsplit('\\')
+                    .next()
+                    .unwrap_or(&full_path)
+                    .to_string();
 
                 if name == search_name {
                     // Get process times
