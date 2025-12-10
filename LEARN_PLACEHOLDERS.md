@@ -384,3 +384,11 @@ Now you understand:
 5. ✅ How to read and understand complex placeholder chains
 
 **Happy chatboxing!** 🎮✨
+
+---
+
+## 🚀 Ready for More?
+
+Want to learn about **parameterized shortcuts** with `$0`, `$1`, `$2`? Build reusable function-like components? Create complex animated displays?
+
+**→ [Continue to the Expert Guide](./LEARN_PLACEHOLDERS_EXPERT.md)** 🧠
