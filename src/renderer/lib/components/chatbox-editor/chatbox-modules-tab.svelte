@@ -4,7 +4,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2 h-[calc(100vh-8rem)] overflow-auto">
   <Card.Root class="px-4 py-2">
     <Accordion.Root type="single">
       {#each chatbox.modules as [moduleId, m]}
