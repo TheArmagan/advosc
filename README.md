@@ -228,6 +228,8 @@ Create custom shortcuts that expand to complex placeholder combinations. Perfect
 
 </details>
 
+> 📚 **Want to master placeholders?** Check out our [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) for a beginner-friendly, in-depth tutorial on the two-layer placeholder system with real examples!
+
 ---
 
 ### 🎭 Avatar OSC Control
