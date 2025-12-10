@@ -19,12 +19,12 @@
     {
       name: "Avatar Profiles",
       to: "/tools/avatar-profiles",
-    }
+    },
   ];
 </script>
 
 <Toaster />
-<main class="w-full h-full flex flex-col">
+<main class="w-full h-screen flex flex-col">
   <nav
     class="w-full h-12 bg-black/95 flex items-center pl-4 border-b justify-between fixed"
     style="-webkit-app-region: drag;"
@@ -68,7 +68,7 @@
   <div class="w-full flex-1 flex pt-12">
     <currentPage.component />
   </div>
+  <code class="fixed bottom-0 right-0 p-2 text-xs text-white/50"
+    >v{window.ADVOSCNative.version}</code
+  >
 </main>
-<code class="absolute bottom-0 right-0 p-2 text-xs text-white/50"
-  >v{window.ADVOSCNative.version}</code
->

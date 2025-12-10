@@ -78,6 +78,7 @@ export interface PreloadElectronAPI {
 }
 
 let pathSep: string | null = null;
+let version: string | null = null;
 
 const api: PreloadElectronAPI = {
   env: { get: (key) => ipcRenderer.sendSync('env:get', key) },
@@ -178,7 +179,10 @@ const api: PreloadElectronAPI = {
     };
   })(),
   get version() {
-    return ipcRenderer.sendSync('app:version');
+    if (version === null) {
+      version = ipcRenderer.sendSync('app:version');
+    }
+    return version!;
   }
 };
 
