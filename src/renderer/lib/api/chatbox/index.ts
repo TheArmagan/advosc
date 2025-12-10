@@ -16,6 +16,7 @@ import { ChatboxNumberModule } from "./modules/chatbox-number-module";
 import { ChatboxProcessModule } from "./modules/chatbox-process-module";
 import { ChatboxOVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
 import { ChatboxHotkeyModule } from "./modules/chatbox-hotkey-module";
+import { ChatboxStopwatchModule } from "./modules/chatbox-stopwatch-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -185,6 +186,8 @@ function updatePlaceholders() {
 registerChatboxModule(new ChatboxShortcutModule());
 registerChatboxModule(new ChatboxOVRTrackersModule());
 registerChatboxModule(new ChatboxHotkeyModule());
+registerChatboxModule(new ChatboxStopwatchModule());
+registerChatboxModule(new ChatboxStopwatchModule());
 registerChatboxModule(new ChatboxPulsoidModule());
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxTimeModule());

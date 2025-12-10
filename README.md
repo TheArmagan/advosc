@@ -36,7 +36,7 @@ A powerful chatbox editor with dynamic placeholder support to make your messages
 
 ### 🧩 Chatbox Modules
 
-The chatbox editor supports 11 powerful modules for dynamic content. Click to expand each module for details:
+The chatbox editor supports 12 powerful modules for dynamic content. Click to expand each module for details:
 
 <details>
 <summary><strong>🎵 Media Info</strong> — Display currently playing media information</summary>
@@ -196,6 +196,26 @@ Create interactive hotkey-triggered content.
 |-------------|--------|-------------|
 | `{{Hotkey;IsPressed;MyHotkey;1000}}` | `true` | Check if pressed within timeout |
 | `{{Hotkey;IsToggled;MyHotkey}}` | `false` | Toggle state (press to switch) |
+
+</details>
+
+<details>
+<summary><strong>⏱️ Stopwatch</strong> — Hotkey-controlled timers</summary>
+
+Create stopwatches controlled by hotkeys from the Hotkey module. Perfect for afk detection, session tracking, or any timed activities.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Stopwatch;ElapsedMs;MyTimer}}` | `125000` | Elapsed time in milliseconds |
+| `{{Stopwatch;IsRunning;MyTimer}}` | `true` | Whether stopwatch is actively running |
+| `{{Stopwatch;IsPaused;MyTimer}}` | `false` | Whether stopwatch is paused |
+
+**Hotkey Actions:**
+- **Start/Toggle** — Start or pause the stopwatch
+- **Pause** — Pause without resetting
+- **Reset** — Reset to zero (keeps running if active)
+- **Stop** — Reset and pause completely
+- **Reset + Start** — Reset to zero and immediately start (perfect for afk detection!)
 
 </details>
 
