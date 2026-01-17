@@ -72,6 +72,9 @@ export const avatarOSC = {
     lockedParameterAddresses.set(Object.keys(lockedParameters));
     window.ADVOSCNative.osc.send(address, value);
   },
+  sendCustomParameter(address: string, value: number, type: "Float" | "Int" | "Bool") {
+    return window.ADVOSCNative.osc.sendCustom(address, [{ value, type }]);
+  },
   setAllParameters(params: Record<string, number>) {
     for (const address in params) {
       this.setParameter(address, params[address]);

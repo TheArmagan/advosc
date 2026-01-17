@@ -104,6 +104,29 @@ export function setupIpcHandlers(port: OSC): void {
     });
   });
 
+  // OSC sendCustom handler - allows explicit type specification
+  ipcMain.handle('osc:sendCustom', (_channel, address: string, args: { value: number | string | boolean | null | undefined, type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[] = []) => {
+    port.send({
+      address,
+      args: args.map(arg => {
+        switch (arg.type) {
+          case "Float":
+            return { type: "f", value: Number(arg.value) };
+          case "Int":
+            return { type: "i", value: Math.floor(Number(arg.value)) };
+          case "Bool":
+            return { type: arg.value ? "T" : "F" };
+          case "String":
+            return { type: "s", value: String(arg.value ?? "") };
+          case "Null":
+          case "Undefined":
+          default:
+            return { type: "N", value: 0 };
+        }
+      }) as any[]
+    });
+  });
+
   port.on("message", (message) => {
     if (!message || !message.address) return;
     const msg = {

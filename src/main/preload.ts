@@ -48,6 +48,7 @@ export interface PreloadElectronAPI {
   };
   osc: {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
+    sendCustom: (address: string, args: { value: (number | string | boolean | null | undefined), type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => void;
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
   };
   path: {
@@ -106,6 +107,9 @@ const api: PreloadElectronAPI = {
   osc: {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => {
       ipcRenderer.invoke('osc:send', address, args);
+    },
+    sendCustom: (address: string, args: { value: number | string | boolean | null | undefined, type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => {
+      ipcRenderer.invoke('osc:sendCustom', address, args);
     },
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => {
       const listener = (_e: unknown, message: { address: string; args: any[] }) => callback(message);
