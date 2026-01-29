@@ -82,6 +82,8 @@
   let fftOscAddressPattern = $state("/avatar/parameters/Band{index}");
   let fftSendToOSC = $state(false);
   let fftOscSendInterval: ReturnType<typeof setInterval> | null = null;
+  let fftUpdateStepsPerBar = $state(20); // 20 steps = 0.05 threshold
+  let fftLastSentValues = $state<number[]>([]);
 
   const fftData = audioFFTData;
   const fftActive = audioFFTActive;
@@ -93,12 +95,27 @@
     fftOscSendInterval = setInterval(() => {
       if (!$fftActive || !fftSendToOSC) return;
       const bands = $fftData.bands;
+      const threshold = 1 / fftUpdateStepsPerBar;
+
+      // Initialize last sent values if needed
+      if (fftLastSentValues.length !== bands.length) {
+        fftLastSentValues = new Array(bands.length).fill(-1);
+      }
+
       bands.forEach((value, index) => {
-        const address = fftOscAddressPattern.replace(
-          "{index}",
-          index.toString(),
-        );
-        avatarOSC.sendCustomParameter(address, value, "Float");
+        // Only send if value changed more than threshold
+        const lastValue = fftLastSentValues[index];
+        if (Math.abs(value - lastValue) >= threshold) {
+          const address = fftOscAddressPattern.replace(
+            "{index}",
+            index.toString(),
+          );
+          // Quantize value to steps for consistency
+          const quantizedValue =
+            Math.round(value * fftUpdateStepsPerBar) / fftUpdateStepsPerBar;
+          avatarOSC.sendCustomParameter(address, quantizedValue, "Float");
+          fftLastSentValues[index] = quantizedValue;
+        }
       });
     }, 1000 / 30); // 30 fps
   }
@@ -687,6 +704,30 @@
             <p class="text-xs text-muted-foreground">
               Use <code class="bg-muted px-1 rounded">{"{index}"}</code> as
               placeholder for band index (0-{$fftConfig.bandCount - 1})
+            </p>
+          </div>
+
+          <!-- Update Steps Setting -->
+          <div class="flex flex-col gap-2">
+            <Label
+              >Update Steps Per Bar: {fftUpdateStepsPerBar} (threshold: {(
+                1 / fftUpdateStepsPerBar
+              ).toFixed(3)})</Label
+            >
+            <Slider
+              type="single"
+              value={fftUpdateStepsPerBar}
+              min={5}
+              max={100}
+              step={1}
+              onValueChange={(v) => {
+                fftUpdateStepsPerBar = v;
+                fftLastSentValues = []; // Reset to force resend
+              }}
+            />
+            <p class="text-xs text-muted-foreground">
+              Only sends OSC when value changes by more than 1/{fftUpdateStepsPerBar}
+              = {(1 / fftUpdateStepsPerBar).toFixed(3)} to avoid network limits
             </p>
           </div>
 
