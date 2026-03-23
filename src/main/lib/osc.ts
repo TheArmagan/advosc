@@ -59,7 +59,12 @@ export class OSC extends EventEmitter {
 
   public open(): void {
     if (!this.isOpen) {
-      this.socket.bind(this.local.port, this.local.address);
+      try {
+        this.socket.bind(this.local.port, this.local.address);
+      } catch (error) {
+        this.emit('error', error);
+        console.log('Failed to bind OSC socket:', error);
+      }
     }
   }
 
