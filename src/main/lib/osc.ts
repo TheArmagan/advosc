@@ -48,6 +48,10 @@ export class OSC extends EventEmitter {
     });
 
     this.socket.on('error', (error: Error) => {
+      if (!this.isOpen) {
+        console.log('Failed to bind OSC socket:', error);
+        return;
+      }
       this.emit('error', error);
     });
 
@@ -59,12 +63,7 @@ export class OSC extends EventEmitter {
 
   public open(): void {
     if (!this.isOpen) {
-      try {
-        this.socket.bind(this.local.port, this.local.address);
-      } catch (error) {
-        this.emit('error', error);
-        console.log('Failed to bind OSC socket:', error);
-      }
+      this.socket.bind(this.local.port, this.local.address);
     }
   }
 
