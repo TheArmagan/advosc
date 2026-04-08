@@ -8,18 +8,24 @@
   import { BracesIcon, BracketsIcon } from "@lucide/svelte";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import Input from "../ui/input/input.svelte";
 
   let insertText = (text: string) => {};
   let setText = (text: string) => {};
 
   const settings = chatbox.settings;
-  const renderedTempalteText = chatbox.renderedTempalteText;
+  const renderedTemplate = chatbox.renderedTemplate;
   const placeholders = chatbox.placeholders;
+
+  let originalTemplate = $settings.template;
+  let isOverwriteActive = $state(false);
+  let overwriteInput = $state("");
+  let overwriteTimer: ReturnType<typeof setTimeout> | null = null;
 
   // fillText'i parse edip HTML formatla - compact ve beyaz tooltip için
   const formatFillTextHTML = (
     fillText: string,
-    separator: string = ";"
+    separator: string = ";",
   ): string => {
     const parts = chatbox.splitParams(fillText, separator);
 
@@ -95,7 +101,11 @@
   };
 
   $effect(() => {
-    setText($settings.template);
+    const current = $settings.template;
+    if (!isOverwriteActive) {
+      originalTemplate = current;
+      setText(current);
+    }
   });
 </script>
 
@@ -182,7 +192,7 @@
                     position.lineNumber,
                     position.column,
                     position.lineNumber,
-                    position.column
+                    position.column,
                   ),
                   text,
                   forceMoveMarkers: true,
@@ -199,20 +209,59 @@
           setText($settings.template);
         }}
         onChange={(value) => {
-          if ($settings.template !== value) {
+          if (originalTemplate !== value) {
+            originalTemplate = value;
             $settings.template = value;
           }
         }}
       />
     </div>
   </div>
+  <div class="flex w-full gap-2 items-center">
+    <Input
+      type="text"
+      bind:value={overwriteInput}
+      placeholder="Template Overwrite (Auto-reset in 30s)"
+      oninput={() => {
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        if (overwriteInput.trim() === "") {
+          isOverwriteActive = false;
+          $settings.template = originalTemplate;
+        } else {
+          isOverwriteActive = true;
+          $settings.template = overwriteInput;
+          overwriteTimer = setTimeout(() => {
+            overwriteInput = "";
+            isOverwriteActive = false;
+            $settings.template = originalTemplate;
+            overwriteTimer = null;
+          }, 30000);
+        }
+      }}
+    />
+    <Button
+      variant="outline"
+      onclick={() => {
+        overwriteInput = "";
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        isOverwriteActive = false;
+        $settings.template = originalTemplate;
+      }}>Reset</Button
+    >
+  </div>
   <div class="flex w-full">
     <Card.Root class="p-2 flex w-full">
-      <Card.Title>Tempalte Preview</Card.Title>
+      <Card.Title>Template Preview</Card.Title>
       <Textarea
         id="template-preview"
-        value={$renderedTempalteText}
-        class="w-full h-48 font-mono bg-secondary text-foreground text-center"
+        value={$renderedTemplate}
+        class="w-full h-38 font-mono bg-secondary text-foreground text-center"
         placeholder="Template preview will appear here..."
         readonly
       />

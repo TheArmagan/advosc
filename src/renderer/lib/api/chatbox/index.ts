@@ -176,7 +176,7 @@ function cleanTempalte(text: string) {
   return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "").split("\n").filter(i => i.trim()).join("\n").trim();
 }
 
-let renderedTempalteText = writable<string>("");
+let renderedTemplate = writable<string>("");
 let placeholders = writable<{ params: string[], value: string, description: string, fillText?: string }[]>([]);
 
 function updatePlaceholders() {
@@ -237,7 +237,7 @@ export const chatbox = {
   settings,
   getPlaceholders,
   cleanTempalte,
-  renderedTempalteText,
+  renderedTemplate,
   splitParams,
   placeholders,
   updatePlaceholders,
@@ -256,7 +256,7 @@ async function renderTemplate() {
   let template = cleanTempalte(s.template);
   template = await fillTemplate(template, "{{;}}");
   template = cleanTempalte(template);
-  renderedTempalteText.set(template);
+  renderedTemplate.set(template);
 
   if (s.autoSend && template) {
     sentClear = false
