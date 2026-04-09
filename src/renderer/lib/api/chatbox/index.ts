@@ -61,6 +61,14 @@ const settings = writable<{ template: string; autoSend: boolean, eggMode: boolea
   }
 );
 
+const advancedTemplate = writable<string>(
+  localData.get("Chatbox;AdvancedTemplate", get(settings).template),
+);
+
+const simpleEditorBlocks = writable<any[]>(
+  localData.get("SimpleEditor;Blocks", []),
+);
+
 setInterval(() => {
   callsMadeMap.clear();
 }, 1000);
@@ -201,6 +209,10 @@ updatePlaceholders();
 export type AllValues = {
   modules: Record<string, any>;
   settings: { template: string; autoSend: boolean, eggMode: boolean, debugMode: boolean };
+  editorState?: {
+    advancedTemplate?: string;
+    simpleBlocks?: any[];
+  };
 };
 
 function getAllValues() {
@@ -214,6 +226,10 @@ function getAllValues() {
   return {
     modules: moduleValues,
     settings: get(settings),
+    editorState: {
+      advancedTemplate: get(advancedTemplate),
+      simpleBlocks: get(simpleEditorBlocks),
+    },
   };
 }
 
@@ -224,6 +240,16 @@ function setAllValues(values: AllValues) {
     }
   });
   settings.set(values.settings);
+
+  if (values.editorState?.advancedTemplate !== undefined) {
+    advancedTemplate.set(values.editorState.advancedTemplate);
+  } else {
+    advancedTemplate.set(values.settings.template);
+  }
+
+  if (values.editorState?.simpleBlocks !== undefined) {
+    simpleEditorBlocks.set(values.editorState.simpleBlocks);
+  }
 }
 
 function getSettings() {
@@ -238,6 +264,8 @@ export const chatbox = {
   getPlaceholders,
   cleanTempalte,
   renderedTemplate,
+  advancedTemplate,
+  simpleEditorBlocks,
   splitParams,
   placeholders,
   updatePlaceholders,
@@ -274,4 +302,12 @@ renderTemplate();
 
 settings.subscribe((value) => {
   localData.set("Chatbox;Settings", value);
+});
+
+advancedTemplate.subscribe((value) => {
+  localData.set("Chatbox;AdvancedTemplate", value);
+});
+
+simpleEditorBlocks.subscribe((value) => {
+  localData.set("SimpleEditor;Blocks", value);
 });

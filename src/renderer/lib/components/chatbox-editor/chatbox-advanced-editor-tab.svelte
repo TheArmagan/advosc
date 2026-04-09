@@ -13,11 +13,14 @@
   let insertText = (text: string) => {};
   let setText = (text: string) => {};
 
+  let { isActive = false }: { isActive?: boolean } = $props();
+
   const settings = chatbox.settings;
   const renderedTemplate = chatbox.renderedTemplate;
   const placeholders = chatbox.placeholders;
+  const advancedTemplate = chatbox.advancedTemplate;
 
-  let originalTemplate = $settings.template;
+  let originalTemplate = $advancedTemplate;
   let isOverwriteActive = $state(false);
   let overwriteInput = $state("");
   let overwriteTimer: ReturnType<typeof setTimeout> | null = null;
@@ -101,9 +104,21 @@
   };
 
   $effect(() => {
+    if (!isActive) return;
+
+    const savedTemplate = $advancedTemplate;
+
+    if (!isOverwriteActive && savedTemplate !== $settings.template) {
+      originalTemplate = savedTemplate;
+      $settings.template = savedTemplate;
+      setText(savedTemplate);
+      return;
+    }
+
     const current = $settings.template;
     if (!isOverwriteActive) {
       originalTemplate = current;
+      $advancedTemplate = current;
       setText(current);
     }
   });
@@ -209,8 +224,9 @@
           setText($settings.template);
         }}
         onChange={(value) => {
-          if (originalTemplate !== value) {
+          if (isActive && originalTemplate !== value) {
             originalTemplate = value;
+            $advancedTemplate = value;
             $settings.template = value;
           }
         }}

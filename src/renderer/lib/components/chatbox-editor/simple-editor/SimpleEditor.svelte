@@ -1,18 +1,12 @@
 <script lang="ts">
   import { chatbox } from "$lib/api/chatbox";
-  import { localData } from "$lib/api/local-data";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import AddBlockMenu from "./components/AddBlockMenu.svelte";
   import BlockEditor from "./components/BlockEditor.svelte";
   import BlockShell from "./components/BlockShell.svelte";
-  import {
-    SIMPLE_EDITOR_STORAGE_KEY,
-    createBlock,
-    knownTypes,
-    meta,
-  } from "./registry";
+  import { createBlock, knownTypes, meta } from "./registry";
   import {
     buildTemplateState,
     getShortcutParamCount,
@@ -21,21 +15,32 @@
   } from "./template";
   import type { Block, BlockType } from "./types";
 
+  let { isActive = false }: { isActive?: boolean } = $props();
+
   const settings = chatbox.settings;
   const renderedTemplate = chatbox.renderedTemplate;
+  const simpleEditorBlocks = chatbox.simpleEditorBlocks;
 
-  let blocks = $state<Block[]>(
-    (localData.get(SIMPLE_EDITOR_STORAGE_KEY, []) as Block[]).filter((block) =>
+  function sanitizeBlocks(input: unknown[]): Block[] {
+    return (input as Block[]).filter((block) =>
       knownTypes.has(block?.type as BlockType),
-    ),
-  );
+    );
+  }
+
+  const blocks = $derived(sanitizeBlocks($simpleEditorBlocks as unknown[]));
+
+  $effect(() => {
+    if (($simpleEditorBlocks as unknown[]).length !== blocks.length) {
+      $simpleEditorBlocks = blocks;
+    }
+  });
 
   function addBlock(type: BlockType) {
-    blocks = [...blocks, createBlock(type)];
+    $simpleEditorBlocks = [...blocks, createBlock(type)];
   }
 
   function removeBlock(id: string) {
-    blocks = blocks.filter((block) => block.id !== id);
+    $simpleEditorBlocks = blocks.filter((block) => block.id !== id);
   }
 
   function moveBlock(id: string, direction: -1 | 1) {
@@ -45,11 +50,11 @@
     if (next < 0 || next >= blocks.length) return;
     const updated = [...blocks];
     [updated[index], updated[next]] = [updated[next], updated[index]];
-    blocks = updated;
+    $simpleEditorBlocks = updated;
   }
 
   function upd(id: string, patch: Partial<Block>) {
-    blocks = blocks.map((block) =>
+    $simpleEditorBlocks = blocks.map((block) =>
       block.id === id ? ({ ...block, ...patch } as Block) : block,
     );
   }
@@ -57,8 +62,9 @@
   $effect(() => {
     const state = buildTemplateState(blocks);
     syncAutoShortcuts(state.autoShortcuts);
-    $settings.template = state.template;
-    localData.set(SIMPLE_EDITOR_STORAGE_KEY, blocks);
+    if (isActive) {
+      $settings.template = state.template;
+    }
   });
 </script>
 
