@@ -103,14 +103,14 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
 
     if (this.lastLyricKey === cacheKey) return this.currentLyric;
 
-    // Eğer bu key için zaten bir fetch işlemi devam ediyorsa, beklemeden null dön
+    // If a fetch is already in progress for this key, return null immediately
     if (this.lyricFetchQueue.has(cacheKey)) {
       return null;
     }
 
     this.lastLyricKey = cacheKey;
 
-    // Fetch işlemini queue'ya ekle
+    // Add the fetch operation to the queue
     const fetchPromise = this.fetchLyrics(
       this.lastMediaInfo.title!,
       this.lastMediaInfo.artist!,
@@ -127,7 +127,7 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
 
     this.lyricFetchQueue.set(cacheKey, fetchPromise);
 
-    // Fetch devam ederken null dön
+    // Return null while the fetch is still running
     return null;
   }
 

@@ -1,41 +1,41 @@
 import { writable, derived, get } from "svelte/store";
 
-// FFT Analiz Sonuçları
+// FFT analysis results
 export interface FFTData {
-  // Ham FFT verisi (0-255 arası değerler)
+  // Raw FFT data (values between 0 and 255)
   frequencyData: Uint8Array<ArrayBuffer>;
   timeDomainData: Uint8Array<ArrayBuffer>;
 
-  // Frekans bantları (0-1 arası normalize edilmiş)
-  subBass: number; // 20-60 Hz - Derin bass, kick'in alt kısmı
+  // Frequency bands (normalized between 0 and 1)
+  subBass: number; // 20-60 Hz - Deep bass, lower part of the kick
   bass: number; // 60-250 Hz - Bass, kick drum
-  lowMid: number; // 250-500 Hz - Alt orta
-  mid: number; // 500-2000 Hz - Orta frekanslar, vokal
-  highMid: number; // 2000-4000 Hz - Üst orta
-  high: number; // 4000-8000 Hz - Tiz
-  brilliance: number; // 8000-20000 Hz - Parlaklık
+  lowMid: number; // 250-500 Hz - Low mids
+  mid: number; // 500-2000 Hz - Mid frequencies, vocals
+  highMid: number; // 2000-4000 Hz - Upper mids
+  high: number; // 4000-8000 Hz - Treble
+  brilliance: number; // 8000-20000 Hz - Brilliance
 
-  // Monstercat tarzı logaritmik bantlar (0-1 arası)
+  // Monstercat-style logarithmic bands (0-1 range)
   bands: number[];
   bandCount: number;
 
-  // Özel değerler
-  kick: number; // Kick drum algılama (subBass + bass kombinasyonu)
-  snare: number; // Snare algılama (mid + highMid kombinasyonu)
-  hihat: number; // Hi-hat algılama (high + brilliance)
-  overall: number; // Genel ses seviyesi
-  peak: number; // En yüksek frekans değeri
-  peakFrequency: number; // En yüksek frekansın Hz değeri
+  // Derived values
+  kick: number; // Kick drum detection (subBass + bass combination)
+  snare: number; // Snare detection (mid + highMid combination)
+  hihat: number; // Hi-hat detection (high + brilliance)
+  overall: number; // Overall sound level
+  peak: number; // Highest frequency value
+  peakFrequency: number; // Frequency of the highest peak in Hz
 }
 
 export interface AudioFFTConfig {
-  fftSize: number; // FFT boyutu (256, 512, 1024, 2048, vb.)
-  smoothingTimeConstant: number; // Yumuşatma (0-1 arası)
-  minDecibels: number; // Minimum desibel
-  maxDecibels: number; // Maximum desibel
-  bandCount: number; // Monstercat tarzı bant sayısı (varsayılan 24)
-  minFrequency: number; // Minimum frekans (Hz)
-  maxFrequency: number; // Maximum frekans (Hz)
+  fftSize: number; // FFT size (256, 512, 1024, 2048, etc.)
+  smoothingTimeConstant: number; // Smoothing (0-1 range)
+  minDecibels: number; // Minimum decibels
+  maxDecibels: number; // Maximum decibels
+  bandCount: number; // Monstercat-style band count (default 24)
+  minFrequency: number; // Minimum frequency (Hz)
+  maxFrequency: number; // Maximum frequency (Hz)
 }
 
 const defaultConfig: AudioFFTConfig = {
@@ -92,7 +92,7 @@ let animationFrameId: number | null = null;
 let frequencyData: Uint8Array<ArrayBuffer> | null = null;
 let timeDomainData: Uint8Array<ArrayBuffer> | null = null;
 
-// Frekans bandını hesapla
+// Calculate the frequency band average
 function getFrequencyRangeAverage(
   dataArray: Uint8Array,
   sampleRate: number,
@@ -119,7 +119,7 @@ function getFrequencyRangeAverage(
   return count > 0 ? sum / count / 255 : 0;
 }
 
-// Peak frekansı bul
+// Find the peak frequency
 function findPeakFrequency(
   dataArray: Uint8Array,
   sampleRate: number
@@ -139,7 +139,7 @@ function findPeakFrequency(
   return { peak: maxValue / 255, frequency };
 }
 
-// Monstercat tarzı logaritmik bantları hesapla
+// Calculate Monstercat-style logarithmic bands
 function calculateLogarithmicBands(
   dataArray: Uint8Array<ArrayBuffer>,
   sampleRate: number,
@@ -150,26 +150,26 @@ function calculateLogarithmicBands(
   const nyquist = sampleRate / 2;
   const bands: number[] = new Array(bandCount).fill(0);
 
-  // Logaritmik frekans dağılımı (Monstercat tarzı)
-  // Düşük frekanslarda daha dar bantlar, yüksekte daha geniş
+  // Logarithmic frequency distribution (Monstercat style)
+  // Narrower bands at low frequencies, wider bands at high frequencies
   const logMin = Math.log10(minFreq);
   const logMax = Math.log10(maxFreq);
   const logStep = (logMax - logMin) / bandCount;
 
   for (let i = 0; i < bandCount; i++) {
-    // Bu bant için frekans aralığı
+    // Frequency range for this band
     const freqLow = Math.pow(10, logMin + logStep * i);
     const freqHigh = Math.pow(10, logMin + logStep * (i + 1));
 
-    // FFT bin indeksleri
+    // FFT bin indices
     const indexLow = Math.floor((freqLow / nyquist) * dataArray.length);
     const indexHigh = Math.ceil((freqHigh / nyquist) * dataArray.length);
 
-    // Güvenli sınırlar
+    // Safe bounds
     const safeIndexLow = Math.max(0, Math.min(indexLow, dataArray.length - 1));
     const safeIndexHigh = Math.max(safeIndexLow + 1, Math.min(indexHigh, dataArray.length));
 
-    // Bu aralıktaki maksimum değeri al (ortalama yerine - daha reaktif)
+    // Take the maximum value in this range (instead of average - more reactive)
     let maxVal = 0;
     let sum = 0;
     let count = 0;
@@ -181,18 +181,18 @@ function calculateLogarithmicBands(
       count++;
     }
 
-    // Maksimum ve ortalamayı karıştır (daha doğal görünüm)
+    // Blend max and average for a more natural look
     const avg = count > 0 ? sum / count : 0;
     const mixed = maxVal * 0.7 + avg * 0.3;
 
-    // Normalize et (0-1)
+    // Normalize (0-1)
     bands[i] = mixed / 255;
   }
 
   return bands;
 }
 
-// FFT verisini analiz et
+// Analyze FFT data
 function analyzeFFTData(): FFTData {
   if (!analyser || !frequencyData || !timeDomainData || !audioContext) {
     return defaultFFTData;
@@ -204,7 +204,7 @@ function analyzeFFTData(): FFTData {
   const sampleRate = audioContext.sampleRate;
   const fftSize = analyser.fftSize;
 
-  // Frekans bantları
+  // Frequency bands
   const subBass = getFrequencyRangeAverage(frequencyData, sampleRate, fftSize, 20, 60);
   const bass = getFrequencyRangeAverage(frequencyData, sampleRate, fftSize, 60, 250);
   const lowMid = getFrequencyRangeAverage(frequencyData, sampleRate, fftSize, 250, 500);
@@ -213,12 +213,12 @@ function analyzeFFTData(): FFTData {
   const high = getFrequencyRangeAverage(frequencyData, sampleRate, fftSize, 4000, 8000);
   const brilliance = getFrequencyRangeAverage(frequencyData, sampleRate, fftSize, 8000, 20000);
 
-  // Özel değerler
-  const kick = Math.min(1, (subBass * 0.6 + bass * 0.4) * 1.5); // Kick genelde subBass + bass
-  const snare = Math.min(1, (mid * 0.4 + highMid * 0.6) * 1.3); // Snare orta-üst frekanslarda
-  const hihat = Math.min(1, (high * 0.5 + brilliance * 0.5) * 1.2); // Hi-hat yüksek frekanslarda
+  // Derived values
+  const kick = Math.min(1, (subBass * 0.6 + bass * 0.4) * 1.5); // Kick usually lives in subBass + bass
+  const snare = Math.min(1, (mid * 0.4 + highMid * 0.6) * 1.3); // Snare lives in upper mids
+  const hihat = Math.min(1, (high * 0.5 + brilliance * 0.5) * 1.2); // Hi-hat lives in high frequencies
 
-  // Genel seviye
+  // Overall level
   let overallSum = 0;
   for (let i = 0; i < frequencyData.length; i++) {
     overallSum += frequencyData[i];
@@ -228,7 +228,7 @@ function analyzeFFTData(): FFTData {
   // Peak
   const { peak, frequency: peakFrequency } = findPeakFrequency(frequencyData, sampleRate);
 
-  // Monstercat tarzı bantlar
+  // Monstercat-style bands
   const config = get(audioFFTConfig);
   const bands = calculateLogarithmicBands(
     frequencyData,
@@ -259,7 +259,7 @@ function analyzeFFTData(): FFTData {
   };
 }
 
-// Analiz döngüsü
+// Analysis loop
 function analysisLoop() {
   if (!get(audioFFTActive)) {
     return;
@@ -271,10 +271,10 @@ function analysisLoop() {
   animationFrameId = requestAnimationFrame(analysisLoop);
 }
 
-// Mevcut ses cihazlarını listele
+// List available audio devices
 export async function listAudioDevices(): Promise<MediaDeviceInfo[]> {
   try {
-    // Önce izin al (cihaz listesi için gerekli)
+    // Request permission first (required to list devices)
     await navigator.mediaDevices.getUserMedia({ audio: true });
 
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -283,24 +283,24 @@ export async function listAudioDevices(): Promise<MediaDeviceInfo[]> {
     availableAudioDevices.set(audioInputs);
     return audioInputs;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Ses cihazları listelenemedi";
+    const message = error instanceof Error ? error.message : "Failed to list audio devices";
     audioFFTError.set(message);
     return [];
   }
 }
 
-// Mikrofon FFT'yi başlat
+// Start microphone FFT
 export async function startAudioFFT(deviceId?: string): Promise<boolean> {
   try {
-    // Önceki oturumu temizle
+    // Clean up the previous session
     await stopAudioFFT();
 
     audioFFTError.set(null);
 
-    // Audio Context oluştur
+    // Create audio context
     audioContext = new AudioContext();
 
-    // Mikrofon erişimi al
+    // Request microphone access
     const constraints: MediaStreamConstraints = {
       audio: deviceId
         ? { deviceId: { exact: deviceId } }
@@ -317,7 +317,7 @@ export async function startAudioFFT(deviceId?: string): Promise<boolean> {
       selectedAudioDeviceId.set(deviceId);
     }
 
-    // Analyser oluştur
+    // Create analyser
     const config = get(audioFFTConfig);
     analyser = audioContext.createAnalyser();
     analyser.fftSize = config.fftSize;
@@ -325,19 +325,19 @@ export async function startAudioFFT(deviceId?: string): Promise<boolean> {
     analyser.minDecibels = config.minDecibels;
     analyser.maxDecibels = config.maxDecibels;
 
-    // Veri dizilerini oluştur
+    // Create data arrays
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
     timeDomainData = new Uint8Array(analyser.frequencyBinCount);
 
-    // Mikrofonu bağla
+    // Connect microphone
     sourceNode = audioContext.createMediaStreamSource(mediaStream);
     sourceNode.connect(analyser);
 
-    // Analizi başlat
+    // Start analysis
     audioFFTActive.set(true);
     analysisLoop();
 
-    console.log("[AudioFFT] Başlatıldı", {
+    console.log("[AudioFFT] Started", {
       sampleRate: audioContext.sampleRate,
       fftSize: analyser.fftSize,
       frequencyBinCount: analyser.frequencyBinCount,
@@ -345,15 +345,15 @@ export async function startAudioFFT(deviceId?: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Mikrofon erişimi başarısız";
+    const message = error instanceof Error ? error.message : "Microphone access failed";
     audioFFTError.set(message);
-    console.error("[AudioFFT] Hata:", error);
+    console.error("[AudioFFT] Error:", error);
     await stopAudioFFT();
     return false;
   }
 }
 
-// Mikrofon FFT'yi durdur
+// Stop microphone FFT
 export async function stopAudioFFT(): Promise<void> {
   audioFFTActive.set(false);
 
@@ -387,15 +387,15 @@ export async function stopAudioFFT(): Promise<void> {
 
   audioFFTData.set(defaultFFTData);
 
-  console.log("[AudioFFT] Durduruldu");
+  console.log("[AudioFFT] Stopped");
 }
 
-// Ayarları güncelle
+// Update settings
 export function updateAudioFFTConfig(newConfig: Partial<AudioFFTConfig>): void {
   audioFFTConfig.update((current) => {
     const updated = { ...current, ...newConfig };
 
-    // Eğer analyser varsa, ayarları uygula
+    // If the analyser exists, apply updated settings
     if (analyser) {
       if (newConfig.fftSize !== undefined) {
         analyser.fftSize = updated.fftSize;
@@ -417,17 +417,17 @@ export function updateAudioFFTConfig(newConfig: Partial<AudioFFTConfig>): void {
   });
 }
 
-// Aktif mi kontrol et
+// Check whether it is active
 export function isAudioFFTActive(): boolean {
   return get(audioFFTActive);
 }
 
-// Anlık FFT verisi al (store subscribe etmeden)
+// Get an FFT snapshot without subscribing to the store
 export function getAudioFFTSnapshot(): FFTData {
   return get(audioFFTData);
 }
 
-// Belirli bir frekans aralığının değerini al
+// Get the value of a specific frequency range
 export function getFrequencyRange(lowFreq: number, highFreq: number): number {
   if (!analyser || !frequencyData || !audioContext) {
     return 0;
@@ -443,7 +443,7 @@ export function getFrequencyRange(lowFreq: number, highFreq: number): number {
   );
 }
 
-// Beat detection için threshold bazlı kontrol
+// Threshold-based beat detection check
 export function isBeatDetected(
   type: "kick" | "snare" | "hihat" | "bass",
   threshold: number = 0.7

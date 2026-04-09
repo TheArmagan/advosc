@@ -20,26 +20,94 @@
 </p>
 
 <p align="center">
-  A sleek, modern desktop application for VRChat OSC tools featuring an advanced chatbox editor with dynamic placeholders, avatar parameter control, and real-time media integration.
+  A modern desktop toolkit for VRChat OSC with a block-based chatbox editor for everyone, a full advanced editor for power users, avatar parameter control, and real-time media integration.
 </p>
 
 ---
 
 ## ✨ Features
 
-### 💬 Advanced Chatbox Editor
+### 💬 Simple Chatbox Editor
 
-A powerful chatbox editor with dynamic placeholder support to make your messages come alive with real-time data.
+ADVOSC now includes a block-based chatbox editor designed to make the placeholder system approachable for everyone. You can build rich VRChat chatbox layouts visually, without needing to memorize placeholder syntax first.
 
 <p align="center">
-  <img src="./screenshots/chatbox-advanced-editor.png" alt="Chatbox Editor" width="700">
+  <img src="./screenshots/chatbox-simple-editor.png" alt="Simple Chatbox Editor" width="700">
+</p>
+
+| Why it is easy to use | What it gives you |
+|-----------------------|-------------------|
+| **Visual block workflow** | Build your message by adding blocks instead of writing raw templates by hand |
+| **Live preview** | See the resulting chatbox output immediately while editing |
+| **Reorderable layout** | Move blocks up or down to shape the final message structure quickly |
+| **Safe by default** | The editor generates the correct placeholder template for you |
+| **Same real engine underneath** | It still uses ADVOSC's full placeholder system, so you do not lose power by starting simple |
+
+The simple editor currently includes **30 block types** across the most useful chatbox workflows:
+
+| Category | Blocks |
+|----------|--------|
+| **Basic** | Text, Text Transform, Text Replace, Text Truncate, Text Pad, Text Fallback, Current Time, New Line |
+| **Media** | Now Playing, Song Progress, Heart Rate |
+| **Display** | Progress Bar, Health Bar, Star Rating, Toggle Text, Number Format |
+| **Animate** | Marquee / Scroll, Bounce, Typewriter, Blink, Cycle Texts |
+| **Logic** | Condition |
+| **VRChat** | Hotkey State, Avatar Param, VR Tracker |
+| **Tools** | Stopwatch, Session Time, Shortcut, Number Calc, Random Number |
+
+### 🧠 Smart Sources, Not Just OSC
+
+Most source-driven blocks can read from more than one kind of value. That means you can build complex chatbox outputs without being locked to raw OSC parameters.
+
+Supported source styles include:
+
+- Plain values like `42`, `true`, or custom text
+- VRChat OSC addresses like `/avatar/parameters/Health`
+- Inner placeholders like `[[MediaInfo:Duration]]`
+- Full placeholders like `{{Shortcut;Time}}`
+
+This makes the simple editor good enough for real everyday templates, not just beginner demos. You can mix media data, tracker info, heart rate, stopwatch values, hotkeys, conditions, reusable shortcuts, text cleanup, and numeric utilities in one visual flow.
+
+It also now covers more cleanup and utility workflows directly in the UI, including text transforms, text replacement, truncation, padding, fallback values, numeric clamping, range mapping, rounding, absolute values, and random ranges.
+
+### ⚡ Examples You Can Build Quickly
+
+- A now-playing line with fallback text when nothing is playing
+- A song progress bar with a moving head character
+- A VRChat status line driven by hotkeys or avatar parameters
+- A heart-rate or tracker battery overlay
+- Cleaned-up text blocks using uppercase, replace, pad, truncate, or fallback logic
+- Numeric HUD values clamped, mapped, rounded, or randomized without hand-writing placeholders
+- Animated text sections like marquee, blink, typewriter, or rotating messages
+- Conditional templates such as AFK status, stream status, or context-aware HUD text
+
+Some of the newly exposed simple-editor workflows include:
+
+- Turning any source into uppercase, lowercase, title case, reversed text, trimmed text, capitalized text, text length, or word count
+- Replacing text fragments inside a live source before displaying it
+- Truncating long media titles or other dynamic values to fit tight chatbox layouts
+- Padding values like HP, combo counters, or indices for cleaner HUD-style formatting
+- Falling back to safe text when a source is empty
+- Clamping or mapping numeric values from one range into another directly inside the editor
+- Generating random integers or floats from static values or live sources
+
+### ✍️ Advanced Chatbox Editor
+
+When you want direct control, ADVOSC still includes the full advanced editor. It is ideal for users who prefer writing placeholders manually, composing custom expressions, or fine-tuning complex templates line by line.
+
+<p align="center">
+  <img src="./screenshots/chatbox-advanced-editor.png" alt="Advanced Chatbox Editor" width="700">
 </p>
 
 ---
 
 ### 🧩 Chatbox Modules
 
-The chatbox editor supports 12 powerful modules for dynamic content. Click to expand each module for details:
+Both chatbox editors are powered by the same **12 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
+
+The simple editor covers the most common combinations visually. The module list below shows the full engine that powers both editing styles.
+
+Click to expand each module for details:
 
 <details>
 <summary><strong>🎵 Media Info</strong> — Display currently playing media information</summary>
@@ -79,20 +147,30 @@ Comprehensive time and date formatting with timezone support.
 <details>
 <summary><strong>🔤 Text</strong> — Text manipulation and animations</summary>
 
-Transform and animate text with various effects.
+Transform, build, format, and animate text with a large set of utilities.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{Text;Upper;hello}}` | `HELLO` | Convert to uppercase |
 | `{{Text;Lower;HELLO}}` | `hello` | Convert to lowercase |
 | `{{Text;Title;hello world}}` | `Hello World` | Convert to title case |
+| `{{Text;Trim;  hello  }}` | `hello` | Remove leading and trailing whitespace |
+| `{{Text;Replace;cat;dog;cat nap}}` | `dog nap` | Replace all matching text |
 | `{{Text;Length;hello}}` | `5` | Get text length |
 | `{{Text;Reverse;hello}}` | `olleh` | Reverse text |
 | `{{Text;Repeat;3;Hi }}` | `Hi Hi Hi ` | Repeat text N times |
 | `{{Text;Slice;0;5;Hello World}}` | `Hello` | Extract substring |
 | `{{Text;Format;Rounded;text}}` | `ⓣⓔⓧⓣ` | Apply special formatting |
+| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | Apply one of the newer visual styles |
 | `{{Text;Truncate;10;Long text...}}` | `Long text...` | Truncate with ellipsis |
+| `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Build a progress bar with an optional head character |
+| `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Build a hearts / health style meter |
+| `{{Text;Build;StarRating;3;5;★;☆}}` | `★★★☆☆` | Build a rating display |
+| `{{Text;Build;Toggle;true;ON;OFF}}` | `ON` | Map truthy / falsy values to text |
+| `{{Text;NumberFormat;2;.;,;1234.5}}` | `1,234.50` | Format numeric text for display |
 | `{{Text;Animate;Marquee;...}}` | `scrolling` | Animated marquee effect |
+| `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal text over time |
+| `{{Text;Animate;Blink;ON;OFF}}` | `ON` → `OFF` | Alternate between two texts |
 | `{{Text;Animate;EachOne;A;B;C}}` | `A` → `B` → `C` | Cycle through items |
 
 </details>
@@ -235,9 +313,9 @@ Create custom shortcuts that expand to complex placeholder combinations. Perfect
 
 ---
 
-### 🎭 Avatar OSC Control
+### 🎭 Beyond Chatbox: Avatar OSC Control
 
-Take full control of your avatar's parameters with powerful tools.
+Once your chatbox is set up, ADVOSC also gives you direct control over avatar parameters with tools built for real VRChat use.
 
 <p align="center">
   <img src="./screenshots/avatar-osc-parameters.png" alt="Avatar OSC Parameters" width="700">
@@ -256,9 +334,9 @@ Take full control of your avatar's parameters with powerful tools.
 
 ---
 
-### 👗 Avatar Profiles
+### 👗 Beyond Chatbox: Avatar Profiles
 
-Save and restore your avatar's parameter configurations instantly.
+Save, reuse, and restore complete avatar parameter states in a few clicks.
 
 <p align="center">
   <img src="./screenshots/avatar-profiles.png" alt="Avatar Profiles" width="700">

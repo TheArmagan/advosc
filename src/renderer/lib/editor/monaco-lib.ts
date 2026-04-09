@@ -26,7 +26,7 @@ export interface DynamicAutocompleteSuggestion {
 }
 
 export interface HoverInfo {
-  value: string; // Markdown destekler
+  value: string; // Supports Markdown
   isTrusted?: boolean;
 }
 
@@ -43,10 +43,10 @@ export type GetHoverInfoFunction = (
 ) => HoverInfo | null | Promise<HoverInfo | null>;
 
 /**
- * Regex tabanlı autocomplete için basit altyapı
- * @param languageId Dil ID'si (örn: 'javascript', 'text')
- * @param rules Autocomplete kuralları
- * @returns Dispose fonksiyonu
+ * Simple infrastructure for regex-based autocomplete
+ * @param languageId Language ID (e.g. 'javascript', 'text')
+ * @param rules Autocomplete rules
+ * @returns Dispose function
  */
 export function registerRegexAutocomplete(
   languageId: string,
@@ -64,7 +64,7 @@ export function registerRegexAutocomplete(
 
       const suggestions: monaco.languages.CompletionItem[] = [];
 
-      // Kelimenin başlangıç pozisyonunu bul
+      // Find the start position of the current word
       const wordUntilPosition = model.getWordUntilPosition(position);
       const range = {
         startLineNumber: position.lineNumber,
@@ -73,11 +73,11 @@ export function registerRegexAutocomplete(
         endColumn: wordUntilPosition.endColumn,
       };
 
-      // Her kural için kontrol yap
+      // Check each rule
       for (const rule of rules) {
         const match = textUntilPosition.match(rule.pattern);
         if (match) {
-          // Eşleşen kuralın önerilerini ekle
+          // Add suggestions from the matching rule
           for (const suggestion of rule.suggestions) {
             suggestions.push({
               label: suggestion.label,
@@ -98,12 +98,12 @@ export function registerRegexAutocomplete(
 }
 
 /**
- * Dinamik/Live API tabanlı autocomplete - runtime'da öneriler alır
- * @param languageId Dil ID'si
- * @param getCompletions Önerileri döndüren fonksiyon (async olabilir)
- * @param getHoverInfo Hover bilgisi döndüren fonksiyon (opsiyonel, async olabilir)
- * @param triggerCharacters Tetikleyici karakterler (opsiyonel)
- * @returns Dispose fonksiyonları
+ * Dynamic/live API-based autocomplete - fetches suggestions at runtime
+ * @param languageId Language ID
+ * @param getCompletions Function that returns suggestions (can be async)
+ * @param getHoverInfo Function that returns hover info (optional, can be async)
+ * @param triggerCharacters Trigger characters (optional)
+ * @returns Dispose handlers
  */
 export function registerDynamicAutocomplete(
   languageId: string,
@@ -113,7 +113,7 @@ export function registerDynamicAutocomplete(
 ): monaco.IDisposable {
   const disposables: monaco.IDisposable[] = [];
 
-  // Autocomplete provider'ı kaydet
+  // Register autocomplete provider
   const completionDisposable = monaco.languages.registerCompletionItemProvider(languageId, {
     triggerCharacters: triggerCharacters ?? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '.', '(', '['],
     provideCompletionItems: async (model, position) => {
@@ -124,7 +124,7 @@ export function registerDynamicAutocomplete(
         endColumn: position.column,
       });
 
-      // Kelimenin başlangıç pozisyonunu bul
+      // Find the start position of the current word
       const wordUntilPosition = model.getWordUntilPosition(position);
       const range = {
         startLineNumber: position.lineNumber,
@@ -134,7 +134,7 @@ export function registerDynamicAutocomplete(
       };
 
       try {
-        // Dinamik olarak önerileri al (async olabilir)
+        // Get suggestions dynamically (can be async)
         const dynamicSuggestions = await getCompletions(textUntilPosition, position, model);
 
         const suggestions: monaco.languages.CompletionItem[] = dynamicSuggestions.map(
@@ -147,7 +147,7 @@ export function registerDynamicAutocomplete(
             documentation: suggestion.documentation
               ? { value: suggestion.documentation, isTrusted: true }
               : undefined,
-            range: suggestion.range ?? range, // Custom range veya default range
+            range: suggestion.range ?? range, // Custom range or default range
           })
         );
 
@@ -161,7 +161,7 @@ export function registerDynamicAutocomplete(
 
   disposables.push(completionDisposable);
 
-  // Eğer hover fonksiyonu varsa, hover provider'ı da kaydet
+  // If a hover function exists, register the hover provider too
   if (getHoverInfo) {
     const hoverDisposable = monaco.languages.registerHoverProvider(languageId, {
       provideHover: async (model, position) => {
@@ -202,34 +202,34 @@ export function registerDynamicAutocomplete(
 
 export interface RegexHighlightRule {
   pattern: RegExp;
-  token: string; // Monaco token tipi: 'keyword', 'string', 'comment', 'number', 'type', vb.
+  token: string; // Monaco token type: 'keyword', 'string', 'comment', 'number', 'type', etc.
 }
 
 /**
- * Regex tabanlı syntax highlighting
- * @param languageId Dil ID'si
- * @param rules Highlighting kuralları
- * @returns Dispose fonksiyonu
+ * Regex-based syntax highlighting
+ * @param languageId Language ID
+ * @param rules Highlighting rules
+ * @returns Dispose function
  */
 export function registerRegexHighlighting(
   languageId: string,
   rules: RegexHighlightRule[]
 ): monaco.IDisposable {
-  // Dili kaydet
+  // Register language
   monaco.languages.register({ id: languageId });
 
-  // Tokenizer'ı ayarla
+  // Configure tokenizer
   monaco.languages.setMonarchTokensProvider(languageId, {
     tokenizer: {
       root: rules.map((rule) => {
-        // RegExp'i string'e çevir (/ karakterlerini kaldır)
+        // Convert RegExp to string form (remove / delimiters)
         const pattern = rule.pattern.source;
         return [new RegExp(pattern), rule.token];
       }),
     },
   });
 
-  // Tema renklerini ayarla
+  // Configure theme colors
   monaco.editor.defineTheme('advosc-theme', {
     base: 'vs-dark',
     inherit: true,
@@ -250,7 +250,7 @@ export function registerRegexHighlighting(
 
   return {
     dispose: () => {
-      // Dispose işlemi gerekirse buraya eklenebilir
+      // Dispose logic can be added here if needed
     },
   };
 }

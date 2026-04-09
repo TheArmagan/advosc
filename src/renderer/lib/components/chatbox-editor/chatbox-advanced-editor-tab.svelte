@@ -22,7 +22,7 @@
   let overwriteInput = $state("");
   let overwriteTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // fillText'i parse edip HTML formatla - compact ve beyaz tooltip için
+  // Parse fillText and format it as HTML for a compact white tooltip
   const formatFillTextHTML = (
     fillText: string,
     separator: string = ";",
@@ -32,17 +32,17 @@
     let items = "";
 
     parts.forEach((part, index) => {
-      // ${1:inputText} formatını parse et
+      // Parse ${1:inputText} format
       const placeholderMatch = part.match(/\$\{(\d+):([^}]+)\}/);
 
       if (placeholderMatch) {
         const [_, paramIndex, content] = placeholderMatch;
 
-        // ... ile biten parametreler (variadic)
+        // Parameters ending with ... (variadic)
         if (content.endsWith("...")) {
-          const paramName = content.slice(0, -3); // "..." kısmını çıkar
+          const paramName = content.slice(0, -3); // Remove the "..." suffix
 
-          // Left|Right|... gibi seçenekli variadic
+          // Option-based variadic values like Left|Right|...
           if (paramName.includes("|")) {
             const options = paramName.split("|");
             items += `
@@ -65,7 +65,7 @@
             `;
           }
         }
-        // Left|Right gibi seçenekleri ayır
+        // Split options like Left|Right
         else if (content.includes("|")) {
           const options = content.split("|");
           items += `
@@ -86,7 +86,7 @@
           `;
         }
       } else {
-        // Normal parametre (sabit değer)
+        // Normal parameter (fixed value)
         items += `
           <div class="flex items-center gap-1.5 text-xs">
             <span class="text-gray-500 font-mono">${index + 1}.</span>

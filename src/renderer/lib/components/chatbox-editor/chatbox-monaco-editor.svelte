@@ -17,7 +17,7 @@
   let isHighlightingRegistered = false;
   let modelId = `model-${Math.random().toString(36).substring(7)}`;
 
-  // Global provider kaydı için flag (tüm instance'lar için tek bir provider)
+  // Flag for global provider registration (single provider for all instances)
   let isProviderRegistered = false;
 
   let {
@@ -26,7 +26,7 @@
     width = 900,
     height = 400,
     value = $bindable(
-      `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`
+      `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`,
     ),
     language = "advosc-placeholders",
   }: {
@@ -38,47 +38,47 @@
     language?: string;
   } = $props();
 
-  // Örnek dinamik/live autocomplete fonksiyonu
+  // Dynamic/live autocomplete function
   const getCompletions: GetCompletionsFunction = async (
     textUntilPosition,
     position,
-    model
+    model,
   ) => {
-    // Sadece bu editörün modeli için çalış
+    // Only run for this editor's model
     if (editor && model.uri.toString() !== editor.getModel()?.uri.toString()) {
       return [];
     }
 
     const placeholders = chatbox.getPlaceholders();
 
-    // ÖNCELİK 1: [[ için autocomplete - inner placeholder ({{ içinde bile olsa)
+    // PRIORITY 1: autocomplete for [[ - inner placeholders (even inside {{)
     const innerPlaceholderMatch = textUntilPosition.match(/\[\[([^\]]*)$/);
     if (innerPlaceholderMatch) {
       const lineContent = model.getLineContent(position.lineNumber);
       const textAfterPosition = lineContent.substring(position.column - 1);
       const needsClosing = !textAfterPosition.includes("]]");
 
-      const currentText = innerPlaceholderMatch[1]; // [[ sonrası yazılan text
+      const currentText = innerPlaceholderMatch[1]; // Text typed after [[
       const parts = chatbox.splitParams(currentText, ":");
       const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
 
-      // [[ 'nin başladığı kolon
+      // Column where [[ starts
       const placeholderStartColumn = position.column - currentText.length;
 
-      // Params'a göre dedupe
+      // Dedupe by params
       const seenParams = new Set<string>();
 
       return placeholders
         .filter((placeholder) => {
-          // Eğer henüz bir şey yazılmadıysa hepsini göster
+          // If nothing has been typed yet, show all
           if (!lastPart) return true;
-          // Son yazılan kısım ile eşleşenleri göster
+          // Show items matching the last typed part
           return placeholder.params.some((param) =>
-            param.toLowerCase().includes(lastPart)
+            param.toLowerCase().includes(lastPart),
           );
         })
         .filter((placeholder) => {
-          // Params kombinasyonuna göre dedupe
+          // Dedupe by parameter combination
           const paramsKey = placeholder.params.join(";");
           if (seenParams.has(paramsKey)) {
             return false;
@@ -114,34 +114,34 @@
         });
     }
 
-    // ÖNCELİK 2: {{ için autocomplete - normal placeholder
+    // PRIORITY 2: autocomplete for {{ - normal placeholders
     const normalPlaceholderMatch = textUntilPosition.match(/{{([^}]*)$/);
     if (normalPlaceholderMatch) {
       const lineContent = model.getLineContent(position.lineNumber);
       const textAfterPosition = lineContent.substring(position.column - 1);
       const needsClosing = !textAfterPosition.includes("}}");
 
-      const currentText = normalPlaceholderMatch[1]; // {{ sonrası yazılan text
+      const currentText = normalPlaceholderMatch[1]; // Text typed after {{
       const parts = chatbox.splitParams(currentText, ";");
       const lastPart = parts[parts.length - 1]?.toLowerCase() || "";
 
-      // {{ 'nin başladığı kolon
+      // Column where {{ starts
       const placeholderStartColumn = position.column - currentText.length;
 
-      // Params'a göre dedupe
+      // Dedupe by params
       const seenParams = new Set<string>();
 
       return placeholders
         .filter((placeholder) => {
-          // Eğer henüz bir şey yazılmadıysa hepsini göster
+          // If nothing has been typed yet, show all
           if (!lastPart) return true;
-          // Son yazılan kısım ile eşleşenleri göster
+          // Show items matching the last typed part
           return placeholder.params.some((param) =>
-            param.toLowerCase().includes(lastPart)
+            param.toLowerCase().includes(lastPart),
           );
         })
         .filter((placeholder) => {
-          // Params kombinasyonuna göre dedupe
+          // Dedupe by parameter combination
           const paramsKey = placeholder.params.join(";");
           if (seenParams.has(paramsKey)) {
             return false;
@@ -178,10 +178,10 @@
     return [];
   };
 
-  // fillText'i parse edip formatla - her argümanı alt alta listele
+  // Parse fillText and format it - list each argument on its own line
   const formatFillText = (
     fillText: string,
-    separator: string = ";"
+    separator: string = ";",
   ): string => {
     // Text;Animate;Marquee;${1:inputText};${2:Left|Right};${3:maxLength}
     const parts = chatbox.splitParams(fillText, separator);
@@ -189,17 +189,17 @@
     let result = "**Arguments:**\n";
 
     parts.forEach((part, index) => {
-      // ${1:inputText} formatını parse et
+      // Parse ${1:inputText} format
       const placeholderMatch = part.match(/\$\{(\d+):([^}]+)\}/);
 
       if (placeholderMatch) {
         const [_, paramIndex, content] = placeholderMatch;
 
-        // ... ile biten parametreler (variadic)
+        // Parameters ending with ... (variadic)
         if (content.endsWith("...")) {
-          const paramName = content.slice(0, -3); // "..." kısmını çıkar
+          const paramName = content.slice(0, -3); // Remove the "..." suffix
 
-          // Left|Right|... gibi seçenekli variadic
+          // Option-based variadic values like Left|Right|...
           if (paramName.includes("|")) {
             const options = paramName.split("|");
             result += `\n${index + 1}. **${options[0]}...** (Options: ${options.join(", ")}) *(repeatable)*`;
@@ -207,7 +207,7 @@
             result += `\n${index + 1}. **${paramName}...** *(repeatable)*`;
           }
         }
-        // Left|Right gibi seçenekleri ayır
+        // Split options like Left|Right
         else if (content.includes("|")) {
           const options = content.split("|");
           result += `\n${index + 1}. **${content.split("|")[0]}** (Options: ${options.join(", ")})`;
@@ -215,7 +215,7 @@
           result += `\n${index + 1}. **${content}**`;
         }
       } else {
-        // Normal parametre (sabit değer)
+        // Normal parameter (fixed value)
         result += `\n${index + 1}. \`${part}\` (fixed)`;
       }
     });
@@ -223,24 +223,24 @@
     return result;
   };
 
-  // Hover bilgisi döndüren fonksiyon
+  // Function that returns hover information
   const getHoverInfo: GetHoverInfoFunction = async (word, position, model) => {
-    // Sadece bu editörün modeli için çalış
+    // Only run for this editor's model
     if (editor && model.uri.toString() !== editor.getModel()?.uri.toString()) {
       return null;
     }
 
     const placeholders = chatbox.getPlaceholders();
 
-    // Cursor'un bulunduğu satırı al
+    // Get the line where the cursor is located
     const lineContent = model.getLineContent(position.lineNumber);
 
-    // {{ }} veya [[ ]] içinde mi kontrol et
+    // Check whether the cursor is inside {{ }} or [[ ]]
     const cursorColumn = position.column;
 
     let match;
 
-    // Inner placeholder [[...]] kontrolü
+    // Check inner placeholder [[...]]
     const innerPlaceholderRegex = /\[\[([^\]]*)\]\]/g;
     while ((match = innerPlaceholderRegex.exec(lineContent)) !== null) {
       const startCol = match.index + 1;
@@ -251,7 +251,7 @@
         const parts = chatbox.splitParams(placeholderText, ":");
 
         const placeholder = placeholders.find((p) =>
-          p.params.every((param) => parts.includes(param))
+          p.params.every((param) => parts.includes(param)),
         );
 
         if (placeholder) {
@@ -270,7 +270,7 @@
       }
     }
 
-    // Normal placeholder {{...}} kontrolü
+    // Check normal placeholder {{...}}
     const normalPlaceholderRegex = /{{([^}]*)}}/g;
 
     while ((match = normalPlaceholderRegex.exec(lineContent)) !== null) {
@@ -282,7 +282,7 @@
         const parts = chatbox.splitParams(placeholderText, ";");
 
         const placeholder = placeholders.find((p) =>
-          p.params.every((param) => parts.includes(param))
+          p.params.every((param) => parts.includes(param)),
         );
 
         if (placeholder) {
@@ -304,14 +304,14 @@
     return null;
   };
 
-  // Örnek highlighting kuralları
+  // Example highlighting rules
   const highlightRules: RegexHighlightRule[] = [
     { pattern: /\/\/.*$/, token: "comment" },
     { pattern: /{{[^}]*}}/, token: "advosc.placeholder" },
     { pattern: /\[\[[^\]]*\]\]/, token: "advosc.innerPlaceholder" },
   ];
 
-  // value prop değiştiğinde editor'ı güncelle
+  // Update the editor when the value prop changes
   $effect(() => {
     if (editor && value !== editor.getValue()) {
       const position = editor.getPosition();
@@ -323,27 +323,27 @@
   });
 
   onMount(async () => {
-    // monaco-worker'ı yükle (worker setup için)
+    // Load monaco-worker (for worker setup)
     await import("../../editor/monaco-worker");
-    // monaco-lib'den monaco'yu al
+    // Get monaco from monaco-lib
     monaco = (await import("../../editor/monaco-lib")).default;
 
-    // Highlighting'i kaydet (sadece ilk instance için, tekrar kayıt yapmamak için kontrol et)
+    // Register highlighting (only for the first instance, avoid duplicate registration)
     try {
       const languages = monaco.languages.getLanguages();
       isHighlightingRegistered = languages.some(
-        (lang) => lang.id === "advosc-placeholders"
+        (lang) => lang.id === "advosc-placeholders",
       );
 
       if (!isHighlightingRegistered) {
         highlightDisposable = registerRegexHighlighting(
           "advosc-placeholders",
-          highlightRules
+          highlightRules,
         );
         isHighlightingRegistered = true;
       }
     } catch (e) {
-      // Dil zaten kayıtlıysa hata vermez, devam eder
+      // If the language is already registered, continue without failing
     }
 
     editor = monaco.editor.create(editorContainer, {
@@ -356,12 +356,12 @@
     const model = monaco.editor.createModel(
       value,
       language,
-      monaco.Uri.parse(`inmemory://${modelId}`)
+      monaco.Uri.parse(`inmemory://${modelId}`),
     );
 
     editor.setModel(model);
 
-    // Provider'ı global olarak sadece bir kere kaydet (tüm editörler için)
+    // Register the provider globally only once (for all editors)
     if (!isProviderRegistered) {
       registerDynamicAutocomplete(language, getCompletions, getHoverInfo);
       isProviderRegistered = true;
@@ -377,11 +377,11 @@
   });
 
   onDestroy(() => {
-    // Highlighting'i sadece bu instance kaydettiyse dispose et
+    // Dispose highlighting only if this instance registered it
     if (highlightDisposable && isHighlightingRegistered) {
       highlightDisposable?.dispose();
     }
-    // Sadece bu editöre ait modeli dispose et
+    // Dispose only the model belonging to this editor
     editor?.getModel()?.dispose();
     editor?.dispose();
   });

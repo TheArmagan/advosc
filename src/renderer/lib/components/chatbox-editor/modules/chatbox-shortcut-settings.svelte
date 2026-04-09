@@ -39,7 +39,7 @@
   let openedShortcutKey = $state<string | null>(null);
   let shortcutRender = $state<string>("");
   let shortcutParamsCount = $derived(
-    openedShortcutKey ? module.getMaxParamCount(openedShortcutKey) : 0
+    openedShortcutKey ? module.getMaxParamCount(openedShortcutKey) : 0,
   );
   let placeholderParams = $state<string[]>([]);
 
@@ -53,7 +53,7 @@
               .join(";")}`
           : ""
       }}}`,
-      "{{;}}"
+      "{{;}}",
     );
   }
 
@@ -182,7 +182,7 @@
       </Drawer.Content>
     </Drawer.Root>
   </div>
-  {#each Object.entries($values.shortcuts || {}) as [key, value]}
+  {#each Object.entries($values.shortcuts || {}).filter(([key]) => !key.startsWith("__SE_")) as [key, value]}
     <Item.Root class="w-full p-0">
       <InputGroup.Root>
         <InputGroup.Addon>

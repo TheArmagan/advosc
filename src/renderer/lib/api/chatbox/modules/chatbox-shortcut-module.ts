@@ -33,7 +33,9 @@ export class ChatboxShortcutModule extends ChatboxModule {
   }
 
   getPreCalculatedPlaceholders(): PlaceholdersRecord {
-    const shortcuts = this.getValues().shortcuts || {};
+    const shortcuts = Object.fromEntries(
+      Object.entries(this.getValues().shortcuts || {}).filter(([key]) => !key.startsWith("__SE_"))
+    ) as Record<string, string>;
     return Object.fromEntries(Object.keys(shortcuts).map((key) => {
       const maxParams = this.getMaxParamCount(key);
       return [key, {
@@ -54,6 +56,11 @@ export class ChatboxShortcutModule extends ChatboxModule {
     const values = this.getValues();
     (values.secrets || []).forEach((secretKey: string) => {
       delete values.shortcuts[secretKey];
+    });
+    Object.keys(values.shortcuts || {}).forEach((key) => {
+      if (key.startsWith("__SE_")) {
+        delete values.shortcuts[key];
+      }
     });
     return {
       shortcuts: values.shortcuts || {}
