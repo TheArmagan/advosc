@@ -3,6 +3,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import Input from "$lib/components/ui/input/input.svelte";
   import AddBlockMenu from "./components/AddBlockMenu.svelte";
   import BlockEditor from "./components/BlockEditor.svelte";
   import BlockShell from "./components/BlockShell.svelte";
@@ -59,16 +60,60 @@
     );
   }
 
+  let originalTemplate = $state("");
+  let isOverwriteActive = $state(false);
+  let overwriteInput = $state("");
+  let overwriteTimer: ReturnType<typeof setTimeout> | null = null;
+
   $effect(() => {
     const state = buildTemplateState(blocks);
     syncAutoShortcuts(state.autoShortcuts);
-    if (isActive) {
+    originalTemplate = state.template;
+    if (isActive && !isOverwriteActive) {
       $settings.template = state.template;
     }
   });
 </script>
 
 <div class="flex flex-col gap-2">
+  <div class="flex w-full gap-2 items-center">
+    <Input
+      type="text"
+      bind:value={overwriteInput}
+      placeholder="Template Overwrite (Auto-reset in 30s)"
+      oninput={() => {
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        if (overwriteInput.trim() === "") {
+          isOverwriteActive = false;
+          $settings.template = originalTemplate;
+        } else {
+          isOverwriteActive = true;
+          $settings.template = overwriteInput;
+          overwriteTimer = setTimeout(() => {
+            overwriteInput = "";
+            isOverwriteActive = false;
+            $settings.template = originalTemplate;
+            overwriteTimer = null;
+          }, 30000);
+        }
+      }}
+    />
+    <Button
+      variant="outline"
+      onclick={() => {
+        overwriteInput = "";
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        isOverwriteActive = false;
+        $settings.template = originalTemplate;
+      }}>Reset</Button
+    >
+  </div>
   <div class="flex items-center gap-1.5 sticky top-0 z-10 bg-background py-0.5">
     <AddBlockMenu onAdd={addBlock} />
     <span class="text-xs text-muted-foreground"

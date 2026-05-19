@@ -125,6 +125,44 @@
 </script>
 
 <div class="flex flex-col gap-2">
+  <div class="flex w-full gap-2 items-center">
+    <Input
+      type="text"
+      bind:value={overwriteInput}
+      placeholder="Template Overwrite (Auto-reset in 30s)"
+      oninput={() => {
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        if (overwriteInput.trim() === "") {
+          isOverwriteActive = false;
+          $settings.template = originalTemplate;
+        } else {
+          isOverwriteActive = true;
+          $settings.template = overwriteInput;
+          overwriteTimer = setTimeout(() => {
+            overwriteInput = "";
+            isOverwriteActive = false;
+            $settings.template = originalTemplate;
+            overwriteTimer = null;
+          }, 30000);
+        }
+      }}
+    />
+    <Button
+      variant="outline"
+      onclick={() => {
+        overwriteInput = "";
+        if (overwriteTimer) {
+          clearTimeout(overwriteTimer);
+          overwriteTimer = null;
+        }
+        isOverwriteActive = false;
+        $settings.template = originalTemplate;
+      }}>Reset</Button
+    >
+  </div>
   <div class="flex gap-2">
     <Card.Root
       class="p-2 flex flex-col gap-2 shrink-0 max-w-[250px] max-h-[400px]"
@@ -232,44 +270,6 @@
         }}
       />
     </div>
-  </div>
-  <div class="flex w-full gap-2 items-center">
-    <Input
-      type="text"
-      bind:value={overwriteInput}
-      placeholder="Template Overwrite (Auto-reset in 30s)"
-      oninput={() => {
-        if (overwriteTimer) {
-          clearTimeout(overwriteTimer);
-          overwriteTimer = null;
-        }
-        if (overwriteInput.trim() === "") {
-          isOverwriteActive = false;
-          $settings.template = originalTemplate;
-        } else {
-          isOverwriteActive = true;
-          $settings.template = overwriteInput;
-          overwriteTimer = setTimeout(() => {
-            overwriteInput = "";
-            isOverwriteActive = false;
-            $settings.template = originalTemplate;
-            overwriteTimer = null;
-          }, 30000);
-        }
-      }}
-    />
-    <Button
-      variant="outline"
-      onclick={() => {
-        overwriteInput = "";
-        if (overwriteTimer) {
-          clearTimeout(overwriteTimer);
-          overwriteTimer = null;
-        }
-        isOverwriteActive = false;
-        $settings.template = originalTemplate;
-      }}>Reset</Button
-    >
   </div>
   <div class="flex w-full">
     <Card.Root class="p-2 flex w-full">

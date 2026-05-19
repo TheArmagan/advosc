@@ -8,8 +8,10 @@ import { setupIpcHandlers } from './lib/ipc-handlers';
 export type { OSCMessage, MediaCommand, MediaInfo } from './lib/types';
 
 const port = new OSC({
-  local: { address: '0.0.0.0', port: 9001 },
-  remote: { address: '0.0.0.0', port: 9000 }
+  sources: [
+    { local: { address: '0.0.0.0', port: 9001 }, remote: { address: '127.0.0.1', port: 9000 } },
+    { local: { address: '0.0.0.0', port: 9002 } },
+  ],
 });
 
 app.whenReady().then(async () => {

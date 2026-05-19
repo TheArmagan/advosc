@@ -16,27 +16,42 @@ export interface OSCEndpoint {
   port: number;
 }
 
+export interface OSCSource {
+  local?: OSCEndpoint;
+  remote?: OSCEndpoint;
+}
+
 export interface OSCOptions {
-  local: OSCEndpoint;
-  remote: OSCEndpoint;
+  sources: OSCSource[];
+}
+
+interface OSCSocketEntry extends OSCSource {
+  socket: dgram.Socket;
+  isOpen: boolean;
 }
 
 export class OSC extends EventEmitter {
-  private socket: dgram.Socket;
-  private local: OSCEndpoint;
-  private remote: OSCEndpoint;
-  private isOpen: boolean = false;
+  private entries: OSCSocketEntry[];
+  private readyCount: number = 0;
 
   constructor(options: OSCOptions) {
     super();
-    this.local = options.local;
-    this.remote = options.remote;
-    this.socket = dgram.createSocket('udp4');
-    this.setupSocket();
+    this.entries = options.sources.map(src => ({
+      ...src,
+      socket: dgram.createSocket('udp4'),
+      isOpen: false,
+    }));
+    this.entries.forEach((_, i) => this.setupSocket(i));
   }
 
-  private setupSocket(): void {
-    this.socket.on('message', (buffer: Buffer) => {
+  get isOpen(): boolean {
+    return this.entries.some(e => e.isOpen);
+  }
+
+  private setupSocket(index: number): void {
+    const entry = this.entries[index];
+
+    entry.socket.on('message', (buffer: Buffer) => {
       try {
         const message = this.parseOSCMessage(buffer);
         if (message) {
@@ -47,63 +62,80 @@ export class OSC extends EventEmitter {
       }
     });
 
-    this.socket.on('error', (error: Error) => {
-      if (!this.isOpen) {
-        console.log('Failed to bind OSC socket:', error);
+    entry.socket.on('error', (error: Error) => {
+      if (!entry.isOpen) {
+        console.log(`Failed to bind OSC socket [${index}]:`, error);
         return;
       }
       this.emit('error', error);
     });
 
-    this.socket.on('listening', () => {
-      this.isOpen = true;
-      this.emit('ready');
+    entry.socket.on('listening', () => {
+      entry.isOpen = true;
+      this.readyCount++;
+      const localCount = this.entries.filter(e => e.local).length;
+      if (this.readyCount === localCount) {
+        this.emit('ready');
+      }
     });
   }
 
   public open(): void {
-    if (!this.isOpen) {
-      this.socket.bind(this.local.port, this.local.address);
+    for (const entry of this.entries) {
+      if (!entry.isOpen && entry.local) {
+        entry.socket.bind(entry.local.port, entry.local.address);
+      }
     }
   }
 
   public close(): void {
-    if (this.isOpen) {
-      this.socket.close();
-      this.isOpen = false;
+    let wasOpen = false;
+    for (const entry of this.entries) {
+      if (entry.isOpen) {
+        entry.socket.close();
+        entry.isOpen = false;
+        wasOpen = true;
+      }
+    }
+    this.readyCount = 0;
+    if (wasOpen) {
       this.emit('close');
     }
   }
 
-  public send(message: OSCMessage): void {
-    if (!this.isOpen) {
+  // Sends to all open remotes by default; pass sourceIndex to target one.
+  public send(message: OSCMessage, sourceIndex?: number): void {
+    const targets = sourceIndex !== undefined
+      ? [this.entries[sourceIndex]]
+      : this.entries.filter(e => e.isOpen);
+
+    if (targets.length === 0) {
       throw new Error('OSC socket is not open. Call open() first.');
     }
 
     const buffer = this.buildOSCMessage(message);
-    this.socket.send(buffer, this.remote.port, this.remote.address, (error) => {
-      if (error) {
-        this.emit('error', error);
-      }
-    });
+    for (const entry of targets) {
+      if (!entry.remote) continue;
+      entry.socket.send(buffer, entry.remote.port, entry.remote.address, (error) => {
+        if (error) {
+          this.emit('error', error);
+        }
+      });
+    }
   }
 
   private buildOSCMessage(message: OSCMessage): Buffer {
     const parts: Buffer[] = [];
 
-    // Address pattern
     const addressBuffer = this.toOSCString(message.address);
     parts.push(addressBuffer);
 
-    // Type tag string
     let typeTags = ',';
     for (const arg of message.args) {
       typeTags += arg.type;
     }
-    const typeTagBuffer = this.toOSCString(typeTags);
-    parts.push(typeTagBuffer);
+    parts.push(this.toOSCString(typeTags));
 
-    // Arguments
     for (const arg of message.args) {
       switch (arg.type) {
         case 'i': {
@@ -124,7 +156,6 @@ export class OSC extends EventEmitter {
         case 'T':
         case 'F':
         case 'N':
-          // These types have no data
           break;
       }
     }
@@ -135,19 +166,16 @@ export class OSC extends EventEmitter {
   private parseOSCMessage(buffer: Buffer): OSCMessage | null {
     let offset = 0;
 
-    // Parse address
     const address = this.readOSCString(buffer, offset);
     if (!address) return null;
     offset += this.getOSCStringLength(address.value);
 
-    // Parse type tags
     const typeTags = this.readOSCString(buffer, offset);
     if (!typeTags || !typeTags.value.startsWith(',')) return null;
     offset += this.getOSCStringLength(typeTags.value);
 
-    // Parse arguments
     const args: OSCArg[] = [];
-    const types = typeTags.value.slice(1); // Remove leading comma
+    const types = typeTags.value.slice(1);
 
     for (const type of types) {
       switch (type) {
