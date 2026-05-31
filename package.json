@@ -1,6 +1,6 @@
 {
   "name": "advosc",
-  "version": "0.0.6.2",
+  "version": "0.0.6.3",
   "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
   "type": "module",
   "main": "dist/main.cjs",

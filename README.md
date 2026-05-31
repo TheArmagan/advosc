@@ -101,6 +101,24 @@ When you want direct control, ADVOSC still includes the full advanced editor. It
 
 ---
 
+### 📡 OSC Forwarder
+
+The **OSC Forwarder** lets you evaluate any chatbox template value and send it to an arbitrary OSC address on a configurable interval.
+
+<p align="center">
+  <img src="./screenshots/osc-forwarder.png" alt="OSC Forwarder" width="700">
+</p>
+
+| Feature | Description |
+|---------|-------------|
+| **Template-driven values** | The value field supports any chatbox placeholder, e.g. `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` |
+| **OSC path picker** | Type a path manually or pick directly from the current avatar's OSC schema |
+| **Type casting** | Forward as `Float`, `Int`, `Bool`, or `String` — value is cast after template resolution |
+| **Value mapping** | For `Float` / `Int` types, optionally remap the resolved number from one range to another (e.g. `0..1` → `0..255`) |
+| **Per-rule interval** | Each forwarder runs on its own configurable interval (minimum 100 ms) |
+
+---
+
 ### 🧩 Chatbox Modules
 
 Both chatbox editors are powered by the same **12 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
