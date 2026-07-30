@@ -36,16 +36,58 @@ export class OSC extends EventEmitter {
 
   constructor(options: OSCOptions) {
     super();
-    this.entries = options.sources.map(src => ({
-      ...src,
-      socket: dgram.createSocket('udp4'),
-      isOpen: false,
-    }));
-    this.entries.forEach((_, i) => this.setupSocket(i));
+    this.entries = [];
+    this.setSources(options.sources);
   }
 
   get isOpen(): boolean {
     return this.entries.some(e => e.isOpen);
+  }
+
+  /** True when at least one source can currently be sent to. */
+  public hasSendTarget(): boolean {
+    return this.entries.some(e => e.remote && (e.isOpen || !e.local));
+  }
+
+  public getSources(): OSCSource[] {
+    return this.entries.map(({ local, remote }) => ({
+      ...(local ? { local } : {}),
+      ...(remote ? { remote } : {}),
+    }));
+  }
+
+  /** Status of every configured source, in configuration order. */
+  public getStatus(): { local?: OSCEndpoint; remote?: OSCEndpoint; isOpen: boolean }[] {
+    return this.entries.map(({ local, remote, isOpen }) => ({
+      ...(local ? { local } : {}),
+      ...(remote ? { remote } : {}),
+      isOpen,
+    }));
+  }
+
+  private setSources(sources: OSCSource[]): void {
+    this.entries = sources.map(src => ({
+      ...src,
+      socket: dgram.createSocket('udp4'),
+      isOpen: false,
+    }));
+    this.readyCount = 0;
+    this.entries.forEach((_, i) => this.setupSocket(i));
+  }
+
+  /** Tears down current sockets, swaps in the new sources and re-opens them. */
+  public reconfigure(sources: OSCSource[]): void {
+    this.close();
+    for (const entry of this.entries) {
+      entry.socket.removeAllListeners();
+      try {
+        entry.socket.close();
+      } catch (_) {
+        // Socket was never bound; nothing to close.
+      }
+    }
+    this.setSources(sources);
+    this.open();
   }
 
   private setupSocket(index: number): void {
@@ -105,12 +147,13 @@ export class OSC extends EventEmitter {
 
   // Sends to all open remotes by default; pass sourceIndex to target one.
   public send(message: OSCMessage, sourceIndex?: number): void {
+    // A send-only source has no local endpoint to bind, so it never reports isOpen.
     const targets = sourceIndex !== undefined
       ? [this.entries[sourceIndex]]
-      : this.entries.filter(e => e.isOpen);
+      : this.entries.filter(e => e.remote && (e.isOpen || !e.local));
 
     if (targets.length === 0) {
-      throw new Error('OSC socket is not open. Call open() first.');
+      throw new Error('No OSC source available to send from.');
     }
 
     const buffer = this.buildOSCMessage(message);

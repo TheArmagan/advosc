@@ -205,7 +205,7 @@
   {@const current = block as EachOneBlock}
   <div class="flex flex-col gap-1.5">
     <Label class="text-xs text-muted-foreground"
-      >Texts to cycle through — one per row, changes every ~2.2 s</Label
+      >Texts to cycle through, one per row, changes every ~2.2 s</Label
     >
     {#each current.items as item, ii}
       <div class="flex gap-1 items-center">

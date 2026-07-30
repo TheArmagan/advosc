@@ -35,6 +35,29 @@ export interface TrackerBatteryResponse {
   error?: string;
 }
 
+export interface OSCEndpoint {
+  address: string;
+  port: number;
+}
+
+export interface OSCSourceConfig {
+  id: string;
+  name: string;
+  enabled: boolean;
+  local?: OSCEndpoint;
+  remote?: OSCEndpoint;
+}
+
+export interface OSCSourceStatus {
+  local?: OSCEndpoint;
+  remote?: OSCEndpoint;
+  isOpen: boolean;
+}
+
+export type OSCSourcesResult =
+  | { success: true; sources: OSCSourceConfig[]; status: OSCSourceStatus[] }
+  | { success: false; error: string };
+
 export interface PreloadElectronAPI {
   env: { get(key: string): string | undefined };
   theme: {
@@ -50,6 +73,11 @@ export interface PreloadElectronAPI {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
     sendCustom: (address: string, args: { value: (number | string | boolean | null | undefined), type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => void;
     onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
+    getSources: () => Promise<OSCSourceConfig[]>;
+    getDefaultSources: () => Promise<OSCSourceConfig[]>;
+    getStatus: () => Promise<OSCSourceStatus[]>;
+    setSources: (sources: OSCSourceConfig[]) => Promise<OSCSourcesResult>;
+    resetSources: () => Promise<OSCSourcesResult>;
   };
   path: {
     join: (...paths: string[]) => string;
@@ -68,6 +96,9 @@ export interface PreloadElectronAPI {
   utils: {
     getStartTime: (processName: string) => Promise<StartTimeResponse>;
     getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
+  };
+  shell: {
+    openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   };
   globalShortcut: {
     register: (accelerator: string, callback: () => void) => Promise<{ success: boolean; accelerator: string; error?: string }>;
@@ -115,7 +146,13 @@ const api: PreloadElectronAPI = {
       const listener = (_e: unknown, message: { address: string; args: any[] }) => callback(message);
       ipcRenderer.on('osc:message', listener as any);
       return () => ipcRenderer.removeListener('osc:message', listener as any);
-    }
+    },
+    getSources: () => ipcRenderer.invoke('osc:getSources') as Promise<OSCSourceConfig[]>,
+    getDefaultSources: () => ipcRenderer.invoke('osc:getDefaultSources') as Promise<OSCSourceConfig[]>,
+    getStatus: () => ipcRenderer.invoke('osc:getStatus') as Promise<OSCSourceStatus[]>,
+    setSources: (sources: OSCSourceConfig[]) =>
+      ipcRenderer.invoke('osc:setSources', sources) as Promise<OSCSourcesResult>,
+    resetSources: () => ipcRenderer.invoke('osc:resetSources') as Promise<OSCSourcesResult>,
   },
   path: {
     join: (...paths: string[]) => ipcRenderer.sendSync('path:join', ...paths),
@@ -146,6 +183,9 @@ const api: PreloadElectronAPI = {
   utils: {
     getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
     getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
+  },
+  shell: {
+    openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,
   },
   globalShortcut: (() => {
     const callbacks = new Map<string, () => void>();

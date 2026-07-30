@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
@@ -6,6 +6,14 @@ import { OSC } from './osc';
 import { executeMediaCommand } from './media';
 import { getMainWindow } from './window';
 import { getProcessStartTime, getOpenVRTrackers } from './advosc-utils';
+import {
+  DEFAULT_OSC_SOURCES,
+  loadOSCSources,
+  sanitizeSources,
+  saveOSCSources,
+  toActiveSources,
+  type OSCSourceConfig,
+} from './osc-config';
 import type { MediaCommand } from './types';
 
 const watchers = new Map<string, FSWatcher>();
@@ -91,6 +99,8 @@ export function setupIpcHandlers(port: OSC): void {
 
   // OSC handlers
   ipcMain.handle('osc:send', (_channel, address, args: (number | string | boolean | null | undefined)[] = []) => {
+    // A user-configured setup may have no send endpoint at all; don't reject into the renderer.
+    if (!port.hasSendTarget()) return;
     port.send({
       address,
       args: args.map(arg => {
@@ -106,6 +116,7 @@ export function setupIpcHandlers(port: OSC): void {
 
   // OSC sendCustom handler - allows explicit type specification
   ipcMain.handle('osc:sendCustom', (_channel, address: string, args: { value: number | string | boolean | null | undefined, type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[] = []) => {
+    if (!port.hasSendTarget()) return;
     port.send({
       address,
       args: args.map(arg => {
@@ -125,6 +136,39 @@ export function setupIpcHandlers(port: OSC): void {
         }
       }) as any[]
     });
+  });
+
+  // OSC source configuration
+  const applySources = (sources: OSCSourceConfig[]) => {
+    saveOSCSources(sources);
+    port.reconfigure(toActiveSources(sources));
+    return { success: true, sources, status: port.getStatus() };
+  };
+
+  ipcMain.handle('osc:getSources', () => loadOSCSources());
+
+  ipcMain.handle('osc:getDefaultSources', () => DEFAULT_OSC_SOURCES);
+
+  ipcMain.handle('osc:getStatus', () => port.getStatus());
+
+  ipcMain.handle('osc:setSources', (_event, sources: unknown) => {
+    try {
+      const sanitized = sanitizeSources(sources);
+      if (!sanitized.length) {
+        return { success: false, error: 'At least one valid OSC source is required.' };
+      }
+      return applySources(sanitized);
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.handle('osc:resetSources', () => {
+    try {
+      return applySources([...DEFAULT_OSC_SOURCES]);
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
   });
 
   port.on("message", (message) => {
@@ -157,6 +201,20 @@ export function setupIpcHandlers(port: OSC): void {
   // App info
   ipcMain.on('app:version', (event) => {
     event.returnValue = app.getVersion();
+  });
+
+  // Open a link in the user's default browser (https only)
+  ipcMain.handle('shell:openExternal', async (_event, url: string) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:') {
+        return { success: false, error: 'Only https links can be opened.' };
+      }
+      await shell.openExternal(parsed.toString());
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
   });
 
   // Media IPC handlers

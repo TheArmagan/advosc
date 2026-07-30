@@ -3,18 +3,17 @@ import { OSC } from './lib/osc';
 import { createWindow } from './lib/window';
 import { startMediaMonitor, stopMediaMonitor } from './lib/media';
 import { setupIpcHandlers } from './lib/ipc-handlers';
+import { loadOSCSources, toActiveSources } from './lib/osc-config';
 
 // Re-export types for external use
 export type { OSCMessage, MediaCommand, MediaInfo } from './lib/types';
 
-const port = new OSC({
-  sources: [
-    { local: { address: '0.0.0.0', port: 9001 }, remote: { address: '127.0.0.1', port: 9000 } },
-    { local: { address: '0.0.0.0', port: 9002 } },
-  ],
-});
+// `loadOSCSources` needs app paths, so the instance is created after the app is ready.
+let port: OSC;
 
 app.whenReady().then(async () => {
+  port = new OSC({ sources: toActiveSources(loadOSCSources()) });
+
   port.once("ready", () => {
     console.log("OSC connection opened.");
   });

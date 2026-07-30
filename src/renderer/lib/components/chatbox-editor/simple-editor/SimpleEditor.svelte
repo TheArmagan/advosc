@@ -124,7 +124,7 @@
   {#if blocks.length === 0}
     <Card.Root class="py-6 text-center">
       <p class="text-muted-foreground text-sm">
-        No blocks yet — click <strong>Add Block</strong> to start.
+        No blocks yet, click <strong>Add Block</strong> to start.
       </p>
       <div class="flex gap-1.5 justify-center mt-3 flex-wrap">
         {#each ["text", "time", "media", "progbar", "condition"] as key}

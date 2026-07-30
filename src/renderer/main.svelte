@@ -20,6 +20,10 @@
       name: "Avatar Profiles",
       to: "/tools/avatar-profiles",
     },
+    {
+      name: "Settings",
+      to: "/settings",
+    },
   ];
 </script>
 
