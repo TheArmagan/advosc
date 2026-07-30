@@ -1,12 +1,5 @@
 <script lang="ts">
-  import {
-    audioFFT,
-    audioFFTActive,
-    audioFFTConfig,
-    audioFFTData,
-    audioFFTError,
-    avatarOSC,
-  } from "$lib/api/vrc-osc";
+  import { avatarOSC } from "$lib/api/vrc-osc";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -22,10 +15,7 @@
     LinkIcon,
     LockIcon,
     LockOpenIcon,
-    MicIcon,
-    MicOffIcon,
     PlayIcon,
-    RefreshCwIcon,
     SearchIcon,
     SquareIcon,
     UnlinkIcon,
@@ -37,7 +27,6 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import gsap from "gsap";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
-  import { Slider } from "$lib/components/ui/slider/index.js";
 
   const schema = avatarOSC.schema;
   const parameters = avatarOSC.parameters;
@@ -76,64 +65,6 @@
     toAddress: "",
   });
 
-  // FFT State
-  let fftAudioDevices = $state<MediaDeviceInfo[]>([]);
-  let fftSelectedDeviceId = $state<string>("");
-  let fftOscAddressPattern = $state("/avatar/parameters/Band{index}");
-  let fftSendToOSC = $state(false);
-  let fftOscSendInterval: ReturnType<typeof setInterval> | null = null;
-  let fftUpdateStepsPerBar = $state(20); // 20 steps = 0.05 threshold
-  let fftLastSentValues = $state<number[]>([]);
-
-  const fftData = audioFFTData;
-  const fftActive = audioFFTActive;
-  const fftConfig = audioFFTConfig;
-  const fftError = audioFFTError;
-
-  function startFFTOscSender() {
-    if (fftOscSendInterval) return;
-    fftOscSendInterval = setInterval(() => {
-      if (!$fftActive || !fftSendToOSC) return;
-      const bands = $fftData.bands;
-      const threshold = 1 / fftUpdateStepsPerBar;
-
-      // Initialize last sent values if needed
-      if (fftLastSentValues.length !== bands.length) {
-        fftLastSentValues = new Array(bands.length).fill(-1);
-      }
-
-      bands.forEach((value, index) => {
-        // Only send if value changed more than threshold
-        const lastValue = fftLastSentValues[index];
-        if (Math.abs(value - lastValue) >= threshold) {
-          const address = fftOscAddressPattern.replace(
-            "{index}",
-            index.toString(),
-          );
-          // Quantize value to steps for consistency
-          const quantizedValue =
-            Math.round(value * fftUpdateStepsPerBar) / fftUpdateStepsPerBar;
-          avatarOSC.sendCustomParameter(address, quantizedValue, "Float");
-          fftLastSentValues[index] = quantizedValue;
-        }
-      });
-    }, 1000 / 30); // 30 fps
-  }
-
-  function stopFFTOscSender() {
-    if (fftOscSendInterval) {
-      clearInterval(fftOscSendInterval);
-      fftOscSendInterval = null;
-    }
-  }
-
-  async function loadAudioDevices() {
-    fftAudioDevices = await audioFFT.listDevices();
-    if (fftAudioDevices.length > 0 && !fftSelectedDeviceId) {
-      fftSelectedDeviceId = fftAudioDevices[0].deviceId;
-    }
-  }
-
   onMount(() => {
     inputParameters = { ...$parameters };
 
@@ -146,13 +77,8 @@
       }
     });
 
-    // Load audio devices for FFT
-    loadAudioDevices();
-    startFFTOscSender();
-
     return () => {
       unsubParams();
-      stopFFTOscSender();
       // Cleanup GSAP timelines on unmount
       Object.values(gsapTimelines).forEach((tl) => tl?.kill());
     };
@@ -178,7 +104,6 @@
         <Tabs.Trigger value="parameters">Parameters</Tabs.Trigger>
         <Tabs.Trigger value="schema">Schema</Tabs.Trigger>
         <Tabs.Trigger value="input">Input</Tabs.Trigger>
-        <Tabs.Trigger value="fft">Other (FFT)</Tabs.Trigger>
       </Tabs.List>
 
       <div class="flex items-center">
@@ -245,16 +170,6 @@
             }}
           >
             Refresh Schema
-          </Button>
-        </Tabs.Content>
-        <Tabs.Content value="fft">
-          <Button
-            variant="outline"
-            size="sm"
-            onclick={() => loadAudioDevices()}
-          >
-            <RefreshCwIcon class="size-4 mr-1" />
-            Refresh Devices
           </Button>
         </Tabs.Content>
       </div>
@@ -606,274 +521,6 @@
               }}>Update</Button
             >
           </div>
-        </Card.Content>
-      </Card.Root>
-    </Tabs.Content>
-    <Tabs.Content value="fft" class="flex flex-col gap-4">
-      <!-- FFT Controls -->
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center gap-2">
-            {#if $fftActive}
-              <MicIcon class="size-5 text-green-500" />
-            {:else}
-              <MicOffIcon class="size-5 text-muted-foreground" />
-            {/if}
-            Audio FFT Analyzer
-          </Card.Title>
-          <Card.Description>
-            Capture microphone audio and send frequency bands to VRChat avatar
-            parameters.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content class="flex flex-col gap-4">
-          <!-- Device Selection -->
-          <div class="flex flex-col gap-2">
-            <Label>Audio Input Device</Label>
-            <div class="flex gap-2">
-              <Select.Root
-                type="single"
-                value={fftSelectedDeviceId}
-                onValueChange={(v) => (fftSelectedDeviceId = v)}
-              >
-                <Select.Trigger class="flex-1">
-                  {fftAudioDevices.find(
-                    (d) => d.deviceId === fftSelectedDeviceId,
-                  )?.label || "Select Device"}
-                </Select.Trigger>
-                <Select.Content>
-                  {#each fftAudioDevices as device}
-                    <Select.Item value={device.deviceId}>
-                      {device.label ||
-                        `Device ${device.deviceId.slice(0, 8)}...`}
-                    </Select.Item>
-                  {/each}
-                </Select.Content>
-              </Select.Root>
-              <Button
-                variant={$fftActive ? "destructive" : "default"}
-                onclick={async () => {
-                  if ($fftActive) {
-                    await audioFFT.stop();
-                    toast.success("FFT Stopped");
-                  } else {
-                    const success = await audioFFT.start(
-                      fftSelectedDeviceId || undefined,
-                    );
-                    if (success) {
-                      toast.success("FFT Started");
-                    } else {
-                      toast.error($fftError || "Failed to start FFT");
-                    }
-                  }
-                }}
-              >
-                {#if $fftActive}
-                  <SquareIcon class="size-4 mr-1" />
-                  Stop
-                {:else}
-                  <PlayIcon class="size-4 mr-1" />
-                  Start
-                {/if}
-              </Button>
-            </div>
-            {#if $fftError}
-              <p class="text-sm text-destructive">{$fftError}</p>
-            {/if}
-          </div>
-
-          <!-- OSC Settings -->
-          <div class="flex flex-col gap-2">
-            <Label>OSC Address Pattern</Label>
-            <div class="flex gap-2 items-center">
-              <InputGroup.Root class="flex-1">
-                <InputGroup.Input
-                  placeholder={`/avatar/parameters/Band{index}`}
-                  bind:value={fftOscAddressPattern}
-                />
-              </InputGroup.Root>
-              <div class="flex items-center gap-2">
-                <Checkbox
-                  id="fft-send-osc"
-                  checked={fftSendToOSC}
-                  onCheckedChange={(v) => (fftSendToOSC = v)}
-                />
-                <Label for="fft-send-osc" class="text-sm">Send to OSC</Label>
-              </div>
-            </div>
-            <p class="text-xs text-muted-foreground">
-              Use <code class="bg-muted px-1 rounded">{"{index}"}</code> as
-              placeholder for band index (0-{$fftConfig.bandCount - 1})
-            </p>
-          </div>
-
-          <!-- Update Steps Setting -->
-          <div class="flex flex-col gap-2">
-            <Label
-              >Update Steps Per Bar: {fftUpdateStepsPerBar} (threshold: {(
-                1 / fftUpdateStepsPerBar
-              ).toFixed(3)})</Label
-            >
-            <Slider
-              type="single"
-              value={fftUpdateStepsPerBar}
-              min={5}
-              max={100}
-              step={1}
-              onValueChange={(v) => {
-                fftUpdateStepsPerBar = v;
-                fftLastSentValues = []; // Reset to force resend
-              }}
-            />
-            <p class="text-xs text-muted-foreground">
-              Only sends OSC when value changes by more than 1/{fftUpdateStepsPerBar}
-              = {(1 / fftUpdateStepsPerBar).toFixed(3)} to avoid network limits
-            </p>
-          </div>
-
-          <!-- FFT Config -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-              <Label>Band Count: {$fftConfig.bandCount}</Label>
-              <Slider
-                type="single"
-                value={$fftConfig.bandCount}
-                min={4}
-                max={64}
-                step={1}
-                onValueChange={(v) => audioFFT.updateConfig({ bandCount: v })}
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <Label
-                >Smoothing: {$fftConfig.smoothingTimeConstant.toFixed(2)}</Label
-              >
-              <Slider
-                type="single"
-                value={$fftConfig.smoothingTimeConstant}
-                min={0}
-                max={0.99}
-                step={0.01}
-                onValueChange={(v) =>
-                  audioFFT.updateConfig({ smoothingTimeConstant: v })}
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <Label>Min Frequency: {$fftConfig.minFrequency} Hz</Label>
-              <Slider
-                type="single"
-                value={$fftConfig.minFrequency}
-                min={20}
-                max={500}
-                step={10}
-                onValueChange={(v) =>
-                  audioFFT.updateConfig({ minFrequency: v })}
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <Label>Max Frequency: {$fftConfig.maxFrequency} Hz</Label>
-              <Slider
-                type="single"
-                value={$fftConfig.maxFrequency}
-                min={4000}
-                max={20000}
-                step={500}
-                onValueChange={(v) =>
-                  audioFFT.updateConfig({ maxFrequency: v })}
-              />
-            </div>
-          </div>
-        </Card.Content>
-      </Card.Root>
-
-      <!-- FFT Visualization -->
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Frequency Bands</Card.Title>
-          <Card.Description>
-            Real-time visualization of {$fftConfig.bandCount} frequency bands (Monstercat
-            style logarithmic scaling)
-          </Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <!-- Band Visualizer -->
-          <div class="flex items-end gap-1 h-32 bg-muted/30 rounded-lg p-2">
-            {#each $fftData.bands as band, i}
-              <div
-                class="flex-1 bg-linear-to-t from-green-500 via-yellow-500 to-red-500 rounded-t"
-                style="height: {Math.max(2, band * 100)}%;"
-                title="Band {i}: {(band * 100).toFixed(1)}%"
-              ></div>
-            {/each}
-          </div>
-
-          <!-- Special Values -->
-          <div class="grid grid-cols-4 gap-2 mt-4">
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Kick</Label>
-              <Progress value={$fftData.kick * 100} class="h-2" />
-              <span class="text-xs text-muted-foreground"
-                >{($fftData.kick * 100).toFixed(0)}%</span
-              >
-            </div>
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Bass</Label>
-              <Progress value={$fftData.bass * 100} class="h-2" />
-              <span class="text-xs text-muted-foreground"
-                >{($fftData.bass * 100).toFixed(0)}%</span
-              >
-            </div>
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Snare</Label>
-              <Progress value={$fftData.snare * 100} class="h-2" />
-              <span class="text-xs text-muted-foreground"
-                >{($fftData.snare * 100).toFixed(0)}%</span
-              >
-            </div>
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Hi-Hat</Label>
-              <Progress value={$fftData.hihat * 100} class="h-2" />
-              <span class="text-xs text-muted-foreground"
-                >{($fftData.hihat * 100).toFixed(0)}%</span
-              >
-            </div>
-          </div>
-
-          <!-- Overall & Peak -->
-          <div class="grid grid-cols-2 gap-4 mt-4">
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Overall Level</Label>
-              <Progress value={$fftData.overall * 100} class="h-3" />
-              <span class="text-xs text-muted-foreground"
-                >{($fftData.overall * 100).toFixed(1)}%</span
-              >
-            </div>
-            <div class="flex flex-col gap-1">
-              <Label class="text-xs">Peak Frequency</Label>
-              <div class="flex items-center gap-2">
-                <Progress value={$fftData.peak * 100} class="h-3 flex-1" />
-                <span
-                  class="text-xs text-muted-foreground font-mono w-20 text-right"
-                >
-                  {$fftData.peakFrequency.toFixed(0)} Hz
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Address Preview -->
-          {#if fftSendToOSC && $fftActive}
-            <div class="mt-4 p-2 bg-muted/30 rounded-lg">
-              <Label class="text-xs mb-2 block">Sending to addresses:</Label>
-              <div class="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                {#each Array($fftConfig.bandCount) as _, i}
-                  <code class="text-[10px] bg-black/50 px-1 py-0.5 rounded">
-                    {fftOscAddressPattern.replace("{index}", i.toString())}
-                  </code>
-                {/each}
-              </div>
-            </div>
-          {/if}
         </Card.Content>
       </Card.Root>
     </Tabs.Content>

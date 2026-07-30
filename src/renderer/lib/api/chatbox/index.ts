@@ -10,7 +10,6 @@ import { chatboxOSC } from "../vrc-osc";
 import { ChatboxTextModule } from "./modules/chatbox-text-module";
 import { ChatboxTimeModule } from "./modules/chatbox-time-module";
 import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
-import { register } from "module";
 import { ChatboxPulsoidModule } from "./modules/chatbox-pulsoid-module";
 import { ChatboxNumberModule } from "./modules/chatbox-number-module";
 import { ChatboxProcessModule } from "./modules/chatbox-process-module";
