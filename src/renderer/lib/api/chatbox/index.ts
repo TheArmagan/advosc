@@ -194,7 +194,6 @@ registerChatboxModule(new ChatboxShortcutModule());
 registerChatboxModule(new ChatboxOVRTrackersModule());
 registerChatboxModule(new ChatboxHotkeyModule());
 registerChatboxModule(new ChatboxStopwatchModule());
-registerChatboxModule(new ChatboxStopwatchModule());
 registerChatboxModule(new ChatboxPulsoidModule());
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxTimeModule());
