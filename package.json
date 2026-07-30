@@ -127,5 +127,8 @@
       "publishers": [],
       "plugins": []
     }
-  }
+  },
+  "trustedDependencies": [
+    "svelte-preprocess"
+  ]
 }

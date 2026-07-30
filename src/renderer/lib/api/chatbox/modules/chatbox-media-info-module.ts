@@ -2,19 +2,12 @@ import { localData } from "$lib/api/local-data";
 import { type MediaInfo } from "../../../../../main/preload";
 import { ChatboxModule } from "../chatbox-module";
 
-const SyncedLyricRegex = /^\[([^\]]+)\](.*)/gm;
-
 interface LyricData {
-  id: string;
-  name: string;
-  trackName: string;
-  artistName: string;
-  albumName: string;
-  duration: number;
-  insturmental: boolean;
-  plainLyrics: string;
-  syncedLyrics?: string;
-  parsedSyncedLyrics?: { at: number, text: string }[];
+  lyrics: {
+    time: number,
+    duration: number,
+    text: string
+  }[]
 }
 
 type LyricsCache = Record<string, { at: number; data: LyricData | null }>;
@@ -134,44 +127,32 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
   getCurrentLyricLine(): string {
     if (!this.lastMediaInfo) return "";
     const lyric = this.fetchCurrentLyric();
-    if (!this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "";
-    if (!lyric || !lyric.parsedSyncedLyrics) return "";
-    if (lyric.insturmental) return "";
+    if (!lyric || !this.lastMediaInfo || this.lastMediaInfo.playbackStatus !== "Playing") return "";
     const currentTime = this.getEstimatedPosition()! * 1000;
-    const currentLineIndex = lyric.parsedSyncedLyrics.findIndex(
-      (l) => l.at >= currentTime
-    );
-    const currentLine = lyric.parsedSyncedLyrics[
-      currentLineIndex === -1 ? lyric.parsedSyncedLyrics.length - 1 : Math.max(0, currentLineIndex - 1)
-    ];
+    const currentLine = lyric.lyrics.find(l => l.time >= currentTime && currentTime <= l.time + l.duration)
     if (!currentLine) return "";
     return currentLine.text || "";
   }
 
   async fetchLyrics(trackName: string, artistName: string, duration: number): Promise<LyricData | null> {
     const cacheKey = encodeURIComponent(`${trackName};${artistName};${duration.toFixed(2)}`);
-    const cache = localData.get("ChatboxMediaModule;LyricsCache", {}) as LyricsCache;
+    const cache = localData.get("ChatboxMediaModule;LyricsCache;V2", {}) as LyricsCache;
     const cached = cache[cacheKey];
     if (!cached || Date.now() - cached.at > 1000 * 60 * 60 * 24 * 2) {
       const res = await fetch(
-        `https://lrclib.net/api/get?${new URLSearchParams({
-          track_name: trackName,
-          artist_name: artistName,
+        `https://lyricsplus.prjktla.my.id/v2/lyrics/get?${new URLSearchParams({
+          title: trackName,
+          artist: artistName,
           duration: duration.toFixed(2),
-        }).toString()}`
+        }).toString()}`,
+        {
+          headers: {
+            "X-User-Agent": "ADVOSC v0.0.7 (https://github.com/thearmagan/advosc)"
+          }
+        }
       );
       if (res.status === 200) {
         const data = await res.json() as LyricData;
-        if (data.syncedLyrics) {
-          const matches = [...data.syncedLyrics.matchAll(SyncedLyricRegex)];
-          data.parsedSyncedLyrics = matches.map(i => {
-            const time = i[1].split(":").map((i: string) => parseFloat(i));
-            return {
-              at: time[0] * 60 * 1000 + time[1] * 1000 + (time[2] || 0),
-              text: i[2].trim()
-            }
-          });
-        }
         cache[cacheKey] = {
           at: Date.now(),
           data

@@ -28,6 +28,7 @@ export function createWindow(): BrowserWindow {
 
   const allowList = [
     "https://lrclib.net",
+    "https://lyricsplus.prjktla.my.id",
     "https://cdn.jsdelivr.net",
     "https://pulsoid.net",
     "wss://pulsoid.net",
