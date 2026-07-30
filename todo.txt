@@ -1,0 +1,7 @@
+custom avatar scaling using osc (/avatar/eyeheight) 0.01 <-> 10.0
+  - use custom send and float
+  - /avatar/parameters/advosc_eyeheight -> /avatar/eyeheight forwarding for easy user interface in avatars
+  - create new tab called "Avatar Scale"
+  - add ability to add predefined scales user-defined
+  - Add checkbox option for saving custom eyeheight to current avatarid so it can restore automatically when avatar changes or enters a instance
+  - add support for both slider input and direct value input
