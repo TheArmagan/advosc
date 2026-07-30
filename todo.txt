@@ -1,7 +1,31 @@
-custom avatar scaling using osc (/avatar/eyeheight) 0.01 <-> 10.0
+* custom avatar scaling using osc (/avatar/eyeheight) 0.01 <-> 10.0
   - use custom send and float
   - /avatar/parameters/advosc_eyeheight -> /avatar/eyeheight forwarding for easy user interface in avatars
   - create new tab called "Avatar Scale"
   - add ability to add predefined scales user-defined
   - Add checkbox option for saving custom eyeheight to current avatarid so it can restore automatically when avatar changes or enters a instance
   - add support for both slider input and direct value input
+
+* improve pulsoid entegration use modules component ui instead of inline token input
+  - option to add key-value based pulsoid tokens
+  - add other platforms too for hearth rate info
+
+* speech to text recignation using chrome apis or/and whisper fast
+  - that apis only works in browsers not in electron so advosc going open a local http server for user to open that page in browser to recognize their speech
+  - translation support with multiple api support (google, deepl, openrouter)
+  - this system needs to work seamleasly with our current chatbox templating system. so we need to make it as chatbox module.
+
+* improve chatbox template system
+  - currently you cant use exact same template more than once in animated templates, fix that.
+
+* add better way to store and switch between made user templates and make them less painless to share
+
+* add weather info chatbox module
+
+* add http request chatbox module for showing custom info in chatbox
+  - ability to send post/get/etc requests with custom body/url from template engine
+
+* add system resources chatbox module
+  - cpu name/usage
+  - gpu name/usage vram usage tempature
+  - memory usage/total
