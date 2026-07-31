@@ -25,8 +25,9 @@ export class ChatboxExpressionModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(expr: string, ...params: string[]): Promise<string> {
-    expr = await chatbox.fillTemplate(expr, "[[:]]", true);
-    const [trueValue = "", falseValue = ""] = (await chatbox.fillTemplates(params, "[[:]]"));
+    const instanceKey = chatbox.getInstanceKey();
+    expr = await chatbox.fillTemplate(expr, "[[:]]", true, instanceKey);
+    const [trueValue = "", falseValue = ""] = (await chatbox.fillTemplates(params, "[[:]]", false, `${instanceKey}:args`));
 
     try {
       const result = await simpleEval(expr, {

@@ -60,7 +60,7 @@ export const lastValuesStore = writable<Record<string, string>>({});
 async function processEntry(entry: OscForwarderEntry) {
   if (!entry.enabled || !entry.oscPath) return;
   try {
-    const resolved = await chatbox.fillTemplate(entry.valueTemplate, "{{;}}");
+    const resolved = await chatbox.fillTemplate(entry.valueTemplate, "{{;}}", false, `OSCForwarder;${entry.id}`);
 
     let sendArgs: { value: number | string | boolean; type: ForwardType }[];
     let displayValue: string;

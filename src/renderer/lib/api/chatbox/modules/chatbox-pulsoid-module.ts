@@ -155,7 +155,7 @@ export class ChatboxPulsoidModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(authToken: string, key: string, ...args: string[]): Promise<string> {
-    [authToken, key, ...args] = await chatbox.fillTemplates([authToken, key, ...args], "[[:]]");
+    [authToken, key, ...args] = await chatbox.fillTemplates([authToken, key, ...args], "[[:]]", false, chatbox.getInstanceKey());
 
     if (!authToken || !UUIDRegex.test(authToken)) {
       return "(No auth token provided)";

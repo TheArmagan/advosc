@@ -59,7 +59,7 @@ export class ChatboxTimeModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
-    params = await chatbox.fillTemplates(params, "[[:]]");
+    params = await chatbox.fillTemplates(params, "[[:]]", false, chatbox.getInstanceKey());
     try {
       switch (key) {
         case "NowMillis": {

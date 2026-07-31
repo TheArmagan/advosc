@@ -4,7 +4,7 @@ import * as textFormats from "$lib/data/text-formats.json";
 import mapReplace from "stuffs/lib/mapReplace";
 
 export class ChatboxTextModule extends ChatboxModule {
-  animationData: Map<string, { at: number, index: number, last: string }> = new Map();
+  animationData: Map<string, { at: number, index: number, last: string, lastUsed: number }> = new Map();
 
   constructor() {
     super({
@@ -150,9 +150,12 @@ export class ChatboxTextModule extends ChatboxModule {
       }
     });
 
+    // Drop state for placeholders that are no longer part of any template. Keyed on last
+    // access, not on `at`: `at` is the animation start time, so using it would wipe (and
+    // therefore restart) any animation that has been running for more than a minute.
     setInterval(() => {
       this.animationData.forEach((data, key) => {
-        if (Date.now() - data.at > 60000) this.animationData.delete(key);
+        if (Date.now() - data.lastUsed > 60000) this.animationData.delete(key);
       });
     }, 60000);
   }
@@ -160,7 +163,8 @@ export class ChatboxTextModule extends ChatboxModule {
 
 
   async getPlaceholderValue(...params: string[]): Promise<string> {
-    params = await chatbox.fillTemplates(params, "[[:]]");
+    const instanceKey = chatbox.getInstanceKey();
+    params = await chatbox.fillTemplates(params, "[[:]]", false, instanceKey);
     const key = params.shift();
 
     switch (key) {
@@ -255,12 +259,16 @@ export class ChatboxTextModule extends ChatboxModule {
       }
       case "Animate": {
         const [animationType, ...args] = params;
-        const dataKey = params.join(";");
+        // Include the placeholder occurrence in the key so the very same animated
+        // placeholder can be used multiple times in one template (or the same shortcut
+        // expanded twice) with each copy animating on its own state.
+        const dataKey = `${instanceKey}|${params.join(";")}`;
         let data = this.animationData.get(dataKey);
         if (!data) {
-          data = { at: Date.now(), index: 0, last: "" };
+          data = { at: Date.now(), index: 0, last: "", lastUsed: Date.now() };
           this.animationData.set(dataKey, data);
         }
+        data.lastUsed = Date.now();
         switch (animationType) {
           case "Marquee": {
             const [text, direction, maxLengthStr, paddingFlag] = args;
@@ -318,29 +326,50 @@ export class ChatboxTextModule extends ChatboxModule {
           }
           case "EachOne": {
             const parts = args;
-            data.index = (data.index + 1) % parts.length;
-            data.at = Date.now();
+            if (!parts.length) return "";
+            const speed = 2200;
+            const now = Date.now();
+            const signature = parts.join(" ");
+            // Advance on elapsed time rather than on call count, so being evaluated more
+            // than once per render (or not at all for a while) doesn't skew the cycle.
+            if (data.last !== signature) {
+              data.at = now;
+              data.index = 0;
+              data.last = signature;
+            }
+            data.index = Math.floor((now - data.at) / speed) % parts.length;
             return parts[data.index];
           }
           case "EachOneCustom": {
             const parts = args;
-            let totalInterval = 0;
-            for (let i = 0; i < parts.length; i++) {
-              const [intervalStr, item] = parts[i].split(":");
-              const interval = Math.max(1, parseInt(intervalStr, 10) || 1);
-              totalInterval += interval * 2200;
-              if (Date.now() - data.at < totalInterval) {
-                if (data.index !== i) {
-                  data.index = i;
-                  data.at = Date.now();
-                }
-                return item;
-              }
+            if (!parts.length) return "";
+            const speed = 2200;
+            const now = Date.now();
+            const signature = parts.join(" ");
+            if (data.last !== signature) {
+              data.at = now;
+              data.index = 0;
+              data.last = signature;
             }
-            // If exceeded total interval, reset to first item
+            const entries = parts.map((part) => {
+              const sep = part.indexOf(":");
+              const intervalStr = sep === -1 ? part : part.slice(0, sep);
+              return {
+                duration: Math.max(1, parseInt(intervalStr, 10) || 1) * speed,
+                item: sep === -1 ? "" : part.slice(sep + 1)
+              };
+            });
+            const totalDuration = entries.reduce((acc, e) => acc + e.duration, 0);
+            let elapsed = (now - data.at) % totalDuration;
+            for (let i = 0; i < entries.length; i++) {
+              if (elapsed < entries[i].duration) {
+                data.index = i;
+                return entries[i].item;
+              }
+              elapsed -= entries[i].duration;
+            }
             data.index = 0;
-            data.at = Date.now();
-            return parts[0]?.split(":")?.[1] || "";
+            return entries[0].item;
           }
           case "Typewriter": {
             const [text] = args;

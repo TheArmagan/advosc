@@ -152,7 +152,7 @@ export class ChatboxHotkeyModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
-    [key, ...params] = await chatbox.fillTemplates([key, ...params], "[[:]]");
+    [key, ...params] = await chatbox.fillTemplates([key, ...params], "[[:]]", false, chatbox.getInstanceKey());
 
     switch (key) {
       case "IsPressed": {

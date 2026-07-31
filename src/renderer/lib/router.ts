@@ -3,6 +3,7 @@ import HomePage from './pages/home-page.svelte';
 import ChatboxEditorPage from './pages/chatbox-editor-page.svelte';
 import AvatarOSCPage from './pages/avatar-osc-page.svelte';
 import AvatarProfilesPage from './pages/avatar-profiles-page.svelte';
+import AvatarScalePage from './pages/avatar-scale-page.svelte';
 import AboutPage from './pages/about-page.svelte';
 import SettingsPage from './pages/settings-page.svelte';
 import TranslatorPage from './pages/translator-page.svelte';
@@ -25,6 +26,7 @@ const initial: RouterState = {
     '/tools/chatbox-editor': ChatboxEditorPage,
     '/tools/avatar-osc': AvatarOSCPage,
     '/tools/avatar-profiles': AvatarProfilesPage,
+    '/tools/avatar-scale': AvatarScalePage,
     '/tools/translator': TranslatorPage,
     '/about': AboutPage,
     '/settings': SettingsPage,

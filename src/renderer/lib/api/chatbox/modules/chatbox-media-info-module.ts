@@ -13,7 +13,7 @@ interface LyricData {
 type LyricsCache = Record<string, { at: number; data: LyricData | null }>;
 
 const LYRICS_CACHE_KEY = "ChatboxMediaModule;LyricsCache;V3";
-const LEGACY_LYRICS_CACHE_KEYS = ["ChatboxMediaModule;LyricsCache;V2"];
+const LEGACY_LYRICS_CACHE_KEYS = ["ChatboxMediaModule;LyricsCache", "ChatboxMediaModule;LyricsCache;V2"];
 const LYRICS_CACHE_TTL = 1000 * 60 * 60 * 24 * 2;
 // The API returns syllable-level data (~40KB/song). Only the fields below are
 // kept, otherwise localStorage fills up and every write throws QuotaExceeded.

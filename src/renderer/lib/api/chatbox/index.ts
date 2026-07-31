@@ -92,9 +92,22 @@ async function incrementCallCount(moduleId: string, ...params: string[]) {
   }
 }
 
-async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false): Promise<string> {
+/**
+ * Identity of the placeholder occurrence currently being resolved. Set synchronously
+ * right before `getPlaceholderValue` is called, so a module can capture it as its very
+ * first statement (before any `await`). Modules use it to key per-occurrence state
+ * (animations, counters) so the same placeholder can appear more than once in a
+ * template without the occurrences fighting over one shared state entry.
+ */
+let activeInstanceKey = "";
+function getInstanceKey() {
+  return activeInstanceKey;
+}
+
+async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false, scope = ""): Promise<string> {
   const matches = [...text.matchAll(type === "{{;}}" ? PlaceholderRegex1 : PlaceholderRegex2)];
-  const results: Record<string, string> = {};
+  const results: (string | null)[] = new Array(matches.length).fill(null);
+  const occurrences: Map<string, number> = new Map();
   const processValue = (val: string) => {
     if (stringify) {
       switch (val) {
@@ -114,30 +127,35 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
       return val;
     }
   };
-  results["\\n"] = "\n";
-  await Promise.all(matches.map(async (match) => {
-    if (results[match[0]]) return;
+  const instanceKeys = matches.map((match) => {
+    const occurrence = occurrences.get(match[0]) || 0;
+    occurrences.set(match[0], occurrence + 1);
+    return `${scope}>${match[0]}#${occurrence}`;
+  });
+  await Promise.all(matches.map(async (match, i) => {
     try {
       const params = splitParams(match[1], type === "{{;}}" ? ";" : ":");
       const moduleId = params.shift()!;
+      const callKey = `${moduleId};${params.join(";")}`;
 
-      if (ignoreSet.has(params[0])) {
-        results[match[0]] = processValue(`(Ignored: ${match[0]})`);
+      if (ignoreSet.has(callKey)) {
+        results[i] = processValue(`(Ignored: ${match[0]})`);
         return;
       }
       await incrementCallCount(moduleId, ...params);
-      if (ignoreSet.has(params[0])) {
-        results[match[0]] = processValue(`(Ignored: ${match[0]})`);
+      if (ignoreSet.has(callKey)) {
+        results[i] = processValue(`(Ignored: ${match[0]})`);
         return;
       }
 
       const m = chatboxList.get(moduleId);
       if (m) {
+        activeInstanceKey = instanceKeys[i];
         const content = await m.getPlaceholderValue(...params);
         if (content !== null) {
-          results[match[0]] = processValue(content);
+          results[i] = processValue(content);
         } else {
-          results[match[0]] = processValue(`(No value for ${match[0]})`);
+          results[i] = processValue(`(No value for ${match[0]})`);
         }
       }
     } catch (e) {
@@ -148,11 +166,23 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
       });
     }
   }));
-  return mapReplace(text, results);
+
+  // Splice results in by position instead of replacing by placeholder text: two identical
+  // placeholders are two independent occurrences and may legitimately resolve differently.
+  let output = "";
+  let cursor = 0;
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    output += mapReplace(text.slice(cursor, match.index!), { "\\n": "\n" });
+    output += results[i] ?? match[0];
+    cursor = match.index! + match[0].length;
+  }
+  output += mapReplace(text.slice(cursor), { "\\n": "\n" });
+  return output;
 }
 
-async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false): Promise<string[]> {
-  return (await fillTemplate(texts.join("䡁"), type, stringify)).split("䡁");
+async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false, scope = ""): Promise<string[]> {
+  return (await fillTemplate(texts.join("䡁"), type, stringify, scope)).split("䡁");
 }
 
 function registerChatboxModule(m: ChatboxModule) {
@@ -257,6 +287,7 @@ function getSettings() {
 export const chatbox = {
   fillTemplate,
   fillTemplates,
+  getInstanceKey,
   modules: chatboxList,
   settings,
   getPlaceholders,
@@ -280,7 +311,7 @@ async function renderTemplate() {
   const s = get(settings);
 
   let template = cleanTempalte(s.template);
-  template = await fillTemplate(template, "{{;}}");
+  template = await fillTemplate(template, "{{;}}", false, "Chatbox");
   template = cleanTempalte(template);
   renderedTemplate.set(template);
 

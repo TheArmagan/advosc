@@ -140,6 +140,17 @@ Cycles through items over time. Great for:
 
 This creates: `❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️` with animations!
 
+### Reusing the Same Animation
+
+You can use the **exact same** animated placeholder (or the same shortcut containing one)
+as many times as you want in a template — like `{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}`
+above. Every occurrence keeps its own animation state, so copies no longer fight over a
+single timeline and cycling animations no longer skip frames when duplicated.
+
+Occurrences that start at the same moment with the same parameters stay in sync (they are
+running the same animation from the same start time). A copy that appears later — for
+example one that only shows up when a condition becomes true — animates on its own phase.
+
 ---
 
 ## 🏗️ Real Expert Configuration Breakdown

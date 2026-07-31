@@ -369,6 +369,19 @@ Save, reuse, and restore complete avatar parameter states in a few clicks.
 
 ---
 
+### 📏 Beyond Chatbox: Avatar Scale
+
+Resize your avatar in-game by sending an eye height (`/avatar/eyeheight`) to VRChat, anywhere from `0.01` to `10.0` meters.
+
+| Feature | Description |
+|---------|-------------|
+| **🎚️ Slider & Direct Input** | Drag for quick changes or type an exact height in meters |
+| **⭐ Custom Presets** | Save your own named sizes and apply them with one click |
+| **💾 Per-Avatar Memory** | Optionally remember a height per avatar and restore it on avatar change or instance join |
+| **🔀 Parameter Forwarding** | Drive your size from inside your avatar — forward `/avatar/parameters/advosc_eyeheight` to `/avatar/eyeheight`, either normalized `0..1` onto a custom range or as a direct meter value |
+
+---
+
 ## 🚧 Coming Soon
 
 - **🗣️ Speech to Text & Translation** — Speak and let your words flow into the chatbox, automatically translated

@@ -54,7 +54,7 @@ export class ChatboxNumberModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(...params: string[]): Promise<string> {
-    params = await chatbox.fillTemplates(params, "[[:]]");
+    params = await chatbox.fillTemplates(params, "[[:]]", false, chatbox.getInstanceKey());
     const key = params.shift();
 
     switch (key) {

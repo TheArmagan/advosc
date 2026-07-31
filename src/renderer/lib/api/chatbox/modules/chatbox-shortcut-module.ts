@@ -15,9 +15,10 @@ export class ChatboxShortcutModule extends ChatboxModule {
   }
 
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
+    const instanceKey = chatbox.getInstanceKey();
     const shortcuts = this.getValues().shortcuts || {};
     if (!shortcuts[key]) return key;
-    params = await chatbox.fillTemplates(params, "[[:]]");
+    params = await chatbox.fillTemplates(params, "[[:]]", false, instanceKey);
     const maxParams = this.getMaxParamCount(key);
     if (params.length < maxParams) {
       if (chatbox.getSettings().debugMode) {
@@ -29,7 +30,9 @@ export class ChatboxShortcutModule extends ChatboxModule {
     if (chatbox.getSettings().debugMode) {
       console.log("Chatbox > Shortcut Module", `Filling shortcut "${key}" with params:`, params);
     }
-    return await chatbox.fillTemplate((shortcuts[key] || "").replace(/\$(\d+)/g, (itself: unknown, index: number) => params[index] || itself), "{{;}}");
+    // Scope the expansion to this occurrence: using the same shortcut twice must give
+    // each copy its own state instead of both driving a single shared animation.
+    return await chatbox.fillTemplate((shortcuts[key] || "").replace(/\$(\d+)/g, (itself: unknown, index: number) => params[index] || itself), "{{;}}", false, instanceKey);
   }
 
   getPreCalculatedPlaceholders(): PlaceholdersRecord {

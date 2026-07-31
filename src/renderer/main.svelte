@@ -21,6 +21,10 @@
       to: "/tools/avatar-profiles",
     },
     {
+      name: "Avatar Scale",
+      to: "/tools/avatar-scale",
+    },
+    {
       name: "Settings",
       to: "/settings",
     },

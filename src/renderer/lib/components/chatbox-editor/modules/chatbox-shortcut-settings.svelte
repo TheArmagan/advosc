@@ -54,6 +54,8 @@
           : ""
       }}}`,
       "{{;}}",
+      false,
+      "ShortcutPreview",
     );
   }
 
