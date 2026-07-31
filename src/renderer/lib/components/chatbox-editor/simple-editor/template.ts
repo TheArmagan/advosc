@@ -1,6 +1,7 @@
 import { chatbox } from "$lib/api/chatbox";
 import { ChatboxShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
 import type { Block, BlockType } from "./types";
+import { weatherDailyFields } from "./options";
 
 type BuildState = {
   template: string;
@@ -222,6 +223,17 @@ function renderBlock(block: Block, autoShortcuts: Record<string, string>): strin
     }
     case "ovrtracker":
       return `{{OVRTrackers;${block.field};${block.finder}}}`;
+    case "weather": {
+      const location = esc(block.location.trim());
+      const day = block.dayOffset || "0";
+      if (block.field === "Sunrise" || block.field === "Sunset") {
+        // Timestamps only become readable once the Time module formats them.
+        return `{{Time;Timestamp;[[Weather:${block.field}:${location}:${day}]];${esc(block.timeFormat || "HH:mm")}}}`;
+      }
+      return weatherDailyFields.has(block.field)
+        ? `{{Weather;${block.field};${location};${day}}}`
+        : `{{Weather;${block.field};${location}}}`;
+    }
     case "numbercalc": {
       const source = sourceToValueArg(block.source, block.id, "source", autoShortcuts);
       if (!source) return "";

@@ -151,6 +151,15 @@ export function createBlock(type: BlockType): Block {
       return { id: newId(), type: "eachone", items: ["Hello!", "VRChat"] };
     case "ovrtracker":
       return { id: newId(), type: "ovrtracker", finder: "0", field: "BatteryLevel" };
+    case "weather":
+      return {
+        id: newId(),
+        type: "weather",
+        location: "",
+        field: "Temperature",
+        dayOffset: "0",
+        timeFormat: "HH:mm",
+      };
     case "numbercalc":
       return {
         id: newId(),
@@ -218,6 +227,7 @@ export const meta: Record<BlockType, BlockMeta> = {
   blink: { label: "Blink", desc: "Alternate between two texts", color: "bg-lime-600" },
   eachone: { label: "Cycle Texts", desc: "Rotate through a list of texts", color: "bg-lime-500" },
   ovrtracker: { label: "VR Tracker", desc: "OpenVR tracker battery / info", color: "bg-sky-500" },
+  weather: { label: "Weather", desc: "Live weather and forecast", color: "bg-sky-400" },
   numbercalc: { label: "Number Calc", desc: "Clamp, map, round, abs, more", color: "bg-orange-500" },
   random: { label: "Random Number", desc: "Random int or float range", color: "bg-orange-400" },
   condition: { label: "Condition", desc: "Show A or B based on a rule", color: "bg-fuchsia-500" },
@@ -230,7 +240,7 @@ export const menuGroups: MenuGroup[] = [
   { label: "Animate", keys: ["marquee", "bounce", "typewriter", "blink", "eachone"] },
   { label: "Logic", keys: ["condition"] },
   { label: "VRChat", keys: ["hotkey", "osc", "ovrtracker"] },
-  { label: "Tools", keys: ["stopwatch", "process", "shortcut", "numbercalc", "random"] },
+  { label: "Tools", keys: ["stopwatch", "process", "weather", "shortcut", "numbercalc", "random"] },
 ];
 
 export const knownTypes = new Set<BlockType>([
@@ -261,6 +271,7 @@ export const knownTypes = new Set<BlockType>([
   "blink",
   "eachone",
   "ovrtracker",
+  "weather",
   "numbercalc",
   "random",
   "condition",

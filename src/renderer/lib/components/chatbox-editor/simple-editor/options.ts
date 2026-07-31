@@ -85,6 +85,46 @@ export const ovrTrackerFields = [
   { value: "IsExists", label: "Is Exists (true/false)" },
 ] as const;
 
+export const weatherFields = [
+  { value: "Temperature", label: "Temperature" },
+  { value: "FeelsLike", label: "Feels Like" },
+  { value: "Condition", label: "Condition (text)" },
+  { value: "Emoji", label: "Condition (emoji)" },
+  { value: "Humidity", label: "Humidity (%)" },
+  { value: "Precipitation", label: "Precipitation (last hour)" },
+  { value: "WindSpeed", label: "Wind Speed" },
+  { value: "WindGusts", label: "Wind Gusts" },
+  { value: "WindCompass", label: "Wind Direction (N, NE, ...)" },
+  { value: "CloudCover", label: "Cloud Cover (%)" },
+  { value: "Pressure", label: "Pressure (hPa)" },
+  { value: "IsDay", label: "Is Daytime (true/false)" },
+  { value: "Location", label: "Location Name" },
+  { value: "High", label: "Daily High" },
+  { value: "Low", label: "Daily Low" },
+  { value: "DailyCondition", label: "Daily Condition (text)" },
+  { value: "DailyEmoji", label: "Daily Condition (emoji)" },
+  { value: "PrecipitationChance", label: "Chance of Precipitation (%)" },
+  { value: "PrecipitationSum", label: "Daily Precipitation Total" },
+  { value: "UVIndex", label: "Daily Max UV Index" },
+  { value: "Sunrise", label: "Sunrise (formatted)" },
+  { value: "Sunset", label: "Sunset (formatted)" },
+] as const;
+
+/** Fields that read from the daily forecast, so they take a day offset. */
+export const weatherDailyFields = new Set([
+  "High",
+  "Low",
+  "DailyCondition",
+  "DailyEmoji",
+  "DailyCode",
+  "PrecipitationChance",
+  "PrecipitationSum",
+  "UVIndex",
+  "Sunrise",
+  "Sunset",
+  "Date",
+]);
+
 export const conditionSources = [
   { value: "mediaplaying", label: "Media is Playing" },
   { value: "hotkey-toggled", label: "Hotkey toggled ON" },

@@ -76,6 +76,7 @@ It also now covers more cleanup and utility workflows directly in the UI, includ
 - A song progress bar with a moving head character
 - A VRChat status line driven by hotkeys or avatar parameters
 - A heart-rate or tracker battery overlay
+- A local weather line with a condition emoji, temperature, and sunset time
 - Cleaned-up text blocks using uppercase, replace, pad, truncate, or fallback logic
 - Numeric HUD values clamped, mapped, rounded, or randomized without hand-writing placeholders
 - Animated text sections like marquee, blink, typewriter, or rotating messages
@@ -121,7 +122,7 @@ The **OSC Forwarder** lets you evaluate any chatbox template value and send it t
 
 ### 🧩 Chatbox Modules
 
-Both chatbox editors are powered by the same **12 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
+Both chatbox editors are powered by the same **13 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
 
 The simple editor covers the most common combinations visually. The module list below shows the full engine that powers both editing styles.
 
@@ -294,6 +295,68 @@ Track process information and session times.
 | `{{Process;IsRunning;VRChat.exe}}` | `true` | Check if process is running |
 | `{{Process;StartedAt;VRChat.exe}}` | `1700000000000` | Process start timestamp |
 | `{{Process;SessionTime;VRChat.exe}}` | `3600000` | Time since process started |
+
+</details>
+
+<details>
+<summary><strong>🌤️ Weather</strong> — Live weather and forecast</summary>
+
+Live conditions and a 7 day forecast from [Open-Meteo](https://open-meteo.com), free and with no API key. Save your locations under **Modules → Weather**: each one gets a name you use in placeholders, and the first one becomes the default used when the location parameter is left empty.
+
+The location parameter accepts a saved location name, any place name (looked up automatically), or `lat,lon` coordinates.
+
+**Current conditions**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Weather;Temperature}}` | `21.4` | Current temperature at your default location |
+| `{{Weather;Temperature;Home}}` | `21.4` | Current temperature at a saved location |
+| `{{Weather;FeelsLike;Tokyo}}` | `19.8` | Apparent temperature |
+| `{{Weather;Condition}}` | `Partly cloudy` | Condition as text |
+| `{{Weather;Emoji}}` | `⛅` | Condition as an emoji, day and night aware |
+| `{{Weather;Code}}` | `2` | WMO weather code |
+| `{{Weather;Humidity}}` | `63` | Relative humidity in percent |
+| `{{Weather;Precipitation}}` | `0.2` | Precipitation of the last hour |
+| `{{Weather;Rain}}` | `0.2` | Rain and showers of the last hour |
+| `{{Weather;Snowfall}}` | `0` | Snowfall of the last hour |
+| `{{Weather;WindSpeed}}` | `12` | Wind speed |
+| `{{Weather;WindGusts}}` | `24` | Wind gusts |
+| `{{Weather;WindDirection}}` | `270` | Wind direction in degrees |
+| `{{Weather;WindCompass}}` | `W` | Wind direction as a compass point |
+| `{{Weather;CloudCover}}` | `48` | Cloud cover in percent |
+| `{{Weather;Pressure}}` | `1013` | Surface pressure in hPa |
+| `{{Weather;IsDay}}` | `true` | Whether it is daytime at the location |
+
+**Daily forecast** (last parameter is the day offset: `0` today, `1` tomorrow, up to `6`)
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Weather;High;;0}}` | `24.1` | Highest temperature of the day |
+| `{{Weather;Low;;0}}` | `12.6` | Lowest temperature of the day |
+| `{{Weather;Sunrise;;0}}` | `1700000000000` | Sunrise timestamp in milliseconds |
+| `{{Weather;Sunset;;0}}` | `1700000000000` | Sunset timestamp in milliseconds |
+| `{{Weather;UVIndex;;0}}` | `5.3` | Maximum UV index of the day |
+| `{{Weather;PrecipitationChance;;1}}` | `40` | Chance of precipitation in percent |
+| `{{Weather;PrecipitationSum;;1}}` | `3.4` | Total precipitation of the day |
+| `{{Weather;DailyCondition;;1}}` | `Slight rain` | Condition text for the whole day |
+| `{{Weather;DailyEmoji;;1}}` | `🌦️` | Condition emoji for the whole day |
+| `{{Weather;Date;;1}}` | `2023-11-15` | Local calendar date of that day |
+
+**Location and status**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Weather;Location}}` | `Berlin, Berlin, DE` | Name of the resolved location |
+| `{{Weather;Timezone}}` | `Europe/Berlin` | Timezone of the location |
+| `{{Weather;UpdatedAt}}` | `1700000000000` | When the data was last fetched |
+| `{{Weather;IsOnline}}` | `true` | Whether the last fetch succeeded |
+| `{{Weather;Unit;Temperature}}` | `°C` | Unit symbol for `Temperature`, `Wind` or `Precipitation` |
+
+Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refresh interval are set in the module tab. Timestamps pair with the Time module:
+
+```
+{{Weather;Emoji}} {{Weather;Temperature}}{{Weather;Unit;Temperature}} • sunset {{Time;Timestamp;[[Weather:Sunset]];HH:mm}}
+```
 
 </details>
 

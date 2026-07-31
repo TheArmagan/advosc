@@ -17,6 +17,7 @@ import { ChatboxProcessModule } from "./modules/chatbox-process-module";
 import { ChatboxOVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
 import { ChatboxHotkeyModule } from "./modules/chatbox-hotkey-module";
 import { ChatboxStopwatchModule } from "./modules/chatbox-stopwatch-module";
+import { ChatboxWeatherModule } from "./modules/chatbox-weather-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -242,6 +243,7 @@ registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 registerChatboxModule(new ChatboxNumberModule());
 registerChatboxModule(new ChatboxProcessModule());
+registerChatboxModule(new ChatboxWeatherModule());
 
 function runPulsoidMigration() {
   migratePulsoidTemplates({

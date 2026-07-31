@@ -26,16 +26,9 @@ export function createWindow(): BrowserWindow {
 
   const isDev = process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
 
-  const allowList = [
-    "https://lrclib.net",
-    "https://lyricsplus.prjktla.my.id",
-    "https://cdn.jsdelivr.net",
-    "https://pulsoid.net",
-    "wss://pulsoid.net",
-    "https://api.pulsoid.net",
-    "https://dev.pulsoid.net",
-    "wss://dev.pulsoid.net",
-  ];
+  // Modules and user templates can talk to any API, so outgoing requests are not
+  // restricted. Code execution still is: scripts and documents stay local.
+  const connectSrc = "connect-src * data: blob: ws: wss:";
 
   // Set CSP for both dev and production
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
@@ -44,8 +37,8 @@ export function createWindow(): BrowserWindow {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? `default-src 'self' http://localhost:5173 ws://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; script-src 'self' http://localhost:5173; connect-src 'self' http://localhost:5173 ws://localhost:5173 ${allowList.join(' ')}`
-            : `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ${allowList.join(' ')}`
+            ? `default-src 'self' http://localhost:5173 ws://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; script-src 'self' http://localhost:5173; ${connectSrc}`
+            : `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; ${connectSrc}`
         ],
       },
     });

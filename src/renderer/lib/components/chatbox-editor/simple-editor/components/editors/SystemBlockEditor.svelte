@@ -12,6 +12,8 @@
     hrFields,
     ovrTrackerFields,
     processFields,
+    weatherDailyFields,
+    weatherFields,
   } from "../../options";
   import SourceInput from "../SourceInput.svelte";
   import { chatbox } from "$lib/api/chatbox";
@@ -27,6 +29,7 @@
     ShortcutBlock,
     StopwatchBlock,
     UpdateBlock,
+    WeatherBlock,
   } from "../../types";
 
   let {
@@ -322,6 +325,85 @@
   </div>
   <p class="text-xs text-muted-foreground">
     Requires SteamVR. Manage aliases in Modules → OpenVR Trackers.
+  </p>
+{:else if block.type === "weather"}
+  {@const current = block as WeatherBlock}
+  {@const isDaily = weatherDailyFields.has(current.field)}
+  <div class="flex gap-1.5 flex-wrap">
+    <div class="flex flex-col gap-0.5 flex-1 min-w-40">
+      <Label class="text-xs text-muted-foreground">
+        Location (empty uses your default one)
+      </Label>
+      <Input
+        placeholder="e.g. Home, Tokyo, or 52.52,13.41"
+        value={current.location}
+        oninput={(e) =>
+          upd(current.id, { location: (e.target as HTMLInputElement).value })}
+      />
+    </div>
+    <div class="flex flex-col gap-0.5">
+      <Label class="text-xs text-muted-foreground">What to show</Label>
+      <Select.Root
+        type="single"
+        value={current.field}
+        onValueChange={(v) => upd(current.id, { field: v ?? "Temperature" })}
+      >
+        <Select.Trigger class="w-56"
+          >{weatherFields.find((item) => item.value === current.field)?.label ??
+            current.field}</Select.Trigger
+        >
+        <Select.Content>
+          {#each weatherFields as item}
+            <Select.Item value={item.value}>{item.label}</Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+    </div>
+    {#if isDaily}
+      <div class="flex flex-col gap-0.5">
+        <Label class="text-xs text-muted-foreground">Day</Label>
+        <Select.Root
+          type="single"
+          value={current.dayOffset || "0"}
+          onValueChange={(v) => upd(current.id, { dayOffset: v ?? "0" })}
+        >
+          <Select.Trigger class="w-36">
+            {current.dayOffset === "1"
+              ? "Tomorrow"
+              : current.dayOffset && current.dayOffset !== "0"
+                ? `In ${current.dayOffset} days`
+                : "Today"}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="0">Today</Select.Item>
+            <Select.Item value="1">Tomorrow</Select.Item>
+            <Select.Item value="2">In 2 days</Select.Item>
+            <Select.Item value="3">In 3 days</Select.Item>
+            <Select.Item value="4">In 4 days</Select.Item>
+            <Select.Item value="5">In 5 days</Select.Item>
+            <Select.Item value="6">In 6 days</Select.Item>
+          </Select.Content>
+        </Select.Root>
+      </div>
+    {/if}
+    {#if current.field === "Sunrise" || current.field === "Sunset"}
+      <div class="flex flex-col gap-0.5">
+        <Label class="text-xs text-muted-foreground">Time format</Label>
+        <Input
+          class="w-32"
+          placeholder="HH:mm"
+          value={current.timeFormat}
+          oninput={(e) =>
+            upd(current.id, {
+              timeFormat: (e.target as HTMLInputElement).value,
+            })}
+        />
+      </div>
+    {/if}
+  </div>
+  <p class="text-xs text-muted-foreground">
+    Weather data from Open-Meteo. Save locations and pick units in Modules →
+    Weather.
   </p>
 {:else if block.type === "condition"}
   {@const current = block as ConditionBlock}

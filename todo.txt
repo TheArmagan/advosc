@@ -5,9 +5,7 @@
 
 * add better way to store and switch between made user templates and make them less painless to share
 
-* add weather info chatbox module
-
-* add http request chatbox module for showing custom info in chatbox
+* add http/ws request chatbox module for showing custom info in chatbox
   - ability to send post/get/etc requests with custom body/url from template engine
 
 * add system resources chatbox module

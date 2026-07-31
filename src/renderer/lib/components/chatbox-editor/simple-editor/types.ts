@@ -161,6 +161,16 @@ export type OVRTrackerBlock = {
   finder: string;
   field: string;
 };
+export type WeatherBlock = {
+  id: string;
+  type: "weather";
+  /** Saved location name, a place name, or "lat,lon". Empty uses the default location. */
+  location: string;
+  field: string;
+  dayOffset: string;
+  /** Only used by the sunrise / sunset fields. */
+  timeFormat: string;
+};
 export type NumberCalcBlock = {
   id: string;
   type: "numbercalc";
@@ -223,6 +233,7 @@ export type Block =
   | BlinkBlock
   | EachOneBlock
   | OVRTrackerBlock
+  | WeatherBlock
   | NumberCalcBlock
   | RandomBlock
   | ConditionBlock;
