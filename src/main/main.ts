@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { OSC } from './lib/osc';
 import { createWindow } from './lib/window';
 import { startMediaMonitor, stopMediaMonitor } from './lib/media';
+import { stopSystemMonitor } from './lib/system-monitor';
 import { setupIpcHandlers } from './lib/ipc-handlers';
 import { loadOSCSources, toActiveSources } from './lib/osc-config';
 
@@ -40,6 +41,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   stopMediaMonitor();
+  stopSystemMonitor();
   if (process.platform !== 'darwin') {
     app.quit();
   }

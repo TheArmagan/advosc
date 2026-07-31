@@ -1,9 +1,12 @@
 use clap::{Parser, Subcommand};
 use serde::Serialize;
+use std::io::Write;
 use std::panic;
 
+mod gpu_info;
 mod openvr_trackers;
 mod process_start_time;
+mod system_info;
 
 #[derive(Parser)]
 #[command(name = "advosc-utils")]
@@ -24,6 +27,13 @@ enum Commands {
     /// Get battery levels of all OpenVR trackers (requires SteamVR to be running)
     #[command(name = "openvr-trackers")]
     OpenVRTrackers,
+    /// Stream CPU / GPU / memory / network usage as one JSON object per line
+    #[command(name = "system-monitor")]
+    SystemMonitor {
+        /// Milliseconds between samples
+        #[arg(long, default_value_t = 2000)]
+        interval: u64,
+    },
 }
 
 #[derive(Serialize)]
@@ -95,6 +105,26 @@ fn main() {
                 },
             };
             println!("{}", serde_json::to_string(&response).unwrap());
+        }
+        Commands::SystemMonitor { interval } => {
+            // Never sample faster than sysinfo can produce meaningful CPU deltas.
+            let interval = std::time::Duration::from_millis(
+                interval.max(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL.as_millis() as u64),
+            );
+            let mut sampler = system_info::SystemSampler::new();
+            let mut stdout = std::io::stdout();
+
+            loop {
+                std::thread::sleep(interval);
+                let snapshot = sampler.sample();
+                if writeln!(stdout, "{}", serde_json::to_string(&snapshot).unwrap()).is_err() {
+                    break;
+                }
+                // The parent reads line by line, so flush every sample.
+                if stdout.flush().is_err() {
+                    break;
+                }
+            }
         }
     }
 }

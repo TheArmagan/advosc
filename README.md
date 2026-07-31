@@ -122,7 +122,7 @@ The **OSC Forwarder** lets you evaluate any chatbox template value and send it t
 
 ### 🧩 Chatbox Modules
 
-Both chatbox editors are powered by the same **13 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
+Both chatbox editors are powered by the same **14 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
 
 The simple editor covers the most common combinations visually. The module list below shows the full engine that powers both editing styles.
 
@@ -295,6 +295,76 @@ Track process information and session times.
 | `{{Process;IsRunning;VRChat.exe}}` | `true` | Check if process is running |
 | `{{Process;StartedAt;VRChat.exe}}` | `1700000000000` | Process start timestamp |
 | `{{Process;SessionTime;VRChat.exe}}` | `3600000` | Time since process started |
+
+</details>
+
+<details>
+<summary><strong>🖥️ System Resources</strong> — Live CPU, GPU, memory and network usage</summary>
+
+Show what your PC is doing right now, sampled by a native helper twice a second.
+
+**CPU**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{System;CPUName}}` | `AMD Ryzen 9 7950X 16-Core Processor` | Processor model name |
+| `{{System;CPUUsage}}` | `13.7` | Overall CPU usage percentage |
+| `{{System;CPUCoreUsage;0}}` | `24.5` | Usage of a single logical core, by zero based index |
+| `{{System;CPUCores}}` | `16` | Physical core count |
+| `{{System;CPUThreads}}` | `32` | Logical core (thread) count |
+| `{{System;CPUFrequency}}` | `4501` | Current frequency in MHz |
+| `{{System;CPUTemperature}}` | `62` | Temperature in celsius, empty when Windows exposes no sensor |
+
+**Memory**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{System;MemoryUsed}}` | `31.2 GB` | Memory in use |
+| `{{System;MemoryTotal}}` | `127.2 GB` | Total physical memory |
+| `{{System;MemoryAvailable}}` | `95.9 GB` | Memory available to applications |
+| `{{System;MemoryUsage}}` | `24.6` | Memory usage percentage |
+| `{{System;SwapUsed}}` | `0 B` | Page file in use |
+| `{{System;SwapTotal}}` | `8 GB` | Total page file size |
+| `{{System;SwapUsage}}` | `0.0` | Page file usage percentage |
+
+**GPU** — every GPU placeholder takes an optional finder as its first parameter: a zero based index, or part of the name or vendor. Leave it empty to use the GPU with the most VRAM, which is the discrete card on a laptop or an APU system.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{System;GPUName}}` | `NVIDIA GeForce RTX 3070 Ti` | GPU name |
+| `{{System;GPUVendor}}` | `NVIDIA` | NVIDIA, AMD, Intel or Unknown |
+| `{{System;GPUUsage}}` | `42.0` | GPU utilization percentage |
+| `{{System;VRAMUsed}}` | `2.7 GB` | VRAM in use |
+| `{{System;VRAMTotal}}` | `8 GB` | Total VRAM |
+| `{{System;VRAMUsage}}` | `34.3` | VRAM usage percentage |
+| `{{System;GPUTemperature}}` | `53` | Temperature in celsius, NVIDIA only |
+| `{{System;GPUPower}}` | `52.1` | Power draw in watts, NVIDIA only |
+| `{{System;GPUFanSpeed}}` | `0` | Fan speed percentage, NVIDIA only |
+| `{{System;GPUCoreClock}}` | `1020` | Core clock in MHz, NVIDIA only |
+| `{{System;GPUCount}}` | `2` | Number of detected GPUs |
+| `{{System;GPUUsage;intel}}` | `3.0` | Usage of the GPU matching a finder |
+
+**Network and uptime**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{System;Upload}}` | `1.5 MB/s` | Current upload speed |
+| `{{System;Download}}` | `12.1 MB/s` | Current download speed |
+| `{{System;TotalUploaded}}` | `32.6 GB` | Bytes uploaded since boot |
+| `{{System;TotalDownloaded}}` | `24.0 GB` | Bytes downloaded since boot |
+| `{{System;Uptime}}` | `22h 41m` | Time since boot, also accepts `seconds`, `minutes`, `hours`, `days` or `clock` |
+
+**Units and decimals** — every byte and speed placeholder accepts a unit and a decimal count. With `auto` (the default) the value scales itself and keeps its label; with an explicit unit you get only the number, which is handy for math and progress bars.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{System;MemoryUsed}}` | `31.2 GB` | Auto unit, one decimal |
+| `{{System;MemoryUsed;GB}}` | `31.2` | Fixed unit, number only |
+| `{{System;MemoryUsed;GB;0}}` | `31` | Fixed unit and decimal count |
+| `{{System;CPUUsage;0}}` | `14` | Percentages take a decimal count directly |
+| `{{System;Download;MB;2}}` | `12.15` | MB/s as a bare number |
+
+**Note:** GPU temperature, power, fan speed and core clock come from NVIDIA's NVML and are empty on AMD and Intel GPUs. Usage and VRAM work on every vendor. CPU temperature needs a sensor Windows actually exposes, so it is usually empty.
 
 </details>
 

@@ -7,9 +7,3 @@
 
 * add http/ws request chatbox module for showing custom info in chatbox
   - ability to send post/get/etc requests with custom body/url from template engine
-
-* add system resources chatbox module (probly native using rust)
-  - cpu name/usage
-  - gpu name/usage vram usage tempature
-  - memory usage/total
-  - network upload/download

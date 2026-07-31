@@ -35,6 +35,81 @@ export interface TrackerBatteryResponse {
   error?: string;
 }
 
+export interface SystemCpuInfo {
+  name: string;
+  vendor: string;
+  /** Overall usage percentage (0-100). */
+  usage: number;
+  physicalCores: number | null;
+  logicalCores: number;
+  /** Current frequency in MHz. */
+  frequency: number;
+  perCoreUsage: number[];
+  /** Celsius, when a readable sensor exists (rarely available on Windows). */
+  temperature: number | null;
+}
+
+export interface SystemMemoryInfo {
+  used: number;
+  total: number;
+  available: number;
+  /** Used percentage (0-100). */
+  usage: number;
+  swapUsed: number;
+  swapTotal: number;
+  swapUsage: number;
+}
+
+export interface SystemGpuInfo {
+  name: string;
+  vendor: string;
+  /** Utilization percentage (0-100), when it can be determined. */
+  usage: number | null;
+  vramUsed: number | null;
+  vramTotal: number | null;
+  vramUsage: number | null;
+  /** Celsius. NVIDIA only. */
+  temperature: number | null;
+  /** Percentage. NVIDIA only. */
+  fanSpeed: number | null;
+  /** Watts. NVIDIA only. */
+  power: number | null;
+  /** MHz. NVIDIA only. */
+  coreClock: number | null;
+}
+
+export interface SystemNetworkInterfaceInfo {
+  name: string;
+  /** Bytes per second. */
+  upload: number;
+  download: number;
+  totalUploaded: number;
+  totalDownloaded: number;
+}
+
+export interface SystemNetworkInfo {
+  /** Bytes per second, summed over every interface. */
+  upload: number;
+  download: number;
+  totalUploaded: number;
+  totalDownloaded: number;
+  interfaces: SystemNetworkInterfaceInfo[];
+}
+
+export interface SystemInfo {
+  cpu: SystemCpuInfo;
+  memory: SystemMemoryInfo;
+  gpus: SystemGpuInfo[];
+  network: SystemNetworkInfo;
+  /** Seconds since boot. */
+  uptime: number;
+}
+
+export interface SystemInfoResponse {
+  info: SystemInfo | null;
+  error?: string;
+}
+
 export interface OSCEndpoint {
   address: string;
   port: number;
@@ -96,6 +171,7 @@ export interface PreloadElectronAPI {
   utils: {
     getStartTime: (processName: string) => Promise<StartTimeResponse>;
     getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
+    getSystemInfo: () => Promise<SystemInfoResponse>;
   };
   shell: {
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
@@ -183,6 +259,7 @@ const api: PreloadElectronAPI = {
   utils: {
     getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
     getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
+    getSystemInfo: () => ipcRenderer.invoke('utils:systemInfo') as Promise<SystemInfoResponse>,
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,

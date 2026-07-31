@@ -27,6 +27,8 @@ cd src/natives/win-media-info && cargo build --release   # -> natives/win-media-
 
 Copy the resulting `target/release/*.exe` into the top-level `natives/` folder; `bun run build` copies `natives/` into `dist/natives/`.
 
+`advosc-utils` needs **cmake** and **LLVM/clang** on the machine, because `openvr_sys` builds the OpenVR C++ lib with cmake and generates bindings with bindgen. If cargo cannot find them, put `C:\Program Files\CMake\bin` on `PATH` and set `LIBCLANG_PATH=C:\Program Files\LLVM\bin`. `Cargo.lock` is gitignored, so version pins that matter live in `Cargo.toml`.
+
 ## Build layout
 
 Three separate Vite configs write into a shared `dist/` (each with `emptyOutDir: false` — order matters, and `copy:natives` runs first):

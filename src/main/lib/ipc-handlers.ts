@@ -6,6 +6,7 @@ import { OSC } from './osc';
 import { executeMediaCommand } from './media';
 import { getMainWindow } from './window';
 import { getProcessStartTime, getOpenVRTrackers } from './advosc-utils';
+import { getSystemInfo } from './system-monitor';
 import {
   DEFAULT_OSC_SOURCES,
   loadOSCSources,
@@ -229,6 +230,10 @@ export function setupIpcHandlers(port: OSC): void {
 
   ipcMain.handle('utils:openvrTrackers', async () => {
     return await getOpenVRTrackers();
+  });
+
+  ipcMain.handle('utils:systemInfo', () => {
+    return getSystemInfo();
   });
 
   // Global shortcuts IPC handlers
