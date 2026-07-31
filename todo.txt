@@ -1,7 +1,3 @@
-* improve pulsoid entegration use modules component ui instead of inline token input
-  - option to add key-value based pulsoid tokens
-  - add other platforms too for hearth rate info
-
 * speech to text recignation using chrome apis or/and whisper fast (native probbly rust)
   - that apis only works in browsers not in electron so advosc going open a local http server for user to open that page in browser to recognize their speech
   - translation support with multiple api support (google, deepl, openrouter)

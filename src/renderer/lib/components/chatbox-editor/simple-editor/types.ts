@@ -63,7 +63,8 @@ export type StopwatchBlock = {
 export type HeartRateBlock = {
   id: string;
   type: "heartrate";
-  token: string;
+  /** Name of a source configured in Modules → Heart Rate. */
+  source: string;
   field: string;
   avgSeconds: string;
 };

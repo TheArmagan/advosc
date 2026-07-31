@@ -14,6 +14,8 @@
     processFields,
   } from "../../options";
   import SourceInput from "../SourceInput.svelte";
+  import { chatbox } from "$lib/api/chatbox";
+  import type { ChatboxHeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
   import type {
     Block,
     ConditionBlock,
@@ -38,6 +40,13 @@
     getShortcutNames: () => string[];
     getShortcutParamCount: (name: string) => number;
   } = $props();
+
+  function getHeartRateSourceNames(): string[] {
+    const module = chatbox.modules.get("HeartRate") as
+      | ChatboxHeartRateModule
+      | undefined;
+    return Object.keys(module?.getSources() ?? {});
+  }
 </script>
 
 {#if block.type === "stopwatch"}
@@ -76,16 +85,24 @@
   </p>
 {:else if block.type === "heartrate"}
   {@const current = block as HeartRateBlock}
+  {@const sourceNames = getHeartRateSourceNames()}
   <div class="flex gap-1.5 flex-wrap">
     <div class="flex flex-col gap-0.5 flex-1 min-w-48">
-      <Label class="text-xs text-muted-foreground">Pulsoid Auth Token</Label>
-      <Input
-        type="password"
-        placeholder="Paste your token here"
-        value={current.token}
-        oninput={(e) =>
-          upd(current.id, { token: (e.target as HTMLInputElement).value })}
-      />
+      <Label class="text-xs text-muted-foreground">Heart rate source</Label>
+      <Select.Root
+        type="single"
+        value={current.source}
+        onValueChange={(v) => upd(current.id, { source: v ?? "" })}
+      >
+        <Select.Trigger class="w-full"
+          >{current.source || "Select a source"}</Select.Trigger
+        >
+        <Select.Content>
+          {#each sourceNames as name}
+            <Select.Item value={name}>{name}</Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
     </div>
     <div class="flex flex-col gap-0.5">
       <Label class="text-xs text-muted-foreground">What to show</Label>
@@ -122,6 +139,11 @@
       </div>
     {/if}
   </div>
+  <p class="text-xs text-muted-foreground">
+    {sourceNames.length === 0
+      ? "No heart rate sources yet. Add Pulsoid, HypeRate, Stromno or a custom WebSocket feed in Modules → Heart Rate."
+      : "Manage your heart rate sources in Modules → Heart Rate."}
+  </p>
 {:else if block.type === "osc"}
   {@const current = block as OSCBlock}
   <div class="flex flex-col gap-0.5">

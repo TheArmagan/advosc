@@ -226,17 +226,28 @@ Evaluate conditions and mathematical expressions.
 </details>
 
 <details>
-<summary><strong>❤️ Pulsoid</strong> — Heart rate monitoring</summary>
+<summary><strong>❤️ Heart Rate</strong> — Pulsoid, HypeRate, Stromno & custom feeds</summary>
 
-Display real-time heart rate data from Pulsoid.
+Display real-time heart rate data. Add your feeds under **Modules → Heart Rate** — each one gets a name you use in placeholders, so tokens never end up inside your template.
+
+Supported platforms:
+
+| Platform | What you need |
+|----------|---------------|
+| Pulsoid | Access token |
+| HypeRate | API key + session id |
+| Stromno | Widget id |
+| Custom WebSocket | WebSocket URL + optional JSON path (e.g. `data.heartRate`) |
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Pulsoid;TOKEN;HeartRate}}` | `75` | Current heart rate |
-| `{{Pulsoid;TOKEN;IsOnline}}` | `true` | Connection status |
-| `{{Pulsoid;TOKEN;AverageHR;300}}` | `72` | Average HR over N seconds |
-| `{{Pulsoid;TOKEN;MaxHR}}` | `120` | Session maximum heart rate |
-| `{{Pulsoid;TOKEN;MinHR}}` | `55` | Session minimum heart rate |
+| `{{HeartRate;SOURCE;HeartRate}}` | `75` | Current heart rate |
+| `{{HeartRate;SOURCE;IsOnline}}` | `true` | Connection status |
+| `{{HeartRate;SOURCE;AverageHR;300}}` | `72` | Average HR over N seconds (max 900) |
+| `{{HeartRate;SOURCE;MaxHR}}` | `120` | Session maximum heart rate |
+| `{{HeartRate;SOURCE;MinHR}}` | `55` | Session minimum heart rate |
+
+> Older templates using `{{Pulsoid;TOKEN;…}}` are migrated automatically: the token becomes a named source and the template is rewritten. `Pulsoid` also still resolves as an alias for `HeartRate`.
 
 </details>
 

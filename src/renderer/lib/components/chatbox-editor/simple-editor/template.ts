@@ -162,10 +162,10 @@ function renderBlock(block: Block, autoShortcuts: Record<string, string>): strin
         ? ""
         : `{{Time;FormatDuration;[[Stopwatch:ElapsedMs:${block.name}]];${block.format}}}`;
     case "heartrate":
-      if (!block.token) return "";
+      if (!block.source) return "";
       return block.field === "AverageHR"
-        ? `{{Pulsoid;${block.token};AverageHR;${block.avgSeconds || "300"}}}`
-        : `{{Pulsoid;${block.token};${block.field}}}`;
+        ? `{{HeartRate;${block.source};AverageHR;${block.avgSeconds || "300"}}}`
+        : `{{HeartRate;${block.source};${block.field}}}`;
     case "osc":
       return !block.address || block.address === "/avatar/parameters/"
         ? ""

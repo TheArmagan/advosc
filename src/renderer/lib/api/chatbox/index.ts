@@ -10,7 +10,8 @@ import { chatboxOSC } from "../vrc-osc";
 import { ChatboxTextModule } from "./modules/chatbox-text-module";
 import { ChatboxTimeModule } from "./modules/chatbox-time-module";
 import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
-import { ChatboxPulsoidModule } from "./modules/chatbox-pulsoid-module";
+import { ChatboxHeartRateModule } from "./modules/chatbox-heart-rate-module";
+import { migratePulsoidTemplates } from "./modules/heart-rate/migrate-pulsoid";
 import { ChatboxNumberModule } from "./modules/chatbox-number-module";
 import { ChatboxProcessModule } from "./modules/chatbox-process-module";
 import { ChatboxOVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
@@ -46,6 +47,14 @@ function splitParams(text: string, delimiter: string): string[] {
 }
 
 const chatboxList = new Map<string, ChatboxModule>();
+
+/**
+ * Renamed modules keep answering to their old id so templates written before the rename
+ * (or imported from an older export) keep resolving.
+ */
+const moduleAliases: Record<string, string> = {
+  Pulsoid: "HeartRate",
+};
 
 let callsMadeMap: Map<string, number> = new Map();
 let ignoreSet: Set<string> = new Set();
@@ -148,7 +157,7 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
         return;
       }
 
-      const m = chatboxList.get(moduleId);
+      const m = chatboxList.get(moduleAliases[moduleId] ?? moduleId);
       if (m) {
         activeInstanceKey = instanceKeys[i];
         const content = await m.getPlaceholderValue(...params);
@@ -224,7 +233,8 @@ registerChatboxModule(new ChatboxShortcutModule());
 registerChatboxModule(new ChatboxOVRTrackersModule());
 registerChatboxModule(new ChatboxHotkeyModule());
 registerChatboxModule(new ChatboxStopwatchModule());
-registerChatboxModule(new ChatboxPulsoidModule());
+const heartRateModule = new ChatboxHeartRateModule();
+registerChatboxModule(heartRateModule);
 registerChatboxModule(new ChatboxMediaInfoModule());
 registerChatboxModule(new ChatboxTimeModule());
 registerChatboxModule(new ChatboxTextModule());
@@ -232,6 +242,18 @@ registerChatboxModule(new ChatboxExpressionModule());
 registerChatboxModule(new ChatboxOSCDataModule());
 registerChatboxModule(new ChatboxNumberModule());
 registerChatboxModule(new ChatboxProcessModule());
+
+function runPulsoidMigration() {
+  migratePulsoidTemplates({
+    heartRate: heartRateModule,
+    modules: chatboxList,
+    settings,
+    advancedTemplate,
+    simpleEditorBlocks,
+  });
+}
+runPulsoidMigration();
+
 updatePlaceholders();
 
 export type AllValues = {
@@ -278,6 +300,10 @@ function setAllValues(values: AllValues) {
   if (values.editorState?.simpleBlocks !== undefined) {
     simpleEditorBlocks.set(values.editorState.simpleBlocks);
   }
+
+  // An imported bundle can still be Pulsoid-era, so re-run the upgrade on the new data.
+  heartRateModule.values.update((current) => ({ ...current, migratedFromPulsoid: false }));
+  runPulsoidMigration();
 }
 
 function getSettings() {

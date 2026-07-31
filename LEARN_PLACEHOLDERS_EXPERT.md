@@ -167,7 +167,7 @@ Here's a full expert-level configuration created by **x᙭x ᗪᕮᗩᗪ x᙭x**
         "MediaProgressText": "{{Time;FormatDuration;[[MediaInfo:Position]];Colon}}",
         "ScrollingHeartrate": "{{Text;Animate;Marquee;ﮩ٨ـ;Left;3}}",
         "FormattedHR": "{{Text;Animate;EachOne;❤️ ;💗 }}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Format;SuperScript;[[Shortcut:HeartrateComplete]]}}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Animate;EachOne; ❤️; 💗}}",
-        "HeartrateComplete": "{{Pulsoid;[[Shortcut:Token]];HeartRate}}",
+        "HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}",
         "MediaProgressText2": "{{Time;FormatDuration;[[MediaInfo:Duration]];Colon}}",
         "FormattedMP": "{{Text;Format;SuperScript;[[Shortcut:MediaProgressText]]}}",
         "FormattedMP2": "{{Text;Format;SuperScript;[[Shortcut:MediaProgressText2]]}}",
@@ -178,7 +178,7 @@ Here's a full expert-level configuration created by **x᙭x ᗪᕮᗩᗪ x᙭x**
         "MediaMarquee": "{{Text;Animate;EachOne;♬ ;♫ }}| {{Text;Animate;Marquee;[[Shortcut:MediaTitle]];Left;14}} |{{Text;Animate;EachOne; ♬; ♫}}\r\n",
         "StatusCycle": "{{Text;Animate;EachOne;*.⋆ | Happily Married <3 | *.⋆;*.⋆ | FBT: SomaticVR | *.⋆;*.⋆ | HMD: Quest 2 | *.⋆;*.⋆ | Rest your eyes! | *.⋆;*.⋆ | Take Breaks! | *.⋆;*.⋆ | Get a Snack! | *.⋆;*.⋆ | Drink Water! | *.⋆;*.⋆ | Say Hi! | *.⋆}}",
         "MediaProgressValue": "{{Expr;Math.round([[MediaInfo:Position]]/[[MediaInfo:Duration]]*$0)||0}}",
-        "Token": "",
+        "Source": "MyPulsoid",
         "EditedStatusCycle": "{{Text;Format;SmallCaps;[[Shortcut:StatusCycle]]}}\r\n",
         "TimeSmall": "{{Text;Format;SuperScript;[[Shortcut:Time]]}}"
       }
@@ -326,7 +326,7 @@ MediaMarquee
 
 ```
 "ScrollingHeartrate": "{{Text;Animate;Marquee;ﮩ٨ـ;Left;3}}"
-"HeartrateComplete": "{{Pulsoid;[[Shortcut:Token]];HeartRate}}"
+"HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}"
 "FormattedHR": "{{Text;Animate;EachOne;❤️ ;💗 }}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Format;SuperScript;[[Shortcut:HeartrateComplete]]}}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Animate;EachOne; ❤️; 💗}}"
 ```
 
@@ -336,12 +336,12 @@ MediaMarquee
 💗 |٨ـﮩ٨ـﮩ|⁷⁵|٨ـﮩ٨ـﮩ| 💗
 ```
 
-**Secret Token Pattern:**
+**Named Source Pattern:**
 ```
-"Token": ""
-"HeartrateComplete": "{{Pulsoid;[[Shortcut:Token]];HeartRate}}"
+"Source": "MyPulsoid"
+"HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}"
 ```
-The `Token` shortcut stores your Pulsoid API token - keeping it in one place and potentially in a "secrets" list!
+The `Source` shortcut stores the name of a feed you configured in **Modules → Heart Rate** (Pulsoid, HypeRate, Stromno or a custom WebSocket) - keeping it in one place so you can swap platforms without touching your template!
 
 ---
 
