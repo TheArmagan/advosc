@@ -5,10 +5,6 @@
 <h1 align="center">ADVOSC</h1>
 
 <p align="center">
-  <strong>Your ultimate VRChat OSC companion</strong>
-</p>
-
-<p align="center">
   <a href="https://discord.gg/spfmB7S78n">
     <img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
   </a>
@@ -19,31 +15,27 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="License">
 </p>
 
-<p align="center">
-  A modern desktop toolkit for VRChat OSC with a block-based chatbox editor for everyone, a full advanced editor for power users, avatar parameter control, and real-time media integration.
-</p>
+ADVOSC is a desktop app for VRChat OSC. It started because I wanted a nicer chatbox than the ones I could find, and it grew from there: a chatbox template engine you can build with blocks or write by hand, avatar parameter control and profiles, avatar scaling, and an OSC forwarder.
+
+Windows only, since a few parts (media info, trackers, hardware sensors) talk to Windows APIs directly.
+
+Grab a build from [Releases](https://github.com/TheArmagan/advosc/releases/latest), or come say hi on [Discord](https://discord.gg/spfmB7S78n) if something breaks.
 
 ---
 
-## ✨ Features
+## The chatbox
 
-### 💬 Simple Chatbox Editor
+Everything in the chatbox is a template. You write text, and anywhere you want live data you drop in a placeholder like `{{MediaInfo;Track}}`. ADVOSC re-renders it every 2.2 seconds (VRChat's rate limit) and sends the result.
 
-ADVOSC now includes a block-based chatbox editor designed to make the placeholder system approachable for everyone. You can build rich VRChat chatbox layouts visually, without needing to memorize placeholder syntax first.
+There are two ways to write one, and they both end up as the same template underneath, so you can start in one and finish in the other.
+
+### Simple editor
 
 <p align="center">
   <img src="./screenshots/chatbox-simple-editor.png" alt="Simple Chatbox Editor" width="700">
 </p>
 
-| Why it is easy to use | What it gives you |
-|-----------------------|-------------------|
-| **Visual block workflow** | Build your message by adding blocks instead of writing raw templates by hand |
-| **Live preview** | See the resulting chatbox output immediately while editing |
-| **Reorderable layout** | Move blocks up or down to shape the final message structure quickly |
-| **Safe by default** | The editor generates the correct placeholder template for you |
-| **Same real engine underneath** | It still uses ADVOSC's full placeholder system, so you do not lose power by starting simple |
-
-The simple editor currently includes **30 block types** across the most useful chatbox workflows:
+You stack blocks, reorder them, and watch the preview update as you go. No syntax to memorize. There are 30 block types:
 
 | Category | Blocks |
 |----------|--------|
@@ -55,237 +47,186 @@ The simple editor currently includes **30 block types** across the most useful c
 | **VRChat** | Hotkey State, Avatar Param, VR Tracker |
 | **Tools** | Stopwatch, Session Time, Shortcut, Number Calc, Random Number |
 
-### 🧠 Smart Sources, Not Just OSC
+The part that makes it actually usable for real templates: most blocks accept more than a plain value as their source. You can feed them:
 
-Most source-driven blocks can read from more than one kind of value. That means you can build complex chatbox outputs without being locked to raw OSC parameters.
+- a literal like `42`, `true`, or some text
+- an OSC address like `/avatar/parameters/Health`
+- an inner placeholder like `[[MediaInfo:Duration]]`
+- a full placeholder like `{{Shortcut;Time}}`
 
-Supported source styles include:
+So mixing media data, tracker battery, heart rate, hotkeys and conditions in one visual flow works fine. A few things people tend to build:
 
-- Plain values like `42`, `true`, or custom text
-- VRChat OSC addresses like `/avatar/parameters/Health`
-- Inner placeholders like `[[MediaInfo:Duration]]`
-- Full placeholders like `{{Shortcut;Time}}`
+- a now playing line that falls back to something else when nothing is playing
+- a song progress bar with a moving head character
+- a status line driven by a hotkey or an avatar parameter
+- a weather line with a condition emoji, temperature and sunset time
+- long media titles truncated so they fit, HP padded so the layout stops jumping
+- numbers clamped, mapped into another range, rounded, or randomized
+- marquee, blink, typewriter, rotating messages
+- AFK or stream status that swaps text depending on a condition
 
-This makes the simple editor good enough for real everyday templates, not just beginner demos. You can mix media data, tracker info, heart rate, stopwatch values, hotkeys, conditions, reusable shortcuts, text cleanup, and numeric utilities in one visual flow.
-
-It also now covers more cleanup and utility workflows directly in the UI, including text transforms, text replacement, truncation, padding, fallback values, numeric clamping, range mapping, rounding, absolute values, and random ranges.
-
-### ⚡ Examples You Can Build Quickly
-
-- A now-playing line with fallback text when nothing is playing
-- A song progress bar with a moving head character
-- A VRChat status line driven by hotkeys or avatar parameters
-- A heart-rate or tracker battery overlay
-- A local weather line with a condition emoji, temperature, and sunset time
-- Cleaned-up text blocks using uppercase, replace, pad, truncate, or fallback logic
-- Numeric HUD values clamped, mapped, rounded, or randomized without hand-writing placeholders
-- Animated text sections like marquee, blink, typewriter, or rotating messages
-- Conditional templates such as AFK status, stream status, or context-aware HUD text
-
-Some of the newly exposed simple-editor workflows include:
-
-- Turning any source into uppercase, lowercase, title case, reversed text, trimmed text, capitalized text, text length, or word count
-- Replacing text fragments inside a live source before displaying it
-- Truncating long media titles or other dynamic values to fit tight chatbox layouts
-- Padding values like HP, combo counters, or indices for cleaner HUD-style formatting
-- Falling back to safe text when a source is empty
-- Clamping or mapping numeric values from one range into another directly inside the editor
-- Generating random integers or floats from static values or live sources
-
-### ✍️ Advanced Chatbox Editor
-
-When you want direct control, ADVOSC still includes the full advanced editor. It is ideal for users who prefer writing placeholders manually, composing custom expressions, or fine-tuning complex templates line by line.
+### Advanced editor
 
 <p align="center">
   <img src="./screenshots/chatbox-advanced-editor.png" alt="Advanced Chatbox Editor" width="700">
 </p>
 
----
+If you would rather just write the template, this is a real editor with autocomplete for every module and placeholder. Nothing is hidden from you here, and anything the simple editor can produce you can also write by hand.
 
-### 🗂️ My Templates
+Whichever editor you have open is the one that gets sent.
 
-Saved templates keep whole chatbox setups around so you can switch between them instead of rebuilding one every time. A template stores the template text, both editors' state and every module's settings, so switching swaps your entire chatbox in one click.
+### My Templates
 
-| Action | Description |
-|--------|-------------|
-| **Save Current As Template** | Snapshots your current chatbox setup under a name |
-| **Use** | Switches to a saved template, optionally saving your current setup first so you can come back to it |
+A saved template holds the whole setup: the template text, both editors' state, and every module's settings. So switching templates swaps your entire chatbox in one click instead of you rebuilding it.
+
+| Action | What it does |
+|--------|--------------|
+| **Save Current As Template** | Snapshots your current setup under a name |
+| **Use** | Switches to a saved template, and can save your current one first so you can come back |
 | **Overwrite With Current Setup** | Updates a saved template in place after you tweak something |
-| **Share** | Copies a compact share code, copies the JSON, or saves a `.advosc.json` file |
-| **Import** | Accepts a share code, a template JSON, a template file, or an older "Export All Settings" bundle |
+| **Share** | Gives you a compact share code, the raw JSON, or a `.advosc.json` file |
+| **Import** | Takes a share code, template JSON, template file, or an old "Export All Settings" bundle |
 
-**Sharing never includes your credentials.** Heart rate tokens/API keys/widget ids, custom heart rate WebSocket URLs, and shortcuts you marked hidden are stripped out, and the share window lists exactly what was removed. They stay in your local copy, and a checkbox lets you include them on purpose when you are exporting a backup for yourself.
+Sharing strips your credentials. Heart rate tokens, API keys, widget ids, custom WebSocket URLs and shortcuts you marked hidden never leave your machine, and the share window tells you exactly what it removed. There is a checkbox to include them on purpose if you are exporting a backup for yourself.
 
-Imported templates land in your list without touching what you are currently running, so you can look before you switch.
-
----
-
-### 📡 OSC Forwarder
-
-The **OSC Forwarder** lets you evaluate any chatbox template value and send it to an arbitrary OSC address on a configurable interval.
-
-<p align="center">
-  <img src="./screenshots/osc-forwarder.png" alt="OSC Forwarder" width="700">
-</p>
-
-| Feature | Description |
-|---------|-------------|
-| **Template-driven values** | The value field supports any chatbox placeholder, e.g. `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` |
-| **OSC path picker** | Type a path manually or pick directly from the current avatar's OSC schema |
-| **Type casting** | Forward as `Float`, `Int`, `Bool`, or `String` — value is cast after template resolution |
-| **Value mapping** | For `Float` / `Int` types, optionally remap the resolved number from one range to another (e.g. `0..1` → `0..255`) |
-| **Per-rule interval** | Each forwarder runs on its own configurable interval (minimum 100 ms) |
+Imported templates just land in your list. Nothing switches until you say so.
 
 ---
 
-### 🧩 Chatbox Modules
+## Modules
 
-Both chatbox editors are powered by the same **14 chatbox modules** and the same placeholder engine. Start with the simple editor, switch to the advanced editor whenever you want, and keep using the exact same underlying system.
-
-The simple editor covers the most common combinations visually. The module list below shows the full engine that powers both editing styles.
-
-Click to expand each module for details:
+Both editors run on the same 14 modules. Click one to see what it does.
 
 <details>
-<summary><strong>🎵 Media Info</strong> — Display currently playing media information</summary>
+<summary><strong>🎵 Media Info</strong> :: whatever you are listening to</summary>
 
-Display real-time information about your currently playing media with synced lyrics support.
+Reads Windows' own media session, so it works with Spotify, browsers, most players. Synced lyrics included when they exist.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{MediaInfo;Status}}` | `Playing` | Current playback status (Playing, Paused, Stopped) |
-| `{{MediaInfo;Track}}` | `Never Gonna Give You Up` | Currently playing track title |
+| `{{MediaInfo;Status}}` | `Playing` | Playback status (Playing, Paused, Stopped) |
+| `{{MediaInfo;Track}}` | `Never Gonna Give You Up` | Track title |
 | `{{MediaInfo;Artist}}` | `Rick Astley` | Artist name |
 | `{{MediaInfo;Album}}` | `Whenever You Need Somebody` | Album name |
 | `{{MediaInfo;Position}}` | `120000` | Current position in milliseconds |
 | `{{MediaInfo;Duration}}` | `300000` | Total duration in milliseconds |
-| `{{MediaInfo;AppName}}` | `Spotify` | Media player application name |
+| `{{MediaInfo;AppName}}` | `Spotify` | Which app is playing it |
 | `{{MediaInfo;Lyric}}` | `Never gonna give you up` | Current synced lyric line |
 
 </details>
 
 <details>
-<summary><strong>🕒 Time</strong> — Date, time, and duration utilities</summary>
-
-Comprehensive time and date formatting with timezone support.
+<summary><strong>🕒 Time</strong> :: clocks, dates, durations</summary>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{Time;NowMillis}}` | `1700000000000` | Current time in milliseconds (Unix epoch) |
-| `{{Time;Now;HH:mm}}` | `14:30` | Current time with custom format |
-| `{{Time;Now;yyyy-MM-dd}}` | `2023-11-14` | Current date with custom format |
-| `{{Time;Timezone}}` | `America/New_York` | System timezone identifier |
+| `{{Time;Now;HH:mm}}` | `14:30` | Current time, your format |
+| `{{Time;Now;yyyy-MM-dd}}` | `2023-11-14` | Current date, your format |
+| `{{Time;Timezone}}` | `America/New_York` | System timezone |
 | `{{Time;UTCOffset}}` | `+00:00` | Current UTC offset |
-| `{{Time;FormatDuration;3600000;Short}}` | `1h 0m 0s` | Format milliseconds as duration |
-| `{{Time;ElapsedMillis;...}}` | `5000` | Elapsed time since timestamp |
+| `{{Time;FormatDuration;3600000;Short}}` | `1h 0m 0s` | Milliseconds as a readable duration |
+| `{{Time;ElapsedMillis;...}}` | `5000` | Time since a timestamp |
 
 </details>
 
 <details>
-<summary><strong>🔤 Text</strong> — Text manipulation and animations</summary>
+<summary><strong>🔤 Text</strong> :: transforms, bars, animations</summary>
 
-Transform, build, format, and animate text with a large set of utilities.
+The biggest module. Transform text, build meters out of it, animate it.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Text;Upper;hello}}` | `HELLO` | Convert to uppercase |
-| `{{Text;Lower;HELLO}}` | `hello` | Convert to lowercase |
-| `{{Text;Title;hello world}}` | `Hello World` | Convert to title case |
-| `{{Text;Trim;  hello  }}` | `hello` | Remove leading and trailing whitespace |
-| `{{Text;Replace;cat;dog;cat nap}}` | `dog nap` | Replace all matching text |
-| `{{Text;Length;hello}}` | `5` | Get text length |
-| `{{Text;Reverse;hello}}` | `olleh` | Reverse text |
-| `{{Text;Repeat;3;Hi }}` | `Hi Hi Hi ` | Repeat text N times |
-| `{{Text;Slice;0;5;Hello World}}` | `Hello` | Extract substring |
-| `{{Text;Format;Rounded;text}}` | `ⓣⓔⓧⓣ` | Apply special formatting |
-| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | Apply one of the newer visual styles |
-| `{{Text;Truncate;10;Long text...}}` | `Long text...` | Truncate with ellipsis |
-| `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Build a progress bar with an optional head character |
-| `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Build a hearts / health style meter |
-| `{{Text;Build;StarRating;3;5;★;☆}}` | `★★★☆☆` | Build a rating display |
-| `{{Text;Build;Toggle;true;ON;OFF}}` | `ON` | Map truthy / falsy values to text |
-| `{{Text;NumberFormat;2;.;,;1234.5}}` | `1,234.50` | Format numeric text for display |
-| `{{Text;Animate;Marquee;...}}` | `scrolling` | Animated marquee effect |
-| `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal text over time |
-| `{{Text;Animate;Blink;ON;OFF}}` | `ON` → `OFF` | Alternate between two texts |
+| `{{Text;Upper;hello}}` | `HELLO` | Uppercase |
+| `{{Text;Lower;HELLO}}` | `hello` | Lowercase |
+| `{{Text;Title;hello world}}` | `Hello World` | Title case |
+| `{{Text;Trim;  hello  }}` | `hello` | Strip surrounding whitespace |
+| `{{Text;Replace;cat;dog;cat nap}}` | `dog nap` | Replace every match |
+| `{{Text;Length;hello}}` | `5` | Length |
+| `{{Text;Reverse;hello}}` | `olleh` | Reverse it |
+| `{{Text;Repeat;3;Hi }}` | `Hi Hi Hi ` | Repeat N times |
+| `{{Text;Slice;0;5;Hello World}}` | `Hello` | Substring |
+| `{{Text;Format;Rounded;text}}` | `ⓣⓔⓧⓣ` | Unicode styling |
+| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | One of the newer styles |
+| `{{Text;Truncate;10;Long text...}}` | `Long text...` | Cut with an ellipsis |
+| `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Progress bar, optional head character |
+| `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Hearts style meter |
+| `{{Text;Build;StarRating;3;5;★;☆}}` | `★★★☆☆` | Rating display |
+| `{{Text;Build;Toggle;true;ON;OFF}}` | `ON` | Truthy or falsy to text |
+| `{{Text;NumberFormat;2;.;,;1234.5}}` | `1,234.50` | Format a number for display |
+| `{{Text;Animate;Marquee;...}}` | `scrolling` | Marquee |
+| `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal over time |
+| `{{Text;Animate;Blink;ON;OFF}}` | `ON` → `OFF` | Alternate two texts |
 | `{{Text;Animate;EachOne;A;B;C}}` | `A` → `B` → `C` | Cycle through items |
 
 </details>
 
 <details>
-<summary><strong>🔢 Number</strong> — Math operations and random numbers</summary>
-
-Mathematical operations and random number generation.
+<summary><strong>🔢 Number</strong> :: math and randomness</summary>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Number;Random;Int;1;100}}` | `42` | Random integer between min and max |
-| `{{Number;Random;Float;0;1}}` | `0.7531` | Random float between min and max |
-| `{{Number;Clamp;150;0;100}}` | `100` | Clamp value between min and max |
-| `{{Number;Map;5;0;10;0;100}}` | `50` | Map value from one range to another |
+| `{{Number;Random;Int;1;100}}` | `42` | Random integer in a range |
+| `{{Number;Random;Float;0;1}}` | `0.7531` | Random float in a range |
+| `{{Number;Clamp;150;0;100}}` | `100` | Keep a value inside bounds |
+| `{{Number;Map;5;0;10;0;100}}` | `50` | Remap one range onto another |
 | `{{Number;Floor;3.7}}` | `3` | Round down |
 | `{{Number;Ceil;3.2}}` | `4` | Round up |
-| `{{Number;Round;3.5}}` | `4` | Round to nearest integer |
+| `{{Number;Round;3.5}}` | `4` | Round to nearest |
 | `{{Number;Abs;-5}}` | `5` | Absolute value |
 
 </details>
 
 <details>
-<summary><strong>🧪 Expression</strong> — Logic and math expressions</summary>
+<summary><strong>🧪 Expression</strong> :: conditions and real math</summary>
 
-Evaluate conditions and mathematical expressions.
+When a condition gets too weird for the other modules, write it out.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Expr;5 > 3;Yes;No}}` | `Yes` | Conditional evaluation |
+| `{{Expr;5 > 3;Yes;No}}` | `Yes` | If / else |
 | `{{Expr;Math.sqrt(16)}}` | `4` | Math expressions |
-| `{{Expr;Math.sin(Math.PI/2)}}` | `1` | Trigonometric functions |
-| `{{Expr;[[MediaInfo:Status]]=='Playing';🎵;⏸️}}` | `🎵` | Dynamic conditions |
+| `{{Expr;Math.sin(Math.PI/2)}}` | `1` | Trig |
+| `{{Expr;[[MediaInfo:Status]]=='Playing';🎵;⏸️}}` | `🎵` | Conditions on live data |
 
 </details>
 
 <details>
-<summary><strong>❤️ Heart Rate</strong> — Pulsoid, HypeRate, Stromno & custom feeds</summary>
+<summary><strong>❤️ Heart Rate</strong> :: Pulsoid, HypeRate, Stromno, custom</summary>
 
-Display real-time heart rate data. Add your feeds under **Modules → Heart Rate** — each one gets a name you use in placeholders, so tokens never end up inside your template.
-
-Supported platforms:
+Add your feeds under **Modules → Heart Rate**. Each one gets a name that you use in the placeholder, so your token never ends up sitting inside a template you might share.
 
 | Platform | What you need |
 |----------|---------------|
 | Pulsoid | Access token |
 | HypeRate | API key + session id |
 | Stromno | Widget id |
-| Custom WebSocket | WebSocket URL + optional JSON path (e.g. `data.heartRate`) |
+| Custom WebSocket | WebSocket URL + optional JSON path (like `data.heartRate`) |
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{HeartRate;SOURCE;HeartRate}}` | `75` | Current heart rate |
 | `{{HeartRate;SOURCE;IsOnline}}` | `true` | Connection status |
-| `{{HeartRate;SOURCE;AverageHR;300}}` | `72` | Average HR over N seconds (max 900) |
-| `{{HeartRate;SOURCE;MaxHR}}` | `120` | Session maximum heart rate |
-| `{{HeartRate;SOURCE;MinHR}}` | `55` | Session minimum heart rate |
+| `{{HeartRate;SOURCE;AverageHR;300}}` | `72` | Average over N seconds (max 900) |
+| `{{HeartRate;SOURCE;MaxHR}}` | `120` | Session maximum |
+| `{{HeartRate;SOURCE;MinHR}}` | `55` | Session minimum |
 
-> Older templates using `{{Pulsoid;TOKEN;…}}` are migrated automatically: the token becomes a named source and the template is rewritten. `Pulsoid` also still resolves as an alias for `HeartRate`.
+> Old templates using `{{Pulsoid;TOKEN;…}}` migrate themselves: the token becomes a named source and the template gets rewritten. `Pulsoid` still works as an alias too.
 
 </details>
 
 <details>
-<summary><strong>📡 OSC Data</strong> — Read avatar OSC parameters</summary>
-
-Access raw OSC parameter values from your avatar.
+<summary><strong>📡 OSC Data</strong> :: raw avatar parameters</summary>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{OSCData;/avatar/parameters/AFK}}` | `true` | Read any OSC parameter value |
-| `{{OSCData;/avatar/parameters/VelocityX}}` | `0.5` | Read float parameters |
+| `{{OSCData;/avatar/parameters/AFK}}` | `true` | Any OSC parameter value |
+| `{{OSCData;/avatar/parameters/VelocityX}}` | `0.5` | Floats too |
 
 </details>
 
 <details>
-<summary><strong>🎮 OpenVR Trackers</strong> — VR tracker information</summary>
-
-Monitor your VR trackers' battery and status.
+<summary><strong>🎮 OpenVR Trackers</strong> :: battery and status</summary>
 
 <p align="center">
   <img src="./screenshots/chatbox-modules-ovr.png" alt="OVR Trackers Module" width="500">
@@ -294,73 +235,71 @@ Monitor your VR trackers' battery and status.
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{OVRTrackers;BatteryLevel;finder}}` | `85` | Battery level (0-100) |
-| `{{OVRTrackers;IsCharging;finder}}` | `true` | Charging status |
-| `{{OVRTrackers;ModelNumber;finder}}` | `Vive Tracker 3.0` | Tracker model |
-| `{{OVRTrackers;SerialNumber;finder}}` | `LHR-12345678` | Serial number |
-| `{{OVRTrackers;IsExists;finder}}` | `true` | Check if tracker exists |
+| `{{OVRTrackers;IsCharging;finder}}` | `true` | Charging or not |
+| `{{OVRTrackers;ModelNumber;finder}}` | `Vive Tracker 3.0` | Model |
+| `{{OVRTrackers;SerialNumber;finder}}` | `LHR-12345678` | Serial |
+| `{{OVRTrackers;IsExists;finder}}` | `true` | Whether it is there at all |
 
-*Finder can be device index, serial number, device class, or model number.*
+The finder can be a device index, serial number, device class, or model number.
 
 </details>
 
 <details>
-<summary><strong>⚙️ Process</strong> — Monitor running processes</summary>
-
-Track process information and session times.
+<summary><strong>⚙️ Process</strong> :: is it running, and for how long</summary>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Process;IsRunning;VRChat.exe}}` | `true` | Check if process is running |
-| `{{Process;StartedAt;VRChat.exe}}` | `1700000000000` | Process start timestamp |
-| `{{Process;SessionTime;VRChat.exe}}` | `3600000` | Time since process started |
+| `{{Process;IsRunning;VRChat.exe}}` | `true` | Running or not |
+| `{{Process;StartedAt;VRChat.exe}}` | `1700000000000` | Start timestamp |
+| `{{Process;SessionTime;VRChat.exe}}` | `3600000` | Time since it started |
 
 </details>
 
 <details>
-<summary><strong>🖥️ System Resources</strong> — Live CPU, GPU, memory and network usage</summary>
+<summary><strong>🖥️ System Resources</strong> :: CPU, GPU, memory, network</summary>
 
-Show what your PC is doing right now, sampled by a native helper twice a second.
+What your PC is doing right now, sampled by a native helper twice a second.
 
 **CPU**
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{System;CPUName}}` | `AMD Ryzen 9 7950X 16-Core Processor` | Processor model name |
-| `{{System;CPUUsage}}` | `13.7` | Overall CPU usage percentage |
-| `{{System;CPUCoreUsage;0}}` | `24.5` | Usage of a single logical core, by zero based index |
+| `{{System;CPUName}}` | `AMD Ryzen 9 7950X 16-Core Processor` | Processor name |
+| `{{System;CPUUsage}}` | `13.7` | Overall usage percentage |
+| `{{System;CPUCoreUsage;0}}` | `24.5` | One logical core, zero based index |
 | `{{System;CPUCores}}` | `16` | Physical core count |
-| `{{System;CPUThreads}}` | `32` | Logical core (thread) count |
+| `{{System;CPUThreads}}` | `32` | Thread count |
 | `{{System;CPUFrequency}}` | `4501` | Current frequency in MHz |
-| `{{System;CPUTemperature}}` | `62` | Temperature in celsius, empty when Windows exposes no sensor |
+| `{{System;CPUTemperature}}` | `62` | Celsius, empty when Windows exposes no sensor |
 
 **Memory**
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{System;MemoryUsed}}` | `31.2 GB` | Memory in use |
+| `{{System;MemoryUsed}}` | `31.2 GB` | In use |
 | `{{System;MemoryTotal}}` | `127.2 GB` | Total physical memory |
-| `{{System;MemoryAvailable}}` | `95.9 GB` | Memory available to applications |
-| `{{System;MemoryUsage}}` | `24.6` | Memory usage percentage |
+| `{{System;MemoryAvailable}}` | `95.9 GB` | Available to applications |
+| `{{System;MemoryUsage}}` | `24.6` | Usage percentage |
 | `{{System;SwapUsed}}` | `0 B` | Page file in use |
 | `{{System;SwapTotal}}` | `8 GB` | Total page file size |
 | `{{System;SwapUsage}}` | `0.0` | Page file usage percentage |
 
-**GPU** — every GPU placeholder takes an optional finder as its first parameter: a zero based index, or part of the name or vendor. Leave it empty to use the GPU with the most VRAM, which is the discrete card on a laptop or an APU system.
+**GPU.** Every GPU placeholder takes an optional finder as its first parameter: a zero based index, or part of the name or vendor. Leave it empty and you get the GPU with the most VRAM, which is the discrete card on a laptop or APU system.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{System;GPUName}}` | `NVIDIA GeForce RTX 3070 Ti` | GPU name |
 | `{{System;GPUVendor}}` | `NVIDIA` | NVIDIA, AMD, Intel or Unknown |
-| `{{System;GPUUsage}}` | `42.0` | GPU utilization percentage |
+| `{{System;GPUUsage}}` | `42.0` | Utilization percentage |
 | `{{System;VRAMUsed}}` | `2.7 GB` | VRAM in use |
 | `{{System;VRAMTotal}}` | `8 GB` | Total VRAM |
 | `{{System;VRAMUsage}}` | `34.3` | VRAM usage percentage |
-| `{{System;GPUTemperature}}` | `53` | Temperature in celsius, NVIDIA only |
-| `{{System;GPUPower}}` | `52.1` | Power draw in watts, NVIDIA only |
-| `{{System;GPUFanSpeed}}` | `0` | Fan speed percentage, NVIDIA only |
+| `{{System;GPUTemperature}}` | `53` | Celsius, NVIDIA only |
+| `{{System;GPUPower}}` | `52.1` | Watts, NVIDIA only |
+| `{{System;GPUFanSpeed}}` | `0` | Fan percentage, NVIDIA only |
 | `{{System;GPUCoreClock}}` | `1020` | Core clock in MHz, NVIDIA only |
-| `{{System;GPUCount}}` | `2` | Number of detected GPUs |
-| `{{System;GPUUsage;intel}}` | `3.0` | Usage of the GPU matching a finder |
+| `{{System;GPUCount}}` | `2` | How many GPUs were found |
+| `{{System;GPUUsage;intel}}` | `3.0` | Usage of whichever GPU matches the finder |
 
 **Network and uptime**
 
@@ -368,11 +307,11 @@ Show what your PC is doing right now, sampled by a native helper twice a second.
 |-------------|--------|-------------|
 | `{{System;Upload}}` | `1.5 MB/s` | Current upload speed |
 | `{{System;Download}}` | `12.1 MB/s` | Current download speed |
-| `{{System;TotalUploaded}}` | `32.6 GB` | Bytes uploaded since boot |
-| `{{System;TotalDownloaded}}` | `24.0 GB` | Bytes downloaded since boot |
-| `{{System;Uptime}}` | `22h 41m` | Time since boot, also accepts `seconds`, `minutes`, `hours`, `days` or `clock` |
+| `{{System;TotalUploaded}}` | `32.6 GB` | Uploaded since boot |
+| `{{System;TotalDownloaded}}` | `24.0 GB` | Downloaded since boot |
+| `{{System;Uptime}}` | `22h 41m` | Since boot, also takes `seconds`, `minutes`, `hours`, `days` or `clock` |
 
-**Units and decimals** — every byte and speed placeholder accepts a unit and a decimal count. With `auto` (the default) the value scales itself and keeps its label; with an explicit unit you get only the number, which is handy for math and progress bars.
+**Units and decimals.** Every byte and speed placeholder takes a unit and a decimal count. With `auto` (the default) the value scales itself and keeps its label. Give it an explicit unit and you get a bare number, which is what you want when feeding it into math or a progress bar.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
@@ -382,65 +321,65 @@ Show what your PC is doing right now, sampled by a native helper twice a second.
 | `{{System;CPUUsage;0}}` | `14` | Percentages take a decimal count directly |
 | `{{System;Download;MB;2}}` | `12.15` | MB/s as a bare number |
 
-**Note:** GPU temperature, power, fan speed and core clock come from NVIDIA's NVML and are empty on AMD and Intel GPUs. Usage and VRAM work on every vendor. CPU temperature needs a sensor Windows actually exposes, so it is usually empty.
+Heads up: GPU temperature, power, fan speed and core clock come from NVIDIA's NVML, so they are empty on AMD and Intel. Usage and VRAM work everywhere. CPU temperature needs a sensor Windows actually exposes, which it usually does not.
 
 </details>
 
 <details>
-<summary><strong>🌤️ Weather</strong> — Live weather and forecast</summary>
+<summary><strong>🌤️ Weather</strong> :: current conditions and forecast</summary>
 
-Live conditions and a 7 day forecast from [Open-Meteo](https://open-meteo.com), free and with no API key. Save your locations under **Modules → Weather**: each one gets a name you use in placeholders, and the first one becomes the default used when the location parameter is left empty.
+Live weather and a 7 day forecast from [Open-Meteo](https://open-meteo.com), free and no API key needed. Save your locations under **Modules → Weather**. Each gets a name, and the first one becomes the default that gets used when you leave the location parameter empty.
 
-The location parameter accepts a saved location name, any place name (looked up automatically), or `lat,lon` coordinates.
+The location parameter takes a saved name, any place name (it gets looked up for you), or `lat,lon` coordinates.
 
-**Current conditions**
+**Right now**
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Weather;Temperature}}` | `21.4` | Current temperature at your default location |
-| `{{Weather;Temperature;Home}}` | `21.4` | Current temperature at a saved location |
+| `{{Weather;Temperature}}` | `21.4` | Temperature at your default location |
+| `{{Weather;Temperature;Home}}` | `21.4` | Temperature at a saved location |
 | `{{Weather;FeelsLike;Tokyo}}` | `19.8` | Apparent temperature |
 | `{{Weather;Condition}}` | `Partly cloudy` | Condition as text |
 | `{{Weather;Emoji}}` | `⛅` | Condition as an emoji, day and night aware |
 | `{{Weather;Code}}` | `2` | WMO weather code |
-| `{{Weather;Humidity}}` | `63` | Relative humidity in percent |
+| `{{Weather;Humidity}}` | `63` | Relative humidity percent |
 | `{{Weather;Precipitation}}` | `0.2` | Precipitation of the last hour |
 | `{{Weather;Rain}}` | `0.2` | Rain and showers of the last hour |
 | `{{Weather;Snowfall}}` | `0` | Snowfall of the last hour |
 | `{{Weather;WindSpeed}}` | `12` | Wind speed |
-| `{{Weather;WindGusts}}` | `24` | Wind gusts |
-| `{{Weather;WindDirection}}` | `270` | Wind direction in degrees |
-| `{{Weather;WindCompass}}` | `W` | Wind direction as a compass point |
-| `{{Weather;CloudCover}}` | `48` | Cloud cover in percent |
+| `{{Weather;WindGusts}}` | `24` | Gusts |
+| `{{Weather;WindDirection}}` | `270` | Direction in degrees |
+| `{{Weather;WindCompass}}` | `W` | Direction as a compass point |
+| `{{Weather;CloudCover}}` | `48` | Cloud cover percent |
 | `{{Weather;Pressure}}` | `1013` | Surface pressure in hPa |
-| `{{Weather;IsDay}}` | `true` | Whether it is daytime at the location |
+| `{{Weather;IsDay}}` | `true` | Daytime at that location |
 
-**Daily forecast** (last parameter is the day offset: `0` today, `1` tomorrow, up to `6`)
+**Forecast.** The last parameter is the day offset: `0` today, `1` tomorrow, up to `6`.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Weather;High;;0}}` | `24.1` | Highest temperature of the day |
-| `{{Weather;Low;;0}}` | `12.6` | Lowest temperature of the day |
+| `{{Weather;High;;0}}` | `24.1` | Day's high |
+| `{{Weather;Low;;0}}` | `12.6` | Day's low |
 | `{{Weather;Sunrise;;0}}` | `1700000000000` | Sunrise timestamp in milliseconds |
 | `{{Weather;Sunset;;0}}` | `1700000000000` | Sunset timestamp in milliseconds |
-| `{{Weather;UVIndex;;0}}` | `5.3` | Maximum UV index of the day |
-| `{{Weather;PrecipitationChance;;1}}` | `40` | Chance of precipitation in percent |
-| `{{Weather;PrecipitationSum;;1}}` | `3.4` | Total precipitation of the day |
+| `{{Weather;UVIndex;;0}}` | `5.3` | Max UV index of the day |
+| `{{Weather;PrecipitationChance;;1}}` | `40` | Chance of precipitation percent |
+| `{{Weather;PrecipitationSum;;1}}` | `3.4` | Total precipitation for the day |
 | `{{Weather;DailyCondition;;1}}` | `Slight rain` | Condition text for the whole day |
 | `{{Weather;DailyEmoji;;1}}` | `🌦️` | Condition emoji for the whole day |
-| `{{Weather;Date;;1}}` | `2023-11-15` | Local calendar date of that day |
+| `{{Weather;Date;;1}}` | `2023-11-15` | Local calendar date |
 
 **Location and status**
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Weather;Location}}` | `Berlin, Berlin, DE` | Name of the resolved location |
-| `{{Weather;Timezone}}` | `Europe/Berlin` | Timezone of the location |
-| `{{Weather;UpdatedAt}}` | `1700000000000` | When the data was last fetched |
-| `{{Weather;IsOnline}}` | `true` | Whether the last fetch succeeded |
+| `{{Weather;Location}}` | `Berlin, Berlin, DE` | Resolved location name |
+| `{{Weather;Timezone}}` | `Europe/Berlin` | Timezone there |
+| `{{Weather;UpdatedAt}}` | `1700000000000` | When it was last fetched |
+| `{{Weather;IsOnline}}` | `true` | Whether the last fetch worked |
 | `{{Weather;Unit;Temperature}}` | `°C` | Unit symbol for `Temperature`, `Wind` or `Precipitation` |
 
-Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refresh interval are set in the module tab. Timestamps pair with the Time module:
+Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refresh interval live in the module tab. Timestamps pair up with the Time module:
 
 ```
 {{Weather;Emoji}} {{Weather;Temperature}}{{Weather;Unit;Temperature}} • sunset {{Time;Timestamp;[[Weather:Sunset]];HH:mm}}
@@ -449,182 +388,144 @@ Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refres
 </details>
 
 <details>
-<summary><strong>🌐 HTTP & WebSocket</strong> — Custom info from any web API or live feed</summary>
+<summary><strong>🌐 HTTP & WebSocket</strong> :: pull in anything else</summary>
 
-Pull anything you like into your chatbox from a web API or a WebSocket. Add your endpoints under **Modules → HTTP & WebSocket**: each one gets a name you use in placeholders.
+If a module for it does not exist, make one out of this. Add endpoints under **Modules → HTTP & WebSocket** and each gets a name you use in placeholders.
 
-There are two kinds of source:
+Two kinds of source:
 
-- **HTTP Request** — any method (GET, POST, PUT, PATCH, DELETE, …) with your own headers and body. It is polled on the refresh interval you pick, and only while a template is actually using it.
-- **WebSocket** — stays connected and reconnects on its own. Placeholders read the **latest** message that arrived. You can send a subscribe or auth message on connect and a keepalive message on a timer.
+- **HTTP Request.** Any method with your own headers and body. Polled on the interval you pick, and only while a template is actually using it.
+- **WebSocket.** Stays connected and reconnects on its own. Placeholders read the latest message that arrived. You can send a subscribe or auth message on connect, and a keepalive on a timer.
 
-The URL, headers and body can all contain placeholders, so a request can be built from live data. They are filled in right before the request goes out.
+The URL, headers and body can all contain placeholders, filled in right before the request goes out, so a request can be built from live data.
 
-**Reading values**
-
-Bodies are parsed as JSON, and the path parameter walks into them: `data.items[0].title`. Array indexes can be negative to count from the end (`[-1]` is the last item), quoted keys handle odd names (`["odd key"]`), and `length` works on arrays. Leave the path empty to get the whole body. A body that is not JSON comes back as plain text.
+**Reading values.** Bodies get parsed as JSON and the path parameter walks into them: `data.items[0].title`. Array indexes can be negative to count from the end (`[-1]` is the last), quoted keys handle weird names (`["odd key"]`), and `length` works on arrays. Empty path gives you the whole body. Anything that is not JSON comes back as plain text.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{Request;Value;MyApi;data.value}}` | `42` | Value at a JSON path in the latest body |
-| `{{Request;Value;MyApi;items[0].name}}` | `Sword` | Array indexing, negative indexes count from the end |
-| `{{Request;Value;MyApi}}` | `{"data":{"value":42}}` | The whole body when the path is left empty |
-| `{{Request;Text;MyApi}}` | `{"data":{"value":42}}` | The raw body exactly as received |
-| `{{Request;Has;MyApi;data.value}}` | `true` | Whether the path exists in the latest body |
-| `{{Request;Get;https://api.example.com/x;data.value}}` | `42` | One-off GET without configuring a source |
-| `{{Request;Get;https://api.example.com/x;data.value;300}}` | `42` | Same, with a custom refresh interval in seconds |
+| `{{Request;Value;MyApi;items[0].name}}` | `Sword` | Array indexing, negatives count from the end |
+| `{{Request;Value;MyApi}}` | `{"data":{"value":42}}` | Whole body when the path is empty |
+| `{{Request;Text;MyApi}}` | `{"data":{"value":42}}` | Raw body exactly as received |
+| `{{Request;Has;MyApi;data.value}}` | `true` | Whether that path exists |
+| `{{Request;Get;https://api.example.com/x;data.value}}` | `42` | One-off GET, no source to configure |
+| `{{Request;Get;https://api.example.com/x;data.value;300}}` | `42` | Same, with a refresh interval in seconds |
 
 **Status**
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Request;IsOnline;MyApi}}` | `true` | Last request succeeded, or the socket is connected |
+| `{{Request;IsOnline;MyApi}}` | `true` | Last request worked, or the socket is connected |
 | `{{Request;Status;MyApi}}` | `200` | HTTP status code, empty for WebSocket sources |
-| `{{Request;Ok;MyApi}}` | `true` | Whether the status code was 2xx |
-| `{{Request;Error;MyApi}}` | `Request timed out after 10000ms` | Last error, empty when everything is fine |
-| `{{Request;Count;MyApi}}` | `7` | Responses received, or WebSocket messages that arrived |
+| `{{Request;Ok;MyApi}}` | `true` | Whether that status was 2xx |
+| `{{Request;Error;MyApi}}` | `Request timed out after 10000ms` | Last error, empty when things are fine |
+| `{{Request;Count;MyApi}}` | `7` | Responses received, or messages that arrived |
 | `{{Request;UpdatedAt;MyApi}}` | `1700000000000` | When data last arrived, in milliseconds |
 | `{{Request;Age;MyApi}}` | `12` | Seconds since data last arrived |
-| `{{Request;Header;MyApi;content-type}}` | `application/json` | A header of the latest HTTP response |
+| `{{Request;Header;MyApi;content-type}}` | `application/json` | A header from the latest response |
 
-Pair it with the Expr module to show a fallback while a source is down, and with Time to format its timestamps:
+Pair it with Expr to show something sensible while a source is down:
 
 ```
 {{Expr;[[Request:IsOnline:MyApi]]=='true';Players online: [[Request:Value:MyApi:server.players]];Server offline}}
 ```
 
-**Note:** HTTP requests are made by ADVOSC itself, not by the page, so ordinary browser CORS rules do not apply and any endpoint works. Response bodies are capped at 2 MB. A source is only polled while a template or the module tab is using it, and a request that has already failed never blocks your chatbox while it retries.
+Requests are made by ADVOSC itself and not by the page, so browser CORS rules do not apply and any endpoint works. Bodies are capped at 2 MB. A source is only polled while a template or the module tab is using it, and a source that is already failing never blocks your chatbox while it retries.
 
 </details>
 
 <details>
-<summary><strong>⌨️ Hotkey</strong> — Keyboard shortcuts</summary>
-
-Create interactive hotkey-triggered content.
+<summary><strong>⌨️ Hotkey</strong> :: press a key, change the chatbox</summary>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Hotkey;IsPressed;MyHotkey;1000}}` | `true` | Check if pressed within timeout |
-| `{{Hotkey;IsToggled;MyHotkey}}` | `false` | Toggle state (press to switch) |
+| `{{Hotkey;IsPressed;MyHotkey;1000}}` | `true` | Pressed within a timeout |
+| `{{Hotkey;IsToggled;MyHotkey}}` | `false` | Toggle state, press to flip |
 
 </details>
 
 <details>
-<summary><strong>⏱️ Stopwatch</strong> — Hotkey-controlled timers</summary>
+<summary><strong>⏱️ Stopwatch</strong> :: timers driven by hotkeys</summary>
 
-Create stopwatches controlled by hotkeys from the Hotkey module. Perfect for afk detection, session tracking, or any timed activities.
+Stopwatches you control with hotkeys from the Hotkey module. Good for AFK detection and session tracking.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{Stopwatch;ElapsedMs;MyTimer}}` | `125000` | Elapsed time in milliseconds |
-| `{{Stopwatch;IsRunning;MyTimer}}` | `true` | Whether stopwatch is actively running |
-| `{{Stopwatch;IsPaused;MyTimer}}` | `false` | Whether stopwatch is paused |
+| `{{Stopwatch;ElapsedMs;MyTimer}}` | `125000` | Elapsed milliseconds |
+| `{{Stopwatch;IsRunning;MyTimer}}` | `true` | Currently running |
+| `{{Stopwatch;IsPaused;MyTimer}}` | `false` | Currently paused |
 
-**Hotkey Actions:**
-- **Start/Toggle** — Start or pause the stopwatch
-- **Pause** — Pause without resetting
-- **Reset** — Reset to zero (keeps running if active)
-- **Stop** — Reset and pause completely
-- **Reset + Start** — Reset to zero and immediately start (perfect for afk detection!)
+The hotkey actions are Start/Toggle, Pause (keeps the time), Reset (back to zero, keeps running), Stop (reset and pause), and Reset + Start, which is the one you want for AFK timers.
 
 </details>
 
 <details>
-<summary><strong>📝 Shortcut</strong> — Custom placeholder shortcuts</summary>
+<summary><strong>📝 Shortcut</strong> :: name your own placeholders</summary>
 
-Define your own reusable placeholder shortcuts.
-
-Create custom shortcuts that expand to complex placeholder combinations. Perfect for frequently used patterns!
+Give a name to a chunk of placeholder soup you keep retyping, then use the name instead. The simple editor also generates these for you behind the scenes.
 
 </details>
 
-> 📚 **Want to master placeholders?** Check out our [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) for a beginner-friendly, in-depth tutorial on the two-layer placeholder system with real examples!
+New to the syntax? The [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) walks through the two-layer system from scratch, and [the expert one](./LEARN_PLACEHOLDERS_EXPERT.md) goes further once that clicks.
 
 ---
 
-### 🎭 Beyond Chatbox: Avatar OSC Control
+## Beyond the chatbox
 
-Once your chatbox is set up, ADVOSC also gives you direct control over avatar parameters with tools built for real VRChat use.
+### Avatar OSC control
 
 <p align="center">
   <img src="./screenshots/avatar-osc-parameters.png" alt="Avatar OSC Parameters" width="700">
 </p>
 
-| Feature | Description |
-|---------|-------------|
-| **🔒 Parameter Locking** | Lock toggles to prevent accidental changes |
-| **🔗 Link & Redirect** | Route one parameter's value to another |
-| **✨ Animate Parameters** | Create breathing effects, color shifts, and more |
+Every parameter on your avatar, in one list. You can lock a toggle so nothing changes it by accident, route one parameter's value into another, or animate one for breathing effects and color shifts.
 
 <p align="center">
   <img src="./screenshots/avatar-osc-link-parameter.png" alt="Parameter Linking" width="400">
   <img src="./screenshots/avatar-osc-animate-parameter.png" alt="Parameter Animation" width="400">
 </p>
 
----
-
-### 👗 Beyond Chatbox: Avatar Profiles
-
-Save, reuse, and restore complete avatar parameter states in a few clicks.
+### Avatar profiles
 
 <p align="center">
   <img src="./screenshots/avatar-profiles.png" alt="Avatar Profiles" width="700">
 </p>
 
-| Feature | Description |
-|---------|-------------|
-| **💾 Save Profiles** | Capture outfits, toggles, props, and moods |
-| **⚡ Quick Load** | Restore any profile with a single click |
-| **📤 Export & Import** | Share profiles or back them up as JSON |
-| **🔍 Search & Filter** | Find profiles by name or filter by avatar |
+Save a whole parameter state (outfit, toggles, props, whatever mood you had going) and load it back in one click. Profiles export and import as JSON, and you can search or filter by avatar once you have collected a few too many.
+
+### Avatar scale
+
+Resize yourself in game by sending an eye height to VRChat, anywhere from `0.01` to `10.0` meters. Drag the slider or type an exact number, save your own named presets, and optionally have ADVOSC remember a height per avatar so it comes back on avatar change or instance join.
+
+There is also parameter forwarding, so you can drive your size from inside your avatar: `/avatar/parameters/advosc_eyeheight` goes to `/avatar/eyeheight`, either normalized `0..1` onto a range you pick, or straight through as meters.
+
+### OSC Forwarder
+
+<p align="center">
+  <img src="./screenshots/osc-forwarder.png" alt="OSC Forwarder" width="700">
+</p>
+
+Take any chatbox template value and send it to an OSC address on a timer. The value field accepts any placeholder, so `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` both work. Pick the target path by hand or straight from the current avatar's schema, cast to `Float`, `Int`, `Bool` or `String`, optionally remap numbers from one range to another (`0..1` to `0..255`, say), and give each rule its own interval down to 100 ms.
 
 ---
 
-### 📏 Beyond Chatbox: Avatar Scale
+## Coming soon
 
-Resize your avatar in-game by sending an eye height (`/avatar/eyeheight`) to VRChat, anywhere from `0.01` to `10.0` meters.
-
-| Feature | Description |
-|---------|-------------|
-| **🎚️ Slider & Direct Input** | Drag for quick changes or type an exact height in meters |
-| **⭐ Custom Presets** | Save your own named sizes and apply them with one click |
-| **💾 Per-Avatar Memory** | Optionally remember a height per avatar and restore it on avatar change or instance join |
-| **🔀 Parameter Forwarding** | Drive your size from inside your avatar — forward `/avatar/parameters/advosc_eyeheight` to `/avatar/eyeheight`, either normalized `0..1` onto a custom range or as a direct meter value |
+Speech to text with translation, so you can talk and let it land in the chatbox.
 
 ---
 
-## 🚧 Coming Soon
+## Development
 
-- **🗣️ Speech to Text & Translation** — Speak and let your words flow into the chatbox, automatically translated
-
----
-
-## 🛠️ Development
-
-This project uses [Bun](https://bun.sh/), [Electron](https://www.electronjs.org/), [Svelte 5](https://svelte.dev/), and [Rust](https://www.rust-lang.org/).
+Bun, Electron, Svelte 5, and a bit of Rust for the Windows-only bits.
 
 ```bash
-# Install dependencies
-bun install
-
-# Start development server
-bun run dev
-
-# Build for production
-bun run build
-
-# Create distributable
-bun run package
+bun install     # deps
+bun run dev     # main + preload + renderer + electron, all watching
+bun run build   # production build into dist/
+bun run package # distributable
 ```
 
 ---
 
-## 📄 License
-
-Distributed under the **GPL-3.0 License**.
-
----
-
-<p align="center">
-  Made with ❤️ for the VRChat Community
-</p>
+GPL-3.0. Made for the VRChat community, mostly at hours I should have been asleep.

@@ -1,89 +1,80 @@
-# 🎯 ADVOSC Placeholder System - A Baby's Guide
+# Learning placeholders
 
-Welcome! This guide will teach you how placeholders work in ADVOSC like you're 5 years old. Let's learn together! 🍼
+If you have opened the advanced editor and immediately closed it again, this is for you. By the end you will be able to read something like `{{Time;FormatDuration;[[MediaInfo:Position]];Short}}` and know exactly what it does.
+
+Take your time, nothing here is hard once you see the pattern.
 
 ---
 
-## 📦 What is a Placeholder?
+## What a placeholder is
 
-Think of a placeholder like a **magic box** 📦 that gets replaced with real information when you need it.
+A placeholder is a hole in your text that ADVOSC fills in for you. Instead of writing:
 
-Instead of writing:
 ```
 The time is 14:30
 ```
 
-You write:
+which is wrong one minute later, you write:
+
 ```
 The time is {{Time;Now;HH:mm}}
 ```
 
-And the magic box `{{Time;Now;HH:mm}}` **transforms** into `14:30` automatically! ✨
+and ADVOSC swaps `{{Time;Now;HH:mm}}` for the real time every time it sends. Same for your music, your heart rate, your tracker battery, anything a module can give you.
+
+The shape is always the same: module name, then parameters, separated by semicolons.
+
+```
+{{Time  ;  Now  ;  HH:mm}}
+   ↑        ↑       ↑
+ module   what     how
+```
 
 ---
 
-## 🎨 The Two Types of Magic Boxes
+## The two kinds
 
-ADVOSC has **TWO** types of placeholder boxes:
+There are two, and the difference matters.
 
-### 1. 🟡 Display Placeholders: `{{Module;Param;Param}}`
-- Uses **curly braces** `{{ }}`
-- Params separated by **semicolons** `;`
-- This is the **OUTER** layer - what you see in your final text
+**Outer:** `{{Module;Param;Param}}` with curly braces and semicolons. This is the one that shows up in your chatbox.
 
-### 2. 🔵 Inner Placeholders: `[[Module:Param:Param]]`
-- Uses **square brackets** `[[ ]]`
-- Params separated by **colons** `:`
-- This is the **INNER** layer - used INSIDE other placeholders
+**Inner:** `[[Module:Param:Param]]` with square brackets and colons. This one does not show up on its own. It goes *inside* an outer placeholder, as one of its parameters.
 
----
+Same modules, same parameters, different punctuation. That is genuinely the whole difference.
 
-## 🪆 The Nesting Concept (Like Russian Dolls!)
+### Why bother with two
 
-Imagine Russian nesting dolls 🪆 - a smaller doll fits inside a bigger doll.
+Because sometimes you need the answer from one placeholder to feed the next one. Say you want your song position as `2m 5s` instead of `125000` milliseconds. The Time module can format a duration, but you have to hand it a number, and only MediaInfo knows that number.
 
-**Inner placeholders** `[[...]]` go INSIDE **outer placeholders** `{{...}}`
-
-```
-{{OuterModule;SomeParam;[[InnerModule:SomeValue]]}}
-        ↑                        ↑
-   OUTER BOX              INNER BOX (inside outer!)
-```
-
-### Why Two Layers?
-
-Because sometimes you need the **result** of one placeholder as a **parameter** for another!
-
-**Example:**
 ```
 {{Time;FormatDuration;[[MediaInfo:Position]];Short}}
 ```
 
-**What happens step-by-step:**
-1. First, `[[MediaInfo:Position]]` gets the song position (e.g., `125000` milliseconds)
-2. Then, `{{Time;FormatDuration;125000;Short}}` formats it to `2m 5s`
+What happens, in order:
 
-It's like a **recipe** - you need ingredients (inner) before cooking (outer)! 🍳
+1. `[[MediaInfo:Position]]` runs first and turns into `125000`
+2. now the outer one reads `{{Time;FormatDuration;125000;Short}}`
+3. that turns into `2m 5s`
 
----
-
-## 🚀 The Shortcut Module - Unlimited Nesting Power!
-
-The **Shortcut module** lets you create **named shortcuts** that can contain OTHER placeholders!
-
-This is where it gets REALLY powerful - you can nest as deep as you want!
-
-```
-Shortcut A → contains → Shortcut B → contains → Shortcut C → contains → actual values
-```
+Inner first, then outer. Like getting your ingredients out before you start cooking.
 
 ---
 
-## 🎓 Real Example Breakdown
+## Shortcuts
 
-Let's analyze this real configuration step by step:
+The Shortcut module lets you give a name to a chunk of placeholder and use the name instead. Nothing more to it, but it is what makes big templates survivable, because a shortcut can contain other shortcuts:
 
-### The Settings We're Learning:
+```
+Shortcut A → Shortcut B → Shortcut C → actual data
+```
+
+You can go as deep as you like.
+
+---
+
+## A real setup, taken apart
+
+Here is a working configuration. Do not try to read it yet, we go through it piece by piece right after.
 
 ```json
 {
@@ -126,165 +117,129 @@ Let's analyze this real configuration step by step:
 }
 ```
 
----
+### `Time`, the easy one
 
-## 🔍 Breaking Down Each Shortcut
-
-### 1️⃣ `Time` - The Simple One
 ```
 {{Time;Now;hh:mm a}}
 ```
-**What it does:** Shows current time like `02:30 PM`
 
-**No nesting here!** Just a simple placeholder. 🕐
+Shows `02:30 PM`. No nesting at all. Every complicated template is made of pieces this small.
 
----
+### `MediaProgressText`, two layers
 
-### 2️⃣ `MediaProgressText` - Two-Layer Nesting
 ```
 {{Time;FormatDuration;[[MediaInfo:Position]];Colon}}-{{Time;FormatDuration;[[MediaInfo:Duration]];Colon}}
 ```
 
-**Visual breakdown:**
-```
-┌─────────────────────────────────────────────────────┐
-│  {{Time;FormatDuration;[[MediaInfo:Position]];Colon}}  │
-│         ↑                    ↑              ↑       │
-│     Module            Inner Value      Format Style │
-└─────────────────────────────────────────────────────┘
-```
+Two placeholders with a dash between them. The inners resolve first:
 
-**Step-by-step:**
-1. `[[MediaInfo:Position]]` → Gets current song position (e.g., `65000` ms)
-2. `[[MediaInfo:Duration]]` → Gets total song length (e.g., `180000` ms)
-3. `{{Time;FormatDuration;65000;Colon}}` → Formats to `1:05`
-4. `{{Time;FormatDuration;180000;Colon}}` → Formats to `3:00`
+1. `[[MediaInfo:Position]]` gives `65000`
+2. `[[MediaInfo:Duration]]` gives `180000`
+3. `{{Time;FormatDuration;65000;Colon}}` gives `1:05`
+4. `{{Time;FormatDuration;180000;Colon}}` gives `3:00`
 
-**Final result:** `1:05-3:00` 🎵
+Result: `1:05-3:00`
 
----
+### `MediaProgressTextFormatted`, three layers
 
-### 3️⃣ `MediaProgressTextFormatted` - Three-Layer Nesting! 🪆🪆🪆
 ```
 {{Text;Format;SuperScript;[[Shortcut:MediaProgressText]]}}
 ```
 
-**The nesting chain:**
 ```
 MediaProgressTextFormatted
-    └── calls → Shortcut:MediaProgressText
-                    └── calls → MediaInfo:Position & MediaInfo:Duration
-                                    └── gets actual song data!
+  └── Shortcut:MediaProgressText
+        └── MediaInfo:Position and MediaInfo:Duration
 ```
 
-**Step-by-step:**
-1. `[[Shortcut:MediaProgressText]]` → Evaluates to `1:05-3:00`
-2. `{{Text;Format;SuperScript;1:05-3:00}}` → Makes it tiny: `¹:⁰⁵⁻³:⁰⁰`
+The shortcut resolves to `1:05-3:00`, then SuperScript shrinks it to `¹:⁰⁵⁻³:⁰⁰`. Tiny text takes less room in the chatbox, which is why people do this.
 
-**Final result:** `¹:⁰⁵⁻³:⁰⁰` (superscript text!)
+### `MediaWithLyric`, now with a condition
 
----
-
-### 4️⃣ `MediaWithLyric` - Conditional + Multi-Layer
 ```
 {{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]] [[Shortcut:MediaProgressTextFormatted]]}}
 {{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}
 ```
 
-**The `Expr` module is like an IF statement:**
+Expr is an if/else:
+
 ```
-{{Expr; CONDITION ; RESULT_IF_TRUE ; RESULT_IF_FALSE}}
+{{Expr; condition ; if true ; if false}}
 ```
 
-**Breaking it down:**
-- **Condition:** `[[MediaInfo:Status]]=='Playing'` → Is music playing?
-- **If TRUE:** Show track info with progress
-- **If FALSE:** Show nothing (no third parameter = empty)
+Here the condition is "is something playing", the true branch is the track and artist and progress, and there is no false branch, so it shows nothing when the music is off. Leaving the last parameter out is a perfectly normal way to say "otherwise nothing".
 
-**The nesting here:**
+The chain underneath:
+
 ```
 MediaWithLyric
-    ├── MediaInfo:Status (is it playing?)
-    ├── MediaInfo:Track (song name)
-    ├── MediaInfo:Artist (artist name)
-    ├── Shortcut:MediaProgressTextFormatted ←── This is 3 layers deep already!
-    │       └── Shortcut:MediaProgressText
-    │               └── MediaInfo:Position & Duration
-    └── MediaInfo:Lyric (current lyric line)
+  ├── MediaInfo:Status      is it playing
+  ├── MediaInfo:Track
+  ├── MediaInfo:Artist
+  ├── Shortcut:MediaProgressTextFormatted    (already 3 layers deep)
+  │     └── Shortcut:MediaProgressText
+  │           └── MediaInfo:Position and Duration
+  └── MediaInfo:Lyric
 ```
 
-**Example result:**
+Output:
+
 ```
 Never Gonna Give You Up ᵇʸ Rick Astley ¹:⁰⁵⁻³:⁰⁰
 ⁿᵉᵛᵉʳ ᵍᵒⁿⁿᵃ ˡᵉᵗ ʸᵒᵘ ᵈᵒʷⁿ
 ```
 
----
+### `AfkForFormatted` and `VRChatSessionTimeFormatted`
 
-### 5️⃣ `AfkForFormatted` - Stopwatch Integration
 ```
 {{Time;FormatDuration;[[Stopwatch:ElapsedMs:AFKStopwatch]];Short}}
-```
-
-**What happens:**
-1. `[[Stopwatch:ElapsedMs:AFKStopwatch]]` → Gets milliseconds since AFK started (e.g., `300000`)
-2. `{{Time;FormatDuration;300000;Short}}` → Formats to `5m`
-
----
-
-### 6️⃣ `VRChatSessionTimeFormatted` - Process Time
-```
 {{Time;FormatDuration;[[Process:SessionTime:VRChat.exe]];Short}}
 ```
 
-**What happens:**
-1. `[[Process:SessionTime:VRChat.exe]]` → How long VRChat has been running (e.g., `3600000` ms)
-2. `{{Time;FormatDuration;3600000;Short}}` → Formats to `1h`
+Exact same shape as before, different source. One asks a stopwatch how long it has been running (`300000`, formatted to `5m`), the other asks how long VRChat has been open (`3600000`, formatted to `1h`).
 
----
+Once you notice that "get a number, format it" is one pattern you reuse forever, most templates stop looking scary.
 
-### 7️⃣ `BatteryInfo` - VR vs Desktop Detection
+### `BatteryInfo`, VR or desktop
+
 ```
 {{Expr;[[OVRTrackers:IsExists:0]];[[OVRTrackers:BatteryLevel:0]]%🔋;Desktop⚡}}
 ```
 
-**This is an IF statement:**
-- **Condition:** `[[OVRTrackers:IsExists:0]]` → Is VR tracker #0 connected?
-- **If TRUE (VR mode):** Show battery level like `85%🔋`
-- **If FALSE (Desktop):** Show `Desktop⚡`
+If tracker 0 exists you are in VR, so show its battery like `85%🔋`. Otherwise show `Desktop⚡`. One line, and your chatbox knows which mode you are in.
 
----
+### `PlayStatus`, everything at once
 
-### 8️⃣ `PlayStatus` - The Ultimate Combo! 🏆
 ```
 {{Expr;[[Hotkey:IsToggled:AFKToggle]];I'm AFK for [[Shortcut:AfkForFormatted]];[[Shortcut:BatteryInfo]] (I'm on VR for [[Shortcut:VRChatSessionTimeFormatted]])}}
 ```
 
-**This is the BOSS of nesting:**
 ```
 PlayStatus
-    ├── Hotkey:IsToggled:AFKToggle (did you press Home key?)
-    │
-    ├── IF AFK (TRUE):
-    │       └── "I'm AFK for " + Shortcut:AfkForFormatted
-    │                               └── Stopwatch:ElapsedMs:AFKStopwatch
-    │
-    └── IF NOT AFK (FALSE):
-            ├── Shortcut:BatteryInfo
-            │       └── OVRTrackers:IsExists:0 → OVRTrackers:BatteryLevel:0 OR "Desktop⚡"
-            │
-            └── Shortcut:VRChatSessionTimeFormatted
-                    └── Process:SessionTime:VRChat.exe
+  ├── Hotkey:IsToggled:AFKToggle          did you press Home
+  │
+  ├── if AFK:
+  │     └── "I'm AFK for " + Shortcut:AfkForFormatted
+  │                            └── Stopwatch:ElapsedMs:AFKStopwatch
+  │
+  └── if not AFK:
+        ├── Shortcut:BatteryInfo
+        │     └── OVRTrackers:IsExists:0 → battery, or "Desktop⚡"
+        └── Shortcut:VRChatSessionTimeFormatted
+              └── Process:SessionTime:VRChat.exe
 ```
 
-**Example results:**
-- AFK mode: `I'm AFK for 5m`
-- Playing VR: `85%🔋 (I'm on VR for 1h 30m)`
-- Playing Desktop: `Desktop⚡ (I'm on VR for 1h 30m)`
+Which gives you one of:
+
+- `I'm AFK for 5m`
+- `85%🔋 (I'm on VR for 1h 30m)`
+- `Desktop⚡ (I'm on VR for 1h 30m)`
 
 ---
 
-## 📋 The Main Template
+## The template itself
+
+After all that, the actual template is three lines:
 
 ```
 {{Shortcut;Time}}
@@ -292,7 +247,6 @@ PlayStatus
 {{Shortcut;PlayStatus}}
 ```
 
-This simple 3-line template produces something like:
 ```
 02:30 PM
 Never Gonna Give You Up ᵇʸ Rick Astley ¹:⁰⁵⁻³:⁰⁰
@@ -300,95 +254,43 @@ Never Gonna Give You Up ᵇʸ Rick Astley ¹:⁰⁵⁻³:⁰⁰
 Desktop⚡ (I'm on VR for 1h 30m)
 ```
 
+That is the point of shortcuts. All the mess lives in named pieces you wrote once, and the template you actually look at stays readable.
+
 ---
 
-## ⌨️ Hotkey & Stopwatch Integration
+## How the hotkey and stopwatch tie in
 
-### The `AFKToggle` Hotkey
 ```json
-"Hotkey": {
-  "hotkeys": {
-    "AFKToggle": "Home"
-  }
-}
+"Hotkey": { "hotkeys": { "AFKToggle": "Home" } }
 ```
-- Pressing **Home** key toggles AFK mode ON/OFF
-- `[[Hotkey:IsToggled:AFKToggle]]` returns `true` or `false`
 
-### The `AFKStopwatch` Stopwatch
+Pressing Home flips `[[Hotkey:IsToggled:AFKToggle]]` between `true` and `false`.
+
 ```json
 "Stopwatch": {
   "stopwatches": {
-    "AFKStopwatch": {
-      "resetStartHotkey": "AFKToggle"
-    }
+    "AFKStopwatch": { "resetStartHotkey": "AFKToggle" }
   }
 }
 ```
-- When `AFKToggle` is pressed, the stopwatch **resets AND starts**
-- This tracks how long you've been AFK!
+
+The same key press resets the stopwatch to zero and starts it. So one tap of Home says "I am AFK now" and starts counting, and your chatbox handles the rest.
 
 ---
 
-## 🗺️ Visual Flow Chart
+## Cheat sheet
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        MAIN TEMPLATE                            │
-│  {{Shortcut;Time}}  {{Shortcut;MediaWithLyric}}  {{Shortcut;PlayStatus}}  │
-└────────┬─────────────────────┬────────────────────────┬─────────┘
-         │                     │                        │
-         ▼                     ▼                        ▼
-    ┌─────────┐         ┌─────────────┐          ┌────────────┐
-    │  Time   │         │MediaWithLyric│          │ PlayStatus │
-    │ shortcut│         │  shortcut   │          │  shortcut  │
-    └────┬────┘         └──────┬──────┘          └─────┬──────┘
-         │                     │                       │
-         ▼                     ▼                       ▼
-    ┌─────────┐    ┌───────────────────────┐   ┌──────────────────┐
-    │Time;Now │    │ Expr (if playing)     │   │ Expr (if AFK)    │
-    │ hh:mm a │    │ + MediaInfo modules   │   │ + nested shortcuts│
-    └─────────┘    │ + MediaProgressText   │   └──────────────────┘
-                   │   Formatted shortcut  │
-                   └───────────────────────┘
-                              │
-                              ▼
-                   ┌───────────────────────┐
-                   │ MediaProgressText     │
-                   │ (Time;FormatDuration) │
-                   │ + MediaInfo:Position  │
-                   │ + MediaInfo:Duration  │
-                   └───────────────────────┘
-```
+| Syntax | Called | For |
+|--------|--------|-----|
+| `{{Module;Param}}` | outer | text that shows up in the chatbox |
+| `[[Module:Param]]` | inner | values you pass into another placeholder |
+| `{{Shortcut;Name}}` | shortcut call | reusing a chunk you named |
+| `{{Expr;cond;yes;no}}` | expression | if/else |
 
 ---
 
-## 📝 Quick Reference
+## That is the whole idea
 
-| Syntax | Name | Use For |
-|--------|------|---------|
-| `{{Module;Param}}` | Outer/Display | Final visible text |
-| `[[Module:Param]]` | Inner/Nested | Values inside other placeholders |
-| `{{Shortcut;Name}}` | Shortcut call | Reuse complex placeholder combos |
-| `{{Expr;cond;true;false}}` | Expression | Conditional text (if/else) |
+Two kinds of placeholder, inner runs first, shortcuts let you name things and stack them. Everything else is just picking modules from the [README](./README.md) and trying stuff.
 
----
-
-## 🎉 You Did It!
-
-Now you understand:
-1. ✅ Two types of placeholders (`{{}}` and `[[]]`)
-2. ✅ How nesting works (inner goes inside outer)
-3. ✅ How Shortcuts let you create reusable, deeply nested templates
-4. ✅ How Hotkeys and Stopwatches integrate with placeholders
-5. ✅ How to read and understand complex placeholder chains
-
-**Happy chatboxing!** 🎮✨
-
----
-
-## 🚀 Ready for More?
-
-Want to learn about **parameterized shortcuts** with `$0`, `$1`, `$2`? Build reusable function-like components? Create complex animated displays?
-
-**→ [Continue to the Expert Guide](./LEARN_PLACEHOLDERS_EXPERT.md)** 🧠
+When you want parameterized shortcuts (`$0`, `$1`, shortcuts that work like functions), animation that stays in sync, and the patterns people use to build the really fancy chatboxes, the [expert guide](./LEARN_PLACEHOLDERS_EXPERT.md) picks up from here.

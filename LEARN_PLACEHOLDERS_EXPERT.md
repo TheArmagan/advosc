@@ -1,161 +1,132 @@
-# 🧠 ADVOSC Placeholder System - Expert Guide
+# Placeholders, the deep end
 
-This guide assumes you've read the [Beginner's Guide](./LEARN_PLACEHOLDERS.md) and understand the basics. Here we dive into **advanced techniques** including parameterized shortcuts, complex animations, and building reusable component systems.
+This one assumes you have been through the [beginner guide](./LEARN_PLACEHOLDERS.md) and that nesting no longer surprises you. Here we get into shortcuts that take parameters, animations that compose, and the patterns behind the chatboxes that make people ask how you did that.
 
----
+Refresher, in case you need it:
 
-## 🎯 Quick Recap
-
-| Syntax | Purpose |
-|--------|---------|
-| `{{Module;Param;...}}` | Outer placeholder (display layer) |
-| `[[Module:Param:...]]` | Inner placeholder (nested inside outer) |
-| `{{Shortcut;Name}}` | Call a named shortcut |
-| `[[Shortcut:Name]]` | Use shortcut result as inner value |
+| Syntax | What it is |
+|--------|------------|
+| `{{Module;Param;...}}` | outer placeholder, the display layer |
+| `[[Module:Param:...]]` | inner placeholder, goes inside an outer one |
+| `{{Shortcut;Name}}` | call a shortcut |
+| `[[Shortcut:Name]]` | use a shortcut's result as an inner value |
 
 ---
 
-## ⚡ Parameterized Shortcuts - The Power Feature
+## Shortcuts that take parameters
 
-Shortcuts can accept **parameters** using `$0`, `$1`, `$2`, etc. This transforms shortcuts from simple text replacements into **reusable functions**!
-
-### Syntax
+This is the feature that changes everything. A shortcut can reference `$0`, `$1`, `$2` and so on, and you fill those in when you call it. Shortcuts stop being copy-paste and start being functions.
 
 ```
-// Defining a shortcut with parameters:
-"MyShortcut": "Hello $0, you are $1 years old!"
+Define:  "MyShortcut": "Hello $0, you are $1 years old!"
 
-// Calling it:
-{{Shortcut;MyShortcut;World;25}}
-         ↑        ↑     ↑    ↑
-      Module   Name   $0   $1
+Call:    {{Shortcut;MyShortcut;World;25}}
+                      ↑         ↑     ↑
+                     name      $0    $1
 
-// Result: "Hello World, you are 25 years old!"
+Get:     Hello World, you are 25 years old!
 ```
 
-### Parameter Indexing
+`$0` is the first parameter after the name, `$1` the second, and it keeps going as far as you need.
 
-- `$0` = First parameter after the shortcut name
-- `$1` = Second parameter
-- `$2` = Third parameter
-- ... and so on
-
-### Parameters Can Be Placeholders!
-
-The real power comes when parameters themselves are placeholders:
+And since parameters are just text that gets substituted in, they can be placeholders themselves:
 
 ```
 {{Shortcut;MyShortcut;[[MediaInfo:Track]];[[MediaInfo:Artist]]}}
 ```
 
+That is where it gets fun.
+
 ---
 
-## 🔧 Building Reusable Components
+## Building components
 
-### Example: Generic Progress Bar
-
-Let's build a progress bar that works for ANYTHING:
+### A progress bar that works for anything
 
 ```
 "ProgressBar": "{{Text;Repeat;$0;$2}}$3{{Text;Repeat;[[Expr:Math.max($0, $1)-$0]];$4}}"
 ```
 
-**Parameters:**
-| Param | Purpose | Example |
-|-------|---------|---------|
-| `$0` | Current progress value | `3` |
-| `$1` | Maximum value | `10` |
-| `$2` | Filled character | `█` |
-| `$3` | Current position marker | `🔘` |
-| `$4` | Empty character | `░` |
+| Param | Is | Example |
+|-------|-----|---------|
+| `$0` | current value | `3` |
+| `$1` | maximum | `10` |
+| `$2` | filled character | `█` |
+| `$3` | the marker that rides along | `🔘` |
+| `$4` | empty character | `░` |
 
-**Usage:**
 ```
-{{Shortcut;ProgressBar;3;10;█;🔘;░}}
+{{Shortcut;ProgressBar;3;10;█;🔘;░}}   →   ███🔘░░░░░░░
 ```
 
-**Result:** `███🔘░░░░░░░`
+Nothing in there knows or cares what it is measuring. Health, song position, a countdown, whatever you feed it.
 
-### Making It Dynamic: Media Progress Bar
-
-Now wrap this generic progress bar for media:
+### Now point it at your music
 
 ```
 "MediaProgressValue": "{{Expr;Math.round([[MediaInfo:Position]]/[[MediaInfo:Duration]]*$0)||0}}"
 "MediaProgressBar": "{{Shortcut;ProgressBar;[[Shortcut:MediaProgressValue:$0]];$0;$1;$2;$3}}"
 ```
 
-**Breaking down `MediaProgressValue`:**
-1. `[[MediaInfo:Position]]` / `[[MediaInfo:Duration]]` = progress ratio (0.0 to 1.0)
-2. Multiply by `$0` (the scale/max value)
-3. `Math.round()` to get integer
-4. `||0` fallback if calculation fails
+`MediaProgressValue` takes position over duration (a ratio from 0 to 1), multiplies by whatever scale you ask for, rounds it, and falls back to `0` with `||0` when there is no music and the division goes to `NaN`.
 
-**Calling `MediaProgressBar`:**
+`MediaProgressBar` is a thin wrapper: it passes your scale down to the calculator to get the current value, then hands everything to the generic bar.
+
 ```
 {{Shortcut;MediaProgressBar;5;˖⁺‧;🛸;₊˖⁺}}
-                          ↑  ↑   ↑   ↑
-                       scale filled marker empty
+                            ↑   ↑    ↑   ↑
+                          scale fill marker empty
 ```
 
-**Result at 60% progress:** `˖⁺‧˖⁺‧˖⁺‧🛸₊˖⁺₊˖⁺`
+At 60% through the song: `˖⁺‧˖⁺‧˖⁺‧🛸₊˖⁺₊˖⁺`
+
+Three shortcuts, and none of them knows more than it has to. That layering is the whole trick.
 
 ---
 
-## 🎨 Advanced Animation Patterns
+## Animation
 
-### Marquee Text (Scrolling)
+### Marquee
 
 ```
 {{Text;Animate;Marquee;TEXT;Direction;VisibleLength}}
 ```
 
-| Param | Values | Description |
-|-------|--------|-------------|
-| Direction | `Left`, `Right` | Scroll direction |
-| VisibleLength | Number | How many characters visible at once |
+Direction is `Left` or `Right`, visible length is how many characters fit in the window.
 
-**Example - Scrolling song title:**
 ```
 "MediaTitle": "{{Text;Format;SmallCaps;[[MediaInfo:Track]]}} ᵇʸ {{Text;Format;SmallCaps;[[MediaInfo:Artist]]}}"
 "MediaMarquee": "{{Text;Animate;Marquee;[[Shortcut:MediaTitle]];Left;14}}"
 ```
 
-### Cycling Animations (EachOne)
+### EachOne
 
 ```
-{{Text;Animate;EachOne;Frame1;Frame2;Frame3;...}}
+{{Text;Animate;EachOne;Frame1;Frame2;Frame3}}
 ```
 
-Cycles through items over time. Great for:
-- Pulsing icons: `{{Text;Animate;EachOne;❤️;💗}}`
-- Status rotation
-- Frame-by-frame animations
+Steps through the items over time. Good for a pulsing icon (`{{Text;Animate;EachOne;❤️;💗}}`), a rotating status line, or hand-drawn frame animation.
 
-**Complex heartbeat animation:**
+Stack the two and you get things like:
+
 ```
 "ScrollingHeartrate": "{{Text;Animate;Marquee;ﮩ٨ـ;Left;3}}"
 "FormattedHR": "{{Text;Animate;EachOne;❤️ ;💗 }}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Format;SuperScript;[[Shortcut:HeartrateComplete]]}}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Animate;EachOne; ❤️; 💗}}"
 ```
 
-This creates: `❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️` with animations!
+which beats away as `❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️`.
 
-### Reusing the Same Animation
+### Using the same animation twice
 
-You can use the **exact same** animated placeholder (or the same shortcut containing one)
-as many times as you want in a template — like `{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}`
-above. Every occurrence keeps its own animation state, so copies no longer fight over a
-single timeline and cycling animations no longer skip frames when duplicated.
+You can drop the exact same animated placeholder (or the same shortcut wrapping one) into a template as many times as you want, like the doubled `{{Shortcut;ScrollingHeartrate}}` above. Every occurrence keeps its own animation state, so copies no longer fight over one timeline and cycling animations no longer skip frames when duplicated.
 
-Occurrences that start at the same moment with the same parameters stay in sync (they are
-running the same animation from the same start time). A copy that appears later — for
-example one that only shows up when a condition becomes true — animates on its own phase.
+Occurrences that start at the same moment with the same parameters stay in sync, since they are running the same animation from the same start time. A copy that shows up later, say one that only appears when a condition flips true, animates on its own phase.
 
 ---
 
-## 🏗️ Real Expert Configuration Breakdown
+## A full expert setup
 
-Here's a full expert-level configuration created by **x᙭x ᗪᕮᗩᗪ x᙭x** ([Discord: deadelixor](https://discord.com/users/274012297683402753)):
+This one is by **x᙭x ᗪᕮᗩᗪ x᙭x** ([Discord: deadelixor](https://discord.com/users/274012297683402753)), and it is a good example of how far this goes.
 
 ```json
 {
@@ -193,106 +164,82 @@ Here's a full expert-level configuration created by **x᙭x ᗪᕮᗩᗪ x᙭x**
 }
 ```
 
----
-
-## 🔬 Deep Dive: Each Shortcut Explained
-
-### 1️⃣ Core Utility: `ProgressBar`
+### `ProgressBar`
 
 ```
 "ProgressBar": "{{Text;Repeat;$0;$2}}$3{{Text;Repeat;[[Expr:Math.max($0, $1)-$0]];$4}}"
 ```
 
-**The formula:**
-```
-[FILLED × current] + [MARKER] + [EMPTY × (max - current)]
-```
+The formula is `filled × current`, then the marker, then `empty × (max - current)`.
 
-**Visual:**
 ```
 $0=3, $1=10, $2=█, $3=🔘, $4=░
 
-{{Text;Repeat;3;█}}  →  ███
-$3                   →  🔘  
-{{Text;Repeat;7;░}}  →  ░░░░░░░
+{{Text;Repeat;3;█}}   →  ███
+$3                    →  🔘
+{{Text;Repeat;7;░}}   →  ░░░░░░░
 
-Result: ███🔘░░░░░░░
+                         ███🔘░░░░░░░
 ```
 
-**Why `Math.max($0, $1)-$0`?**
-- Prevents negative numbers if `$0 > $1`
-- `Math.max(3, 10) - 3 = 7` empty slots
+The `Math.max($0, $1)-$0` guards against a negative repeat count when the current value somehow overshoots the max. `Math.max(3, 10) - 3` gives 7 empty slots, and if current ever exceeds max you get 0 instead of a crash.
 
----
-
-### 2️⃣ Dynamic Calculator: `MediaProgressValue`
+### `MediaProgressValue`
 
 ```
 "MediaProgressValue": "{{Expr;Math.round([[MediaInfo:Position]]/[[MediaInfo:Duration]]*$0)||0}}"
 ```
 
-**This is a FUNCTION that takes a scale parameter!**
+A function with a scale parameter:
 
-| Song Position | Song Duration | Scale ($0) | Result |
-|---------------|---------------|------------|--------|
+| Position | Duration | Scale (`$0`) | Result |
+|----------|----------|--------------|--------|
 | 30000 | 180000 | 10 | 2 |
 | 90000 | 180000 | 10 | 5 |
 | 150000 | 180000 | 5 | 4 |
 
-**Usage:**
 ```
-[[Shortcut:MediaProgressValue:10]]  → Progress out of 10
-[[Shortcut:MediaProgressValue:5]]   → Progress out of 5
+[[Shortcut:MediaProgressValue:10]]   progress out of 10
+[[Shortcut:MediaProgressValue:5]]    progress out of 5
 ```
 
----
-
-### 3️⃣ Composed Component: `MediaProgressBar`
+### `MediaProgressBar`
 
 ```
 "MediaProgressBar": "{{Shortcut;ProgressBar;[[Shortcut:MediaProgressValue:$0]];$0;$1;$2;$3}}"
 ```
 
-**This wraps `ProgressBar` specifically for media!**
-
-**Parameter mapping:**
 ```
-{{Shortcut;MediaProgressBar; 5  ;  ˖⁺‧  ;  🛸  ;  ₊˖⁺ }}
-                            ↓      ↓       ↓      ↓
-                           $0     $1      $2     $3
-                            ↓      ↓       ↓      ↓
-Calls ProgressBar with:  [calc]   $0      $1     $2     $3
-                           ↓      ↓       ↓      ↓
-                         value   max   filled marker empty
+{{Shortcut;MediaProgressBar; 5 ; ˖⁺‧ ; 🛸 ; ₊˖⁺ }}
+                             $0    $1    $2    $3
+                             ↓     ↓     ↓     ↓
+ProgressBar gets:   [computed]  $0    $1    $2    $3
+                       value    max  filled marker empty
 ```
 
-**The magic:** `[[Shortcut:MediaProgressValue:$0]]` passes the scale DOWN to calculate the current value.
+The interesting bit is `[[Shortcut:MediaProgressValue:$0]]`, which passes the scale down a level so the calculation matches the bar width you asked for.
 
----
-
-### 4️⃣ Fancy Progress Display: `EditedPB`
+### `EditedPB`
 
 ```
 "EditedPB": " {{Text;Format;SuperScript;[[Shortcut:MediaProgressText]]}} |{{Shortcut;MediaProgressBar;5;[[Text:Animate:Marquee:˖⁺‧₊˖⁺‧₊˖⁺‧₊:Left:4]];🛸;[[Text:Animate:Marquee:˖⁺‧₊˖⁺‧₊˖⁺‧₊:Left:4]]}}| {{Text;Format;SuperScript;[[Shortcut:MediaProgressText2]]}}"
 ```
 
-**Deconstructed:**
 ```
  ¹:²³ |˖⁺‧₊˖⁺‧🛸₊˖⁺‧₊| ³:⁴⁵
-  ↑         ↑           ↑
- time    progress     total
-(super)   (animated)  (super)
+  ↑          ↑          ↑
+elapsed   the bar     total
 ```
 
-**Note the nested inner placeholders as parameters:**
+Look at what got passed in as the fill and empty characters:
+
 ```
 [[Text:Animate:Marquee:˖⁺‧₊˖⁺‧₊˖⁺‧₊:Left:4]]
 ```
-This creates ANIMATED fill characters! 🤯
 
----
+The bar's own characters are animated. The bar has no idea, it just repeats whatever string it was handed, and that string happens to be different on every frame.
 
-### 5️⃣ Scrolling Media Title: `MediaMarquee`
+### `MediaMarquee`
 
 ```
 "MediaTitle": "{{Text;Format;SmallCaps;[[MediaInfo:Track]]}} ᵇʸ {{Shortcut;MediaArtist}} "
@@ -300,70 +247,52 @@ This creates ANIMATED fill characters! 🤯
 "MediaMarquee": "{{Text;Animate;EachOne;♬ ;♫ }}| {{Text;Animate;Marquee;[[Shortcut:MediaTitle]];Left;14}} |{{Text;Animate;EachOne; ♬; ♫}}\r\n"
 ```
 
-**Result:**
 ```
 ♬ | ɴᴇᴠᴇʀ ɢᴏɴɴᴀ ɢɪ | ♬
 ♫ | ᴇᴠᴇʀ ɢᴏɴɴᴀ ɢɪᴠ | ♫
 ♬ | ᴠᴇʀ ɢᴏɴɴᴀ ɢɪᴠᴇ | ♬
-... (scrolling)
 ```
 
-**Composition chain:**
 ```
 MediaMarquee
-├── Text;Animate;EachOne (♬/♫ icons)
-├── Text;Animate;Marquee
+├── EachOne  ♬ / ♫
+├── Marquee
 │   └── MediaTitle
-│       ├── Text;Format;SmallCaps + MediaInfo:Track
+│       ├── SmallCaps + MediaInfo:Track
 │       └── MediaArtist
-│           └── Text;Format;SmallCaps + MediaInfo:Artist
-└── Text;Animate;EachOne (♬/♫ icons)
+│           └── SmallCaps + MediaInfo:Artist
+└── EachOne  ♬ / ♫
 ```
 
----
-
-### 6️⃣ Heartrate Display: `FormattedHR`
+### `FormattedHR` and the named source
 
 ```
-"ScrollingHeartrate": "{{Text;Animate;Marquee;ﮩ٨ـ;Left;3}}"
+"Source": "MyPulsoid"
 "HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}"
-"FormattedHR": "{{Text;Animate;EachOne;❤️ ;💗 }}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Format;SuperScript;[[Shortcut:HeartrateComplete]]}}|{{Shortcut;ScrollingHeartrate}}{{Shortcut;ScrollingHeartrate}}|{{Text;Animate;EachOne; ❤️; 💗}}"
 ```
 
-**Result:**
+`Source` holds the name of a feed configured in **Modules → Heart Rate**, and everything else reads it through the shortcut. Swap platforms later and you edit one line instead of hunting through the template.
+
 ```
 ❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️
 💗 |٨ـﮩ٨ـﮩ|⁷⁵|٨ـﮩ٨ـﮩ| 💗
 ```
 
-**Named Source Pattern:**
-```
-"Source": "MyPulsoid"
-"HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}"
-```
-The `Source` shortcut stores the name of a feed you configured in **Modules → Heart Rate** (Pulsoid, HypeRate, Stromno or a custom WebSocket) - keeping it in one place so you can swap platforms without touching your template!
-
----
-
-### 7️⃣ Status Rotation: `StatusCycle`
+### `StatusCycle`
 
 ```
-"StatusCycle": "{{Text;Animate;EachOne;*.⋆ | Happily Married <3 | *.⋆;*.⋆ | FBT: SomaticVR | *.⋆;*.⋆ | HMD: Quest 2 | *.⋆;...}}"
+"StatusCycle": "{{Text;Animate;EachOne;*.⋆ | Happily Married <3 | *.⋆;*.⋆ | FBT: SomaticVR | *.⋆;...}}"
 "EditedStatusCycle": "{{Text;Format;SmallCaps;[[Shortcut:StatusCycle]]}}"
 ```
 
-**Cycles through messages:**
 ```
 *.⋆ | ʜᴀᴘᴘɪʟʏ ᴍᴀʀʀɪᴇᴅ <3 | *.⋆
 *.⋆ | ғʙᴛ: sᴏᴍᴀᴛɪᴄᴠʀ | *.⋆
 *.⋆ | ʜᴍᴅ: Qᴜᴇsᴛ 2 | *.⋆
 *.⋆ | ʀᴇsᴛ ʏᴏᴜʀ ᴇʏᴇs! | *.⋆
-...
 ```
 
----
-
-## 📐 The Complete Template
+### And the template on top of all that
 
 ```
 ╭────────★─╮
@@ -374,7 +303,6 @@ The `Source` shortcut stores the name of a feed you configured in **Modules → 
 ╰─★────────╯
 ```
 
-**Final output example:**
 ```
 ╭────────★─╮
 *.⋆ | ᴅʀɪɴᴋ ᴡᴀᴛᴇʀ! | *.⋆
@@ -386,42 +314,32 @@ The `Source` shortcut stores the name of a feed you configured in **Modules → 
 
 ---
 
-## 🧩 Design Patterns
+## Patterns worth stealing
 
-### Pattern 1: Function Shortcuts
-
-Create generic utilities that accept parameters:
+**Function shortcuts.** Write the generic version, use it everywhere.
 
 ```
 "Pad": "{{Text;Repeat;$1;[[Expr:Math.max(0, $0 - [[Text:Length:$2]])]]}}$2"
-// Usage: {{Shortcut;Pad;5;0;42}} → "00042"
+{{Shortcut;Pad;5;0;42}}   →   00042
 ```
 
-### Pattern 2: Secret Storage
-
-Keep sensitive data in one place:
+**One place for secrets.** Keep a token or a source name in its own shortcut and reference it. Mark it hidden in the module settings and it gets stripped when you share.
 
 ```
 "Token": "your-secret-token-here"
 "ApiCall": "{{SomeModule;[[Shortcut:Token]];Data}}"
 ```
 
-Mark it as secret in the module settings to exclude from exports!
-
-### Pattern 3: Composition Layers
-
-Build complex displays from simple parts:
+**Layers.** The setup above is really four floors stacked up, and each floor only talks to the one below it.
 
 ```
-Level 1 (Data):      MediaInfo:Track, MediaInfo:Position
-Level 2 (Format):    MediaTitle, MediaProgressText  
-Level 3 (Compose):   MediaMarquee, EditedPB
-Level 4 (Template):  Final chatbox output
+data      MediaInfo:Track, MediaInfo:Position
+format    MediaTitle, MediaProgressText
+compose   MediaMarquee, EditedPB
+template  the thing you actually see
 ```
 
-### Pattern 4: Animated Fills
-
-Use inner placeholders as parameters for animated elements:
+**Animated parameters.** Anywhere a placeholder takes text, an animated inner placeholder fits.
 
 ```
 {{Shortcut;Something;[[Text:Animate:Marquee:★·.·:Left:2]]}}
@@ -429,33 +347,30 @@ Use inner placeholders as parameters for animated elements:
 
 ---
 
-## ⚠️ Expert Tips & Gotchas
+## Things that will bite you
 
-### 1. Parameter Count Matters
-If a shortcut expects 3 parameters but you only provide 2, it will show an error. Check your `$N` references!
+**Parameter count.** A shortcut that references `$2` and only gets two parameters will show an error rather than guess. Count your `$N`s.
 
-### 2. Escaping Semicolons
-Use `\;` if you need a literal semicolon in a parameter:
+**Literal semicolons.** Escape them with `\;` or they split your parameters.
+
 ```
 {{Shortcut;MyShortcut;Hello\; World}}
 ```
 
-### 3. Recursion Protection
-ADVOSC prevents infinite loops (500 calls/second limit). But be careful with shortcuts calling themselves!
+**Recursion.** ADVOSC caps the same call at 500 per second and temporarily ignores whatever tripped it, so a shortcut that calls itself will not take the app down. It will still ruin your chatbox, so watch out for accidental loops.
 
-### 4. Debug Mode
-Enable `debugMode: true` in settings to see placeholder resolution in the console.
+**Debug mode.** Turn on `debugMode` in settings to watch placeholders resolve in the console. This is usually faster than staring at the template.
 
-### 5. Inner Placeholder Syntax in Parameters
-When passing animated text as a parameter, use inner syntax:
+**Inner syntax in parameters.** When you pass a placeholder as a parameter, use the inner form:
+
 ```
-[[Text:Animate:Marquee:content:Left:5]]
+[[Text:Animate:Marquee:content:Left:5]]      yes
+{{Text;Animate;Marquee;content;Left;5}}      not as a parameter
 ```
-NOT outer syntax `{{...}}` as a parameter.
 
 ---
 
-## 📚 Quick Reference
+## Cheat sheet
 
 | Pattern | Syntax | Example |
 |---------|--------|---------|
@@ -463,22 +378,10 @@ NOT outer syntax `{{...}}` as a parameter.
 | Shortcut call | `{{Shortcut;Name;p0;p1}}` | `{{Shortcut;ProgressBar;5;10;█;🔘;░}}` |
 | Shortcut as inner | `[[Shortcut:Name:p0:p1]]` | `[[Shortcut:MediaProgressValue:10]]` |
 | Animated parameter | `[[Text:Animate:...]]` | `[[Text:Animate:Marquee:★:Left:3]]` |
-| Math expression | `[[Expr:formula]]` | `[[Expr:Math.round($0/100*$1)]]` |
+| Math | `[[Expr:formula]]` | `[[Expr:Math.round($0/100*$1)]]` |
 
 ---
 
-## 🎓 You're Now an Expert!
+That is everything the engine can do. Go make something absurd, and show it off in the [Discord](https://discord.gg/spfmB7S78n).
 
-You've mastered:
-- ✅ Parameterized shortcuts with `$0`, `$1`, `$2`...
-- ✅ Building reusable function-like shortcuts
-- ✅ Complex animation compositions
-- ✅ Multi-layer abstraction patterns
-- ✅ Secret token management
-- ✅ Animated parameters inside shortcuts
-
-Now go create something amazing! 🚀✨
-
----
-
-*← Back to [Beginner's Guide](./LEARN_PLACEHOLDERS.md)*
+*Back to the [beginner guide](./LEARN_PLACEHOLDERS.md)*
