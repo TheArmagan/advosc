@@ -1,7 +1,7 @@
 {
   "name": "advosc",
   "version": "0.1.0",
-  "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
+  "description": "A VRChat OSC app for Windows: build a live chatbox out of blocks or raw templates, control and save avatar parameters, resize your avatar, and forward anything over OSC.",
   "type": "module",
   "main": "dist/main.cjs",
   "scripts": {
@@ -17,13 +17,34 @@
     "package": "bun run build && electron-forge package"
   },
   "keywords": [
+    "vrchat",
+    "vrchat-osc",
+    "osc",
+    "chatbox",
+    "vrchat-chatbox",
+    "avatar-parameters",
+    "openvr",
+    "steamvr",
+    "vr",
+    "heart-rate",
+    "pulsoid",
+    "now-playing",
     "electron",
     "svelte",
     "typescript",
-    "esbuild"
+    "rust",
+    "windows"
   ],
-  "author": "",
+  "author": "Kıraç Armağan Önal",
   "license": "GPL-3.0-only",
+  "homepage": "https://github.com/TheArmagan/advosc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheArmagan/advosc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheArmagan/advosc/issues"
+  },
   "devDependencies": {
     "@electron-forge/maker-squirrel": "^7.10.2",
     "@internationalized/date": "^3.10.0",
@@ -107,7 +128,7 @@
         ],
         "win32metadata": {
           "CompanyName": "Kıraç Armağan Önal",
-          "FileDescription": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
+          "FileDescription": "ADVOSC, a VRChat OSC chatbox and avatar toolkit",
           "ProductName": "ADVOSC"
         }
       },
@@ -118,7 +139,7 @@
           "config": {
             "name": "vrckit",
             "authors": "Kıraç Armağan Önal",
-            "description": "Advanced OSC Tools for VRChat (Chatbox, Avatar Profiles, Raw OSC Editor) with sleek looking UI!",
+            "description": "ADVOSC, a VRChat OSC chatbox and avatar toolkit",
             "setupIcon": "build/icon.ico",
             "loadingGif": "build/icon.png",
             "noMsi": true
