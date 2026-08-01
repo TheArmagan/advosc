@@ -1,0 +1,33 @@
+# ADVOSC
+
+Hey. I made **ADVOSC** because I wanted a nicer VRChat chatbox than the ones I could find, and it kind of grew from there.
+
+Download: [latest release](https://github.com/TheArmagan/advosc/releases/latest) (Windows)
+
+**What it is**
+
+A desktop app that sits in the background and talks to VRChat over OSC. Mostly it builds your chatbox, but it also gives you a proper handle on your avatar parameters.
+
+**The chatbox**
+
+Everything is a template. You write your text, drop in placeholders wherever you want live data, and ADVOSC re-renders and sends it for you.
+
+There are two ways to build one and they produce the same thing underneath, so you can start in either:
+
+*   **Simple editor:** stack blocks, drag them around, watch the live preview. No syntax to learn.
+*   **Advanced editor:** write the template yourself, with autocomplete for every placeholder.
+
+Things you can pull in: whatever you are listening to (with synced lyrics), heart rate from Pulsoid, HypeRate or Stromno, VR tracker battery, live weather, CPU and GPU usage, hotkeys, stopwatches, and any web API or WebSocket you point it at. Plus text formatting, progress bars, conditions and animations to make it look how you want.
+
+Save whole setups as templates and switch between them in one click. Sharing a template strips your tokens and API keys automatically.
+
+**Beyond the chatbox**
+
+*   **Avatar parameters:** see them all in one list, lock a toggle so nothing changes it by accident, link one parameter to another, or animate one.
+*   **Avatar profiles:** save a whole parameter state (outfit, toggles, props) and load it back later.
+*   **Avatar scale:** resize yourself in game, save your own presets, and have it remember a height per avatar.
+*   **OSC forwarder:** send any template value to any OSC address on a timer.
+
+Speech to text with translation is what I am working on next.
+
+Give it a try, and let me know here if something breaks or if you want a module for something.
