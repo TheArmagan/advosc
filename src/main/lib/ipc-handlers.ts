@@ -7,6 +7,7 @@ import { executeMediaCommand } from './media';
 import { getMainWindow } from './window';
 import { getProcessStartTime, getOpenVRTrackers } from './advosc-utils';
 import { getSystemInfo } from './system-monitor';
+import { performHttpRequest, type HttpRequestOptions } from './http-request';
 import {
   DEFAULT_OSC_SOURCES,
   loadOSCSources,
@@ -216,6 +217,12 @@ export function setupIpcHandlers(port: OSC): void {
     } catch (error) {
       return { success: false, error: String(error) };
     }
+  });
+
+  // HTTP requests on behalf of the renderer (chatbox Request module). Runs here so
+  // user-configured endpoints are not subject to the renderer's CORS rules.
+  ipcMain.handle('http:request', async (_event, options: HttpRequestOptions) => {
+    return await performHttpRequest(options);
   });
 
   // Media IPC handlers

@@ -449,6 +449,55 @@ Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refres
 </details>
 
 <details>
+<summary><strong>🌐 HTTP & WebSocket</strong> — Custom info from any web API or live feed</summary>
+
+Pull anything you like into your chatbox from a web API or a WebSocket. Add your endpoints under **Modules → HTTP & WebSocket**: each one gets a name you use in placeholders.
+
+There are two kinds of source:
+
+- **HTTP Request** — any method (GET, POST, PUT, PATCH, DELETE, …) with your own headers and body. It is polled on the refresh interval you pick, and only while a template is actually using it.
+- **WebSocket** — stays connected and reconnects on its own. Placeholders read the **latest** message that arrived. You can send a subscribe or auth message on connect and a keepalive message on a timer.
+
+The URL, headers and body can all contain placeholders, so a request can be built from live data. They are filled in right before the request goes out.
+
+**Reading values**
+
+Bodies are parsed as JSON, and the path parameter walks into them: `data.items[0].title`. Array indexes can be negative to count from the end (`[-1]` is the last item), quoted keys handle odd names (`["odd key"]`), and `length` works on arrays. Leave the path empty to get the whole body. A body that is not JSON comes back as plain text.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Request;Value;MyApi;data.value}}` | `42` | Value at a JSON path in the latest body |
+| `{{Request;Value;MyApi;items[0].name}}` | `Sword` | Array indexing, negative indexes count from the end |
+| `{{Request;Value;MyApi}}` | `{"data":{"value":42}}` | The whole body when the path is left empty |
+| `{{Request;Text;MyApi}}` | `{"data":{"value":42}}` | The raw body exactly as received |
+| `{{Request;Has;MyApi;data.value}}` | `true` | Whether the path exists in the latest body |
+| `{{Request;Get;https://api.example.com/x;data.value}}` | `42` | One-off GET without configuring a source |
+| `{{Request;Get;https://api.example.com/x;data.value;300}}` | `42` | Same, with a custom refresh interval in seconds |
+
+**Status**
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Request;IsOnline;MyApi}}` | `true` | Last request succeeded, or the socket is connected |
+| `{{Request;Status;MyApi}}` | `200` | HTTP status code, empty for WebSocket sources |
+| `{{Request;Ok;MyApi}}` | `true` | Whether the status code was 2xx |
+| `{{Request;Error;MyApi}}` | `Request timed out after 10000ms` | Last error, empty when everything is fine |
+| `{{Request;Count;MyApi}}` | `7` | Responses received, or WebSocket messages that arrived |
+| `{{Request;UpdatedAt;MyApi}}` | `1700000000000` | When data last arrived, in milliseconds |
+| `{{Request;Age;MyApi}}` | `12` | Seconds since data last arrived |
+| `{{Request;Header;MyApi;content-type}}` | `application/json` | A header of the latest HTTP response |
+
+Pair it with the Expr module to show a fallback while a source is down, and with Time to format its timestamps:
+
+```
+{{Expr;[[Request:IsOnline:MyApi]]=='true';Players online: [[Request:Value:MyApi:server.players]];Server offline}}
+```
+
+**Note:** HTTP requests are made by ADVOSC itself, not by the page, so ordinary browser CORS rules do not apply and any endpoint works. Response bodies are capped at 2 MB. A source is only polled while a template or the module tab is using it, and a request that has already failed never blocks your chatbox while it retries.
+
+</details>
+
+<details>
 <summary><strong>⌨️ Hotkey</strong> — Keyboard shortcuts</summary>
 
 Create interactive hotkey-triggered content.

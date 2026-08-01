@@ -110,6 +110,28 @@ export interface SystemInfoResponse {
   error?: string;
 }
 
+export interface HttpRequestOptions {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  /** Milliseconds before the request is aborted. */
+  timeoutMs?: number;
+}
+
+export interface HttpRequestResult {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  /** Set when the request never produced a response (DNS, timeout, bad URL). */
+  error?: string;
+  durationMs: number;
+  /** True when the body hit the size cap and was cut short. */
+  truncated?: boolean;
+}
+
 export interface OSCEndpoint {
   address: string;
   port: number;
@@ -172,6 +194,9 @@ export interface PreloadElectronAPI {
     getStartTime: (processName: string) => Promise<StartTimeResponse>;
     getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
     getSystemInfo: () => Promise<SystemInfoResponse>;
+  };
+  http: {
+    request: (options: HttpRequestOptions) => Promise<HttpRequestResult>;
   };
   shell: {
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
@@ -260,6 +285,9 @@ const api: PreloadElectronAPI = {
     getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
     getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
     getSystemInfo: () => ipcRenderer.invoke('utils:systemInfo') as Promise<SystemInfoResponse>,
+  },
+  http: {
+    request: (options: HttpRequestOptions) => ipcRenderer.invoke('http:request', options) as Promise<HttpRequestResult>,
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,
