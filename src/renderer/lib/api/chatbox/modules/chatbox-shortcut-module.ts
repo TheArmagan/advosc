@@ -57,16 +57,17 @@ export class ChatboxShortcutModule extends ChatboxModule {
 
   getCleanValues(): Record<string, any> {
     const values = this.getValues();
+    // Copy first: `getValues()` hands back the live store object, so deleting in place
+    // would drop the user's own secret shortcuts every time anything exports.
+    const shortcuts = { ...(values.shortcuts || {}) };
     (values.secrets || []).forEach((secretKey: string) => {
-      delete values.shortcuts[secretKey];
+      delete shortcuts[secretKey];
     });
-    Object.keys(values.shortcuts || {}).forEach((key) => {
+    Object.keys(shortcuts).forEach((key) => {
       if (key.startsWith("__SE_")) {
-        delete values.shortcuts[key];
+        delete shortcuts[key];
       }
     });
-    return {
-      shortcuts: values.shortcuts || {}
-    };
+    return { shortcuts };
   }
 }

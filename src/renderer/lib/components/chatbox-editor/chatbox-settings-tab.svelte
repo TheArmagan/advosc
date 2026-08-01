@@ -72,6 +72,11 @@
       </Drawer.Content>
     </Drawer.Root>
   </div>
+  <p class="text-muted-foreground text-sm max-w-[600px]">
+    To keep several setups side by side and switch between them, use the My
+    Templates tab. It can also share a setup as a code or a file, with your
+    credentials stripped out.
+  </p>
   <div class="flex max-w-[600px]">
     <Label
       class="hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950"

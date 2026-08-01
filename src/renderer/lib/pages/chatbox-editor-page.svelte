@@ -2,6 +2,7 @@
   import ChatboxAdvancedEditorTab from "$lib/components/chatbox-editor/chatbox-advanced-editor-tab.svelte";
   import ChatboxModulesTab from "$lib/components/chatbox-editor/chatbox-modules-tab.svelte";
   import ChatboxOscForwarderTab from "$lib/components/chatbox-editor/chatbox-osc-forwarder-tab.svelte";
+  import ChatboxPresetsTab from "$lib/components/chatbox-editor/chatbox-presets-tab.svelte";
   import ChatboxSettingsTab from "$lib/components/chatbox-editor/chatbox-settings-tab.svelte";
   // @ts-ignore
   import ChatboxSimpleEditorTab from "$lib/components/chatbox-editor/chatbox-simple-editor-tab.svelte";
@@ -17,6 +18,7 @@
       <Tabs.Trigger value="simple">Simple Editor</Tabs.Trigger>
       <Tabs.Trigger value="editor">Advanced Editor</Tabs.Trigger>
       <Tabs.Trigger value="modules">Modules</Tabs.Trigger>
+      <Tabs.Trigger value="templates">My Templates</Tabs.Trigger>
       <Tabs.Trigger value="forwarder">OSC Forwarder</Tabs.Trigger>
       <Tabs.Trigger value="settings">Settings</Tabs.Trigger>
     </Tabs.List>
@@ -33,6 +35,11 @@
     <Tabs.Content value="modules">
       <Card.Root class="p-1 bg-transparent border">
         <ChatboxModulesTab />
+      </Card.Root>
+    </Tabs.Content>
+    <Tabs.Content value="templates">
+      <Card.Root class="p-1 bg-transparent border">
+        <ChatboxPresetsTab />
       </Card.Root>
     </Tabs.Content>
     <Tabs.Content value="forwarder">

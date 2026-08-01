@@ -102,6 +102,24 @@ When you want direct control, ADVOSC still includes the full advanced editor. It
 
 ---
 
+### 🗂️ My Templates
+
+Saved templates keep whole chatbox setups around so you can switch between them instead of rebuilding one every time. A template stores the template text, both editors' state and every module's settings, so switching swaps your entire chatbox in one click.
+
+| Action | Description |
+|--------|-------------|
+| **Save Current As Template** | Snapshots your current chatbox setup under a name |
+| **Use** | Switches to a saved template, optionally saving your current setup first so you can come back to it |
+| **Overwrite With Current Setup** | Updates a saved template in place after you tweak something |
+| **Share** | Copies a compact share code, copies the JSON, or saves a `.advosc.json` file |
+| **Import** | Accepts a share code, a template JSON, a template file, or an older "Export All Settings" bundle |
+
+**Sharing never includes your credentials.** Heart rate tokens/API keys/widget ids, custom heart rate WebSocket URLs, and shortcuts you marked hidden are stripped out, and the share window lists exactly what was removed. They stay in your local copy, and a checkbox lets you include them on purpose when you are exporting a backup for yourself.
+
+Imported templates land in your list without touching what you are currently running, so you can look before you switch.
+
+---
+
 ### 📡 OSC Forwarder
 
 The **OSC Forwarder** lets you evaluate any chatbox template value and send it to an arbitrary OSC address on a configurable interval.

@@ -3,8 +3,5 @@
   - translation support with multiple api support (google, deepl, openrouter)
   - this system needs to work seamleasly with our current chatbox templating system. so we need to make it as chatbox module.
 
-* add better way to store and switch between made user templates and make them less painless to share
-  - better if works using export all settings etc
-
 * add http/ws request chatbox module for showing custom info in chatbox
   - ability to send post/get/etc requests with custom body/url from template engine

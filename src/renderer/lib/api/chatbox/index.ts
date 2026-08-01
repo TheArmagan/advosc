@@ -289,8 +289,10 @@ function getAllValues() {
 
 function setAllValues(values: AllValues) {
   chatboxList.forEach((module, moduleId) => {
-    if (values.modules[moduleId]) {
-      module.values.set(values.modules[moduleId]);
+    if (values.modules?.[moduleId]) {
+      // Merge instead of replace: a bundle only carries the keys `getCleanValues()` exports,
+      // so replacing would wipe bookkeeping the module keeps outside of it.
+      module.values.update((current) => ({ ...current, ...values.modules[moduleId] }));
     }
   });
   settings.set(values.settings);
