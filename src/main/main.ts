@@ -4,6 +4,7 @@ import { createWindow } from './lib/window';
 import { startMediaMonitor, stopMediaMonitor } from './lib/media';
 import { stopSystemMonitor } from './lib/system-monitor';
 import { setupIpcHandlers } from './lib/ipc-handlers';
+import { stopSpeechServer } from './lib/speech-server';
 import { loadOSCSources, toActiveSources } from './lib/osc-config';
 
 // Re-export types for external use
@@ -42,6 +43,7 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   stopMediaMonitor();
   stopSystemMonitor();
+  stopSpeechServer();
   if (process.platform !== 'darwin') {
     app.quit();
   }

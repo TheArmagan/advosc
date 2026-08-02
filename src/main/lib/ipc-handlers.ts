@@ -9,6 +9,15 @@ import { getProcessStartTime, getOpenVRTrackers } from './advosc-utils';
 import { getSystemInfo } from './system-monitor';
 import { performHttpRequest, type HttpRequestOptions } from './http-request';
 import {
+  getSpeechServerState,
+  openSpeechPage,
+  sendSpeechCommand,
+  setSpeechConfig,
+  startSpeechServer,
+  stopSpeechServer,
+  type SpeechServerConfig,
+} from './speech-server';
+import {
   DEFAULT_OSC_SOURCES,
   loadOSCSources,
   sanitizeSources,
@@ -223,6 +232,30 @@ export function setupIpcHandlers(port: OSC): void {
   // user-configured endpoints are not subject to the renderer's CORS rules.
   ipcMain.handle('http:request', async (_event, options: HttpRequestOptions) => {
     return await performHttpRequest(options);
+  });
+
+  // Speech recognition server. The page it serves runs in the user's browser, because
+  // the Web Speech API does not exist inside Electron.
+  ipcMain.handle('speech:start', async (_event, options: { port?: number; config?: Partial<SpeechServerConfig> } = {}) => {
+    return await startSpeechServer(options);
+  });
+
+  ipcMain.handle('speech:stop', async () => {
+    return await stopSpeechServer();
+  });
+
+  ipcMain.handle('speech:getState', () => getSpeechServerState());
+
+  ipcMain.handle('speech:setConfig', (_event, config: Partial<SpeechServerConfig>) => {
+    return setSpeechConfig(config || {});
+  });
+
+  ipcMain.handle('speech:command', (_event, action: 'start' | 'stop' | 'clear') => {
+    return sendSpeechCommand(action);
+  });
+
+  ipcMain.handle('speech:openPage', async () => {
+    return await openSpeechPage();
   });
 
   // Media IPC handlers

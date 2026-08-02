@@ -21,6 +21,12 @@ Things you can pull in: whatever you are listening to (with synced lyrics), hear
 
 Save whole setups as templates and switch between them in one click. Sharing a template strips your tokens and API keys automatically.
 
+**Speech to text**
+
+New in this one: talk, and have it show up in your chatbox, translated if you want it translated. Chrome does the listening because Electron has no speech recognition of its own, so ADVOSC serves a small page on your own machine that you open in a tab and leave running.
+
+Translation runs through Google, DeepL, OpenRouter or Gemini. Google needs no API key, so you can turn it on and it just works. It can also follow your VRChat mute: mute yourself in game and the line clears and the mic closes, unmute and it picks back up.
+
 **Beyond the chatbox**
 
 *   **Avatar parameters:** see them all in one list, lock a toggle so nothing changes it by accident, link one parameter to another, or animate one.
@@ -28,6 +34,6 @@ Save whole setups as templates and switch between them in one click. Sharing a t
 *   **Avatar scale:** resize yourself in game, save your own presets, and have it remember a height per avatar.
 *   **OSC forwarder:** send any template value to any OSC address on a timer.
 
-Speech to text with translation is what I am working on next.
+Local recognition with Whisper, so it runs offline without the browser page, is what I am working on next.
 
 Give it a try, and let me know here if something breaks or if you want a module for something.

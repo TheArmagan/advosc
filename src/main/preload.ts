@@ -132,6 +132,49 @@ export interface HttpRequestResult {
   truncated?: boolean;
 }
 
+export interface SpeechServerConfig {
+  /** BCP-47 tag handed to the recognizer, e.g. "en-US". */
+  language: string;
+  interimResults: boolean;
+  continuous: boolean;
+  /** Whether the page should currently have the mic open. */
+  listening: boolean;
+  maxAlternatives: number;
+}
+
+export interface SpeechTranscript {
+  sessionId: string;
+  text: string;
+  isFinal: boolean;
+  confidence: number | null;
+  language: string;
+  at: number;
+  /** Set when the page's Clear button wiped the transcript. */
+  cleared?: boolean;
+}
+
+export interface SpeechPageStatus {
+  sessionId?: string;
+  listening: boolean;
+  wantListening?: boolean;
+  language?: string;
+  /** False when the browser has no Web Speech API. */
+  supported?: boolean;
+  error?: string;
+  closing?: boolean;
+}
+
+export interface SpeechServerState {
+  running: boolean;
+  port: number | null;
+  url: string | null;
+  /** Number of pages holding the event stream open. */
+  clients: number;
+  pageListening: boolean;
+  lastError?: string;
+  config: SpeechServerConfig;
+}
+
 export interface OSCEndpoint {
   address: string;
   port: number;
@@ -197,6 +240,17 @@ export interface PreloadElectronAPI {
   };
   http: {
     request: (options: HttpRequestOptions) => Promise<HttpRequestResult>;
+  };
+  speech: {
+    start: (options?: { port?: number; config?: Partial<SpeechServerConfig> }) => Promise<{ success: boolean; url?: string; port?: number; error?: string }>;
+    stop: () => Promise<{ success: boolean }>;
+    getState: () => Promise<SpeechServerState>;
+    setConfig: (config: Partial<SpeechServerConfig>) => Promise<SpeechServerState>;
+    command: (action: 'start' | 'stop' | 'clear') => Promise<SpeechServerState>;
+    openPage: () => Promise<{ success: boolean; error?: string }>;
+    onTranscript: (callback: (transcript: SpeechTranscript) => void) => () => void;
+    onStatus: (callback: (status: SpeechPageStatus) => void) => () => void;
+    onState: (callback: (state: SpeechServerState) => void) => () => void;
   };
   shell: {
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
@@ -288,6 +342,29 @@ const api: PreloadElectronAPI = {
   },
   http: {
     request: (options: HttpRequestOptions) => ipcRenderer.invoke('http:request', options) as Promise<HttpRequestResult>,
+  },
+  speech: {
+    start: (options = {}) => ipcRenderer.invoke('speech:start', options) as Promise<{ success: boolean; url?: string; port?: number; error?: string }>,
+    stop: () => ipcRenderer.invoke('speech:stop') as Promise<{ success: boolean }>,
+    getState: () => ipcRenderer.invoke('speech:getState') as Promise<SpeechServerState>,
+    setConfig: (config: Partial<SpeechServerConfig>) => ipcRenderer.invoke('speech:setConfig', config) as Promise<SpeechServerState>,
+    command: (action: 'start' | 'stop' | 'clear') => ipcRenderer.invoke('speech:command', action) as Promise<SpeechServerState>,
+    openPage: () => ipcRenderer.invoke('speech:openPage') as Promise<{ success: boolean; error?: string }>,
+    onTranscript: (callback) => {
+      const listener = (_e: unknown, transcript: SpeechTranscript) => callback(transcript);
+      ipcRenderer.on('speech:transcript', listener as any);
+      return () => ipcRenderer.removeListener('speech:transcript', listener as any);
+    },
+    onStatus: (callback) => {
+      const listener = (_e: unknown, status: SpeechPageStatus) => callback(status);
+      ipcRenderer.on('speech:status', listener as any);
+      return () => ipcRenderer.removeListener('speech:status', listener as any);
+    },
+    onState: (callback) => {
+      const listener = (_e: unknown, state: SpeechServerState) => callback(state);
+      ipcRenderer.on('speech:state', listener as any);
+      return () => ipcRenderer.removeListener('speech:state', listener as any);
+    },
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,

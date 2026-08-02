@@ -95,7 +95,7 @@ Imported templates just land in your list. Nothing switches until you say so.
 
 ## Modules
 
-Both editors run on the same 14 modules. Click one to see what it does.
+Both editors run on the same 15 modules. Click one to see what it does.
 
 <details>
 <summary><strong>🎵 Media Info</strong> :: whatever you are listening to</summary>
@@ -466,6 +466,49 @@ Give a name to a chunk of placeholder soup you keep retyping, then use the name 
 
 </details>
 
+<details>
+<summary><strong>🎤 Speech</strong> :: talk, and put it in the chatbox</summary>
+
+Speech to text, with optional live translation. Electron has no speech recognition of its own, so ADVOSC starts a small server on your own machine and Chrome does the listening. Open the page from the Speech module tab, allow the microphone, and keep the tab open. Nothing leaves your machine except what Chrome sends to its own recognition service, and whatever the translation provider needs.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Speech;Text}}` | `hey how are you doing` | Everything heard right now, including the words still being spoken |
+| `{{Speech;Final}}` | `hey how are you doing` | Only the finished sentences |
+| `{{Speech;Interim}}` | `and then i said` | Only the part still being spoken |
+| `{{Speech;Last}}` | `how are you doing` | The most recent finished sentence |
+| `{{Speech;Translated}}` | `hey nasılsın` | Translation of what is currently heard |
+| `{{Speech;TranslatedFinal}}` | `hey nasılsın` | Translation of the finished sentences only |
+| `{{Speech;Both; \| }}` | `hey how are you doing \| hey nasılsın` | Original and translation, with your separator |
+| `{{Speech;IsListening}}` | `true` | The browser page has the mic open |
+| `{{Speech;IsSpeaking}}` | `true` | Words are coming in right now |
+| `{{Speech;HasText}}` | `true` | There is something to show |
+| `{{Speech;IsMuted}}` | `false` | VRChat reports your own mic as muted |
+| `{{Speech;Age}}` | `3200` | Milliseconds since the last thing you said |
+| `{{Speech;Confidence}}` | `0.92` | Recognizer confidence for the last sentence, 0 to 1 |
+| `{{Speech;Language}}` | `en-US` | Recognition language |
+| `{{Speech;TargetLanguage}}` | `tr` | Language it translates into |
+| `{{Speech;DetectedLanguage}}` | `en` | What the translation provider detected |
+| `{{Speech;Provider}}` | `Google Translate` | Translation provider in use |
+| `{{Speech;IsServerRunning}}` | `true` | The local speech server is up |
+| `{{Speech;IsPageConnected}}` | `true` | The browser page is open and connected |
+| `{{Speech;ServerUrl}}` | `http://127.0.0.1:7274/?t=...` | Address of the recognition page |
+| `{{Speech;Error}}` | | Last recognition or translation error, empty when fine |
+
+Translation supports four providers. Google works with no API key at all, so you can turn it on and it just goes. DeepL usually sounds the most natural. OpenRouter and Gemini run the text through an LLM, which handles slang and context better, and you can steer them with your own extra instructions. Keys are stored on your machine and are left out of template exports.
+
+Text clears itself after a while so the chatbox does not keep showing something you said ten minutes ago. You can change the delay, how many sentences to keep at once, and a character cap, all on the module tab.
+
+There is also an option to follow VRChat's own mute. Turn on "Clear and stop capturing while muted in VRChat" and muting yourself in game wipes the current text and closes the browser mic, then unmuting reopens it. It reads VRChat's `MuteSelf` parameter, so it needs OSC enabled in game like everything else here.
+
+A line that only appears while you are talking:
+
+```
+{{Expr;[[Speech:HasText]]=='true';🎤 [[Speech:Both; | ]]}}
+```
+
+</details>
+
 New to the syntax? The [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) walks through the two-layer system from scratch, and [the expert one](./LEARN_PLACEHOLDERS_EXPERT.md) goes further once that clicks.
 
 ---
@@ -511,7 +554,7 @@ Take any chatbox template value and send it to an OSC address on a timer. The va
 
 ## Coming soon
 
-Speech to text with translation, so you can talk and let it land in the chatbox.
+Local speech recognition with Whisper, as an offline alternative to the browser recognizer in the Speech module.
 
 ---
 
