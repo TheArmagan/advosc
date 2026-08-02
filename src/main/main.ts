@@ -7,6 +7,7 @@ import { setupIpcHandlers } from './lib/ipc-handlers';
 import { stopSpeechServer } from './lib/speech-server';
 import { loadOSCSources, toActiveSources } from './lib/osc-config';
 import { handleSquirrelStartup } from './lib/squirrel-startup';
+import { startAutoUpdater } from './lib/auto-updater';
 
 // Re-export types for external use
 export type { OSCMessage, MediaCommand, MediaInfo } from './lib/types';
@@ -39,6 +40,9 @@ app.whenReady().then(async () => {
 
   // Create main window
   createWindow();
+
+  // After the window, so a slow or failing update check never delays startup.
+  startAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

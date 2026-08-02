@@ -52,6 +52,28 @@ The forge config lives in `config.forge` in `package.json`. Three things there a
 
 `bun run make` produces `out/make/squirrel.windows/x64/ADVOSC-Setup.exe`. Squirrel is one-click: no wizard, it installs to `%LocalAppData%\advosc` and launches.
 
+Squirrel has no installer process of its own. It runs our exe with a flag at each lifecycle step (`--squirrel-install`, `--squirrel-updated`, `--squirrel-obsolete`, `--squirrel-uninstall`) and expects the app to handle it and quit. `src/main/lib/squirrel-startup.ts` does that, and `main.ts` calls it before anything else so `ready` never fires during an install. Without it the app boots a window and binds OSC ports in the middle of setup, and no shortcuts get created.
+
+## CI
+
+`.github/workflows/build.yml` builds on pushes to main and on PRs. `.github/workflows/release.yml` runs on a `v*` tag and publishes the installer, the zip, and the Squirrel `RELEASES`/nupkg pair to a GitHub release. Both run on `windows-latest` because the build shells out to xcopy and the Squirrel maker needs Windows.
+
+Releasing means bumping `package.json` and tagging to match:
+
+```bash
+git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
+```
+
+The release job fails if the tag and `package.json` disagree, because the Squirrel package version comes from `package.json` and a mismatch would publish a `v0.1.1` release full of `0.1.0` artifacts. The `natives/*.exe` binaries are committed, so CI never needs Rust, cmake, or LLVM.
+
+## Auto update
+
+`src/main/lib/auto-updater.ts` uses Electron's built-in `autoUpdater`, which on Windows is Squirrel. Squirrel fetches `<feedURL>/RELEASES` and then the nupkg it names, so the feed URL has to stay constant across versions. A GitHub release URL contains the tag, so it cannot be used directly. `update.electronjs.org` is Electron's redirector that resolves to the repo's newest release, which is why the release workflow publishes `RELEASES` and the nupkg as assets. It requires the repo to be public and the release to be published rather than a draft.
+
+The updater is off unless all three hold: `app.isPackaged`, Windows, and an `Update.exe` next to the install (which the zip build does not have). It checks on launch and hourly after that, logs errors instead of surfacing them, and shows a restart prompt on `update-downloaded`.
+
+CI builds from a clean checkout, so there is no previous nupkg to diff against and every release ships a full package. Updates are correct, just a full download each time. `remoteReleases` on the Squirrel maker would produce deltas, at the cost of the make step depending on the network.
+
 ## Architecture
 
 ### Process split

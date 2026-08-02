@@ -1,0 +1,76 @@
+name: Release
+
+# Push a tag to cut a release:
+#   bun pm version patch   (or edit package.json by hand)
+#   git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
+#
+# Running this from the Actions tab instead just builds and attaches the
+# installer to the run, without publishing anything.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Has to be Windows. The build shells out to xcopy, the app is Windows only,
+    # and the Squirrel maker needs Windows tooling.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The Squirrel package version comes from package.json, not from the tag,
+      # so a mismatch would publish v0.1.1 containing 0.1.0 artifacts.
+      - name: Check tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $tag = '${{ github.ref_name }}' -replace '^v', ''
+          if ($pkg -ne $tag) {
+            throw "Tag $tag does not match package.json version $pkg. Bump package.json and retag."
+          }
+          Write-Host "Version $pkg"
+
+      - name: Build installer
+        run: bun run make
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: advosc-windows-x64
+          if-no-files-found: error
+          path: |
+            out/make/squirrel.windows/x64/ADVOSC-Setup.exe
+            out/make/zip/win32/x64/*.zip
+
+      # RELEASES and the nupkg are what Squirrel reads to auto-update, so they
+      # belong on the release even though nothing consumes them yet.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            out/make/squirrel.windows/x64/ADVOSC-Setup.exe
+            out/make/squirrel.windows/x64/*.nupkg
+            out/make/squirrel.windows/x64/RELEASES
+            out/make/zip/win32/x64/*.zip

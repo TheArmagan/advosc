@@ -21,6 +21,8 @@ Windows only, since a few parts (media info, trackers, hardware sensors) talk to
 
 Grab a build from [Releases](https://github.com/TheArmagan/advosc/releases/latest), or come say hi on [Discord](https://discord.gg/spfmB7S78n) if something breaks.
 
+Run `ADVOSC-Setup.exe` and it installs and opens itself, there is no wizard to click through. After that it checks for updates on its own and downloads them in the background, then asks whether you want to restart. If you would rather not have that, use the zip instead: it is the same app, it just never updates itself.
+
 ---
 
 ## The chatbox
