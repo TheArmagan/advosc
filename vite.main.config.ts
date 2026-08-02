@@ -11,7 +11,7 @@ export default defineConfig({
       input: path.resolve(__dirname, 'src/main/main.ts'),
       external: [
         'electron', 'path', 'fs', 'url', 'os', 'module', 'child_process', 'dgram', 'net', 'events',
-        'chokidar', 'osc'
+        'chokidar'
       ],
       output: {
         entryFileNames: 'main.cjs',

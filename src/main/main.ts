@@ -6,9 +6,16 @@ import { stopSystemMonitor } from './lib/system-monitor';
 import { setupIpcHandlers } from './lib/ipc-handlers';
 import { stopSpeechServer } from './lib/speech-server';
 import { loadOSCSources, toActiveSources } from './lib/osc-config';
+import { handleSquirrelStartup } from './lib/squirrel-startup';
 
 // Re-export types for external use
 export type { OSCMessage, MediaCommand, MediaInfo } from './lib/types';
+
+// Has to run before anything else. Quitting here keeps 'ready' from ever firing,
+// so the installer never gets a window, an OSC socket or a media monitor.
+if (handleSquirrelStartup()) {
+  app.quit();
+}
 
 // `loadOSCSources` needs app paths, so the instance is created after the app is ready.
 let port: OSC;

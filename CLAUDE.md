@@ -9,12 +9,15 @@ ADVOSC is a Windows-only Electron + Svelte 5 desktop app for VRChat OSC: a chatb
 ## Commands
 
 ```bash
-bun install          # deps (postinstall runs electron-builder install-app-deps)
+bun install          # deps
 bun run dev          # concurrent: main+preload vite watch, renderer vite (port 5173), electron
-bun run build        # copy:natives (xcopy, Windows-only) + build:main + build:renderer
-bun run package      # build + electron-forge package
+bun run build        # clean + copy:natives (xcopy, Windows-only) + build:main + build:renderer
+bun run package      # build + electron-forge package (unpacked app in out/)
+bun run make         # build + electron-forge make (Squirrel one-click setup + zip in out/make/)
 bun run start        # run electron against an existing dist/
 ```
+
+`clean` deletes `dist/` before every build. Do not skip it: all three Vite configs use `emptyOutDir: false`, so without it `dist/assets` keeps every hashed bundle from every past build and the packaged app balloons.
 
 There is no test suite, linter, or formatter configured. TypeScript is not type-checked as a build step (Vite transpiles only), so run `bunx tsc --noEmit` if you want type errors.
 
@@ -31,13 +34,23 @@ Copy the resulting `target/release/*.exe` into the top-level `natives/` folder; 
 
 ## Build layout
 
-Three separate Vite configs write into a shared `dist/` (each with `emptyOutDir: false`, so order matters and `copy:natives` runs first):
+Three separate Vite configs write into a shared `dist/` (each with `emptyOutDir: false`, so order matters: `clean` wipes `dist/` first, then `copy:natives` runs before the two build steps):
 
 - `vite.main.config.ts` → `src/main/main.ts` → `dist/main.cjs` (CJS, node18, electron/node builtins external)
 - `vite.preload.config.ts` → `src/main/preload.ts` → `dist/preload.cjs`
 - `vite.config.ts` → `index.html` + `src/renderer` → `dist/` (Svelte 5 **runes mode**, Tailwind v4 via `@tailwindcss/vite`, `$lib` → `src/renderer/lib`, HMR disabled)
 
-Dev vs production is detected via `ELECTRON_DEV=true` / `NODE_ENV=development`. That flag also picks the native exe path: dev reads `dist/natives/`, production reads `process.resourcesPath/app.asar.unpacked/dist/natives/` (see `src/main/lib/advosc-utils.ts`), so keep the forge `asar.unpack` patterns in `package.json` in sync if you add binaries.
+Dev vs production is detected via `ELECTRON_DEV=true` / `NODE_ENV=development`. That flag also picks the native exe path: dev reads `dist/natives/`, production reads `process.resourcesPath/app.asar.unpacked/dist/natives/` (see `src/main/lib/advosc-utils.ts`). The forge config unpacks all of `dist/` out of the asar, so new binaries under `natives/` need no config change.
+
+## Packaging
+
+The forge config lives in `config.forge` in `package.json`. Three things there are easy to break:
+
+- **`dependencies` vs `devDependencies`.** Vite bundles everything the renderer and the main process import, so almost nothing is needed at runtime. `chokidar` is the only real dependency, because `vite.main.config.ts` lists it as external. Everything else belongs in `devDependencies`, where forge's `prune` drops it from the build. Putting a renderer package (`monaco-editor`, `@lucide/svelte`, …) back in `dependencies` ships ~100 MB of already-bundled code.
+- **`ignore`.** It is a whitelist: `^/(?!dist($|/)|node_modules($|/)|package\.json$)` drops every other top-level path. The `node_modules/\.…` rule matters more than it looks, because bun parks stale packages in `node_modules/.ignored` (hundreds of MB) and its Vite cache in `node_modules/.vite`. Without that rule they both end up in the asar.
+- **`asar.unpack` globs are matched against absolute paths**, so a bare `dist/**/*` silently matches nothing. It has to be `**/dist/**/*`. `src/main/lib/window.ts` loads the renderer from `app.asar.unpacked/dist/index.html`, so if this stops matching the app opens to a blank window.
+
+`bun run make` produces `out/make/squirrel.windows/x64/ADVOSC-Setup.exe`. Squirrel is one-click: no wizard, it installs to `%LocalAppData%\advosc` and launches.
 
 ## Architecture
 
