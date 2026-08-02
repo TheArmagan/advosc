@@ -1,16 +1,25 @@
 name: Release
 
-# Push a tag to cut a release:
-#   bun pm version patch   (or edit package.json by hand)
-#   git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
+# Two ways to cut a release, both of which take the version from package.json:
 #
-# Running this from the Actions tab instead just builds and attaches the
-# installer to the run, without publishing anything.
+#   Push a tag:  bump package.json, then
+#                git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
+#
+#   Actions tab: run this workflow with "Publish a release" ticked, and it tags
+#                the current commit with the version already in package.json.
+#
+# Running it from the Actions tab without ticking that box only builds, and
+# attaches the installer to the run so you can test it. Nothing gets published.
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a release (tags the current commit with the package.json version)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -26,7 +35,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -35,18 +44,28 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # The Squirrel package version comes from package.json, not from the tag,
-      # so a mismatch would publish v0.1.1 containing 0.1.0 artifacts.
-      - name: Check tag matches package.json
-        if: startsWith(github.ref, 'refs/tags/')
+      # package.json is the source of truth. Squirrel takes the package version
+      # from it, so a tag that disagrees would publish a v0.1.1 release full of
+      # 0.1.0 artifacts.
+      - name: Resolve version
+        id: version
         shell: pwsh
         run: |
-          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          $tag = '${{ github.ref_name }}' -replace '^v', ''
-          if ($pkg -ne $tag) {
-            throw "Tag $tag does not match package.json version $pkg. Bump package.json and retag."
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $tag = '${{ github.ref_name }}'
+            $tagVersion = $tag -replace '^v', ''
+            if ($tagVersion -ne $version) {
+              throw "Tag $tag does not match package.json version $version. Bump package.json, or retag to v$version."
+            }
+          } else {
+            $tag = "v$version"
           }
-          Write-Host "Version $pkg"
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Building $version as $tag"
 
       # Squirrel shells out to a 7-Zip binary that electron-winstaller puts in
       # place from an install script. bun skips install scripts unless the
@@ -64,20 +83,21 @@ jobs:
         run: bun run make
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: advosc-windows-x64
+          name: advosc-${{ steps.version.outputs.version }}
           if-no-files-found: error
           path: |
             out/make/squirrel.windows/x64/ADVOSC-Setup.exe
             out/make/zip/win32/x64/*.zip
 
-      # RELEASES and the nupkg are what Squirrel reads to auto-update, so they
-      # belong on the release even though nothing consumes them yet.
+      # RELEASES and the nupkg are what the auto updater reads, so they have to
+      # be on the release even though nobody downloads them by hand.
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag' || inputs.publish
+        uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           draft: false
           generate_release_notes: true
           fail_on_unmatched_files: true
