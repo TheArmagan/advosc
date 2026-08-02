@@ -1,0 +1,40 @@
+# ADVOSC 0.1.0
+
+Big one. Five new modules, saved templates, avatar scaling, and the app installs and updates itself now.
+
+Download: [latest release](https://github.com/TheArmagan/advosc/releases/latest) (Windows)
+
+**It updates itself now**
+
+Run `ADVOSC-Setup.exe` and it installs and opens itself, there is no wizard to click through. After that it checks for updates on its own, downloads them in the background, and asks whether you want to restart. There is still a zip if you would rather keep it portable and update by hand.
+
+This is the first build with updating in it, so it cannot update itself into place. Install this one, and the next one comes to you.
+
+**New modules**
+
+*   **Speech:** talk, and have it show up in your chatbox, translated if you want it translated. Chrome does the listening because Electron has no speech recognition of its own, so ADVOSC serves a small page on your own machine that you open in a tab and leave running. Translation runs through Google, DeepL, OpenRouter or Gemini, and Google needs no API key. It can also follow your VRChat mute: mute yourself in game and the line clears and the mic closes, unmute and it picks back up.
+*   **Heart Rate:** replaces the Pulsoid module. HypeRate, Stromno and your own WebSocket work now too, and your existing Pulsoid setup carries over on its own.
+*   **Weather:** current conditions and a 7 day forecast from Open-Meteo, free and no API key. Save your locations, or pass a place name and it gets looked up for you.
+*   **System Resources:** CPU, GPU, memory and network.
+*   **HTTP & WebSocket:** point it at any API or socket and pull the values straight into your chatbox.
+
+**My Templates**
+
+Save a whole setup under a name: the template text, both editors' state, and every module's settings. Switching swaps your entire chatbox in one click instead of you rebuilding it.
+
+You can share one as a compact code, raw JSON, or a file. Sharing strips your credentials first. Heart rate tokens, API keys, widget ids, custom WebSocket URLs and shortcuts you marked hidden never leave your machine, and the share window tells you exactly what it removed.
+
+**Avatar scale**
+
+Resize yourself in game, anywhere from 0.01 to 10 meters. Drag the slider or type an exact number, save your own presets, and optionally have ADVOSC remember a height per avatar so it comes back on avatar change. You can also drive your size from inside your avatar with a parameter.
+
+**Smaller things**
+
+*   OSC sources are yours to configure now, so you can add extra listen and send endpoints instead of only VRChat's.
+*   The same animated placeholder can appear as many times as you want in one template. Every copy keeps its own animation state, so they no longer fight over one timeline or skip frames.
+*   Synced lyrics fixes.
+*   The audio FFT source is gone.
+
+Local recognition with Whisper, so speech runs offline without the browser page, is what I am working on next.
+
+Let me know here if something breaks.
