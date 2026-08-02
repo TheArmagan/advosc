@@ -2,3 +2,6 @@
   - that apis only works in browsers not in electron so advosc going open a local http server for user to open that page in browser to recognize their speech
   - translation support with multiple api support (google, deepl, openrouter, gemni)
   - this system needs to work seamleasly with our current chatbox templating system. so we need to make it as chatbox module.
+
+* send chatbox typing to vrchat osc when typing to overwrite text box
+  - add option speech module to send typing while talking
