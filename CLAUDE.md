@@ -66,6 +66,8 @@ git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
 
 The release job fails if the tag and `package.json` disagree, because the Squirrel package version comes from `package.json` and a mismatch would publish a `v0.1.1` release full of `0.1.0` artifacts. The `natives/*.exe` binaries are committed, so CI never needs Rust, cmake, or LLVM.
 
+`electron-winstaller` has to stay in `trustedDependencies`. It ships `7z-x64.exe` and `7z-arm64.exe` and picks one in an `install` lifecycle script, and bun skips lifecycle scripts for anything not listed there. Squirrel shells out to that `vendor/7z.exe` when it builds the package, so without it the make step dies inside .NET with `Squirrel.Utility.CreateZipFromDirectory` and "The system cannot find the file specified", which points nowhere useful. A local machine hides this because the file is already on disk from an earlier install. The release workflow checks for it before running make so the error at least names the cause. Changing `trustedDependencies` also rewrites `bun.lock`, and the lockfile has to be committed with it or CI's `--frozen-lockfile` step fails.
+
 ## Auto update
 
 `src/main/lib/auto-updater.ts` uses Electron's built-in `autoUpdater`, which on Windows is Squirrel. Squirrel fetches `<feedURL>/RELEASES` and then the nupkg it names, so the feed URL has to stay constant across versions. A GitHub release URL contains the tag, so it cannot be used directly. `update.electronjs.org` is Electron's redirector that resolves to the repo's newest release, which is why the release workflow publishes `RELEASES` and the nupkg as assets. It requires the repo to be public and the release to be published rather than a draft.

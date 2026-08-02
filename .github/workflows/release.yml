@@ -48,6 +48,18 @@ jobs:
           }
           Write-Host "Version $pkg"
 
+      # Squirrel shells out to a 7-Zip binary that electron-winstaller puts in
+      # place from an install script. bun skips install scripts unless the
+      # package is in trustedDependencies, and when it is skipped Squirrel fails
+      # deep inside .NET with a stack trace that says nothing useful.
+      - name: Verify Squirrel tooling
+        shell: pwsh
+        run: |
+          $sevenZip = 'node_modules/electron-winstaller/vendor/7z.exe'
+          if (-not (Test-Path $sevenZip)) {
+            throw "$sevenZip is missing, so Squirrel would fail. electron-winstaller's install script did not run. Check that it is still listed in trustedDependencies in package.json."
+          }
+
       - name: Build installer
         run: bun run make
 
