@@ -18,7 +18,7 @@ export function createWindow(): BrowserWindow {
       preload: path.join(__dirname, 'preload.cjs'), // __dirname becasue of build structure
       nodeIntegration: false,
       contextIsolation: true,
-      backgroundThrottling: true,
+      backgroundThrottling: false,
     },
     autoHideMenuBar: true,
     frame: false
