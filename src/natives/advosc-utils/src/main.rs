@@ -3,6 +3,7 @@ use serde::Serialize;
 use std::io::Write;
 use std::panic;
 
+mod ble_heart_rate;
 mod gpu_info;
 mod openvr_trackers;
 mod process_start_time;
@@ -34,6 +35,10 @@ enum Commands {
         #[arg(long, default_value_t = 2000)]
         interval: u64,
     },
+    /// Connect to BLE heart rate devices. Reads JSON commands on stdin, writes JSON
+    /// events on stdout, one per line, until stdin closes.
+    #[command(name = "ble-hr")]
+    BleHeartRate,
 }
 
 #[derive(Serialize)]
@@ -125,6 +130,9 @@ fn main() {
                     break;
                 }
             }
+        }
+        Commands::BleHeartRate => {
+            ble_heart_rate::run();
         }
     }
 }

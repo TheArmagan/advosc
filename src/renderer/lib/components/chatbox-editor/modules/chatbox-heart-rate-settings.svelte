@@ -21,11 +21,13 @@
     PencilIcon,
     WifiIcon,
     WifiOffIcon,
+    BatteryIcon,
     DownloadIcon,
     UploadIcon,
   } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import ChatboxMonacoEditor from "../chatbox-monaco-editor.svelte";
+  import BleDevicePicker from "./ble-device-picker.svelte";
   import { onMount, onDestroy } from "svelte";
 
   const {
@@ -42,9 +44,19 @@
   }
 
   let sources = $state<SourceEntry[]>([]);
-  let statuses = $state<
-    Map<string, { connected: boolean; heartRate?: number; error?: string }>
-  >(new Map());
+  type SourceStatus = {
+    connected: boolean;
+    heartRate?: number;
+    error?: string;
+    extras?: {
+      battery?: number;
+      contact?: boolean | null;
+      deviceName?: string;
+      sensorLocation?: string;
+    };
+  };
+
+  let statuses = $state<Map<string, SourceStatus>>(new Map());
 
   let editorOpen = $state(false);
   /** Name being edited, or null when adding a new source. */
@@ -65,10 +77,7 @@
   }
 
   function refreshStatuses() {
-    const next = new Map<
-      string,
-      { connected: boolean; heartRate?: number; error?: string }
-    >();
+    const next = new Map<string, SourceStatus>();
     for (const entry of sources) {
       // Keep the socket alive while this tab is open so the status is meaningful.
       module.keepAlive(entry.name);
@@ -274,16 +283,24 @@
             <Label>
               {field.label}{field.optional ? " (optional)" : ""}
             </Label>
-            <Input
-              type={field.secret ? "password" : "text"}
-              placeholder={field.placeholder}
-              value={draftSource[field.key] ?? ""}
-              oninput={(e) =>
-                (draftSource = {
-                  ...draftSource,
-                  [field.key]: (e.target as HTMLInputElement).value,
-                })}
-            />
+            {#if field.kind === "bleDevice"}
+              <BleDevicePicker
+                value={draftSource[field.key] ?? ""}
+                onChange={(address) =>
+                  (draftSource = { ...draftSource, [field.key]: address })}
+              />
+            {:else}
+              <Input
+                type={field.secret ? "password" : "text"}
+                placeholder={field.placeholder}
+                value={draftSource[field.key] ?? ""}
+                oninput={(e) =>
+                  (draftSource = {
+                    ...draftSource,
+                    [field.key]: (e.target as HTMLInputElement).value,
+                  })}
+              />
+            {/if}
             {#if field.hint}
               <p class="text-xs text-muted-foreground">{field.hint}</p>
             {/if}
@@ -303,8 +320,8 @@
 
   {#if sources.length === 0}
     <div class="text-muted-foreground text-sm py-4">
-      No heart rate sources configured. Click "Add Source" to connect Pulsoid,
-      HypeRate, Stromno or a custom WebSocket feed.
+      No heart rate sources configured. Click "Add Source" to connect a Bluetooth
+      band or strap, Pulsoid, HypeRate, Stromno or a custom WebSocket feed.
     </div>
   {:else}
     <div class="flex flex-col gap-2 w-full">
@@ -336,6 +353,15 @@
               {/if}
               {#if status.heartRate !== undefined}
                 <span class="text-rose-500 text-xs">{status.heartRate} BPM</span>
+              {/if}
+              {#if status.extras?.battery !== undefined}
+                <span class="flex items-center gap-1 text-xs text-muted-foreground">
+                  <BatteryIcon class="w-4 h-4" />
+                  {status.extras.battery}%
+                </span>
+              {/if}
+              {#if status.extras?.contact === false}
+                <span class="text-amber-500 text-xs">No skin contact</span>
               {/if}
             </Item.Description>
           </Item.Content>

@@ -200,6 +200,7 @@ Add your feeds under **Modules → Heart Rate**. Each one gets a name that you u
 
 | Platform | What you need |
 |----------|---------------|
+| Bluetooth (BLE) | A band or strap broadcasting heart rate. Hit Scan and pick it from the list |
 | Pulsoid | Access token |
 | HypeRate | API key + session id |
 | Stromno | Widget id |
@@ -212,6 +213,14 @@ Add your feeds under **Modules → Heart Rate**. Each one gets a name that you u
 | `{{HeartRate;SOURCE;AverageHR;300}}` | `72` | Average over N seconds (max 900) |
 | `{{HeartRate;SOURCE;MaxHR}}` | `120` | Session maximum |
 | `{{HeartRate;SOURCE;MinHR}}` | `55` | Session minimum |
+| `{{HeartRate;SOURCE;Battery}}` | `84` | Device battery percentage (Bluetooth only) |
+| `{{HeartRate;SOURCE;HasContact}}` | `true` | Skin contact (Bluetooth only) |
+| `{{HeartRate;SOURCE;DeviceName}}` | `Xiaomi Smart Band 10 Pro` | Advertised device name (Bluetooth only) |
+| `{{HeartRate;SOURCE;SensorLocation}}` | `Wrist` | Where the device is worn (Bluetooth only) |
+
+**Bluetooth notes.** Anything implementing the standard heart rate service (`0x180D`) works: Coospo, Polar, Garmin, Amazfit, Xiaomi and so on. There is no pairing step, and you should not pair the device in Windows Settings, since a bonded device that is not broadcasting is a common cause of stuck connections.
+
+Your device has to actually be broadcasting. On Xiaomi bands that is Settings → Heart rate → Bluetooth broadcast, and it is off by default. While broadcasting, the band drops its connection to your phone, so if the phone app grabs it first the PC will never see it. Broadcast usually stops when the band screen goes back to the watchface. Drops are normal and ADVOSC reconnects on its own with a backoff.
 
 > Old templates using `{{Pulsoid;TOKEN;…}}` migrate themselves: the token becomes a named source and the template gets rewritten. `Pulsoid` still works as an alias too.
 

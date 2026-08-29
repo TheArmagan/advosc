@@ -210,7 +210,7 @@ export const meta: Record<BlockType, BlockMeta> = {
   media: { label: "Now Playing", desc: "Music / media info", color: "bg-violet-500" },
   mediaprog: { label: "Song Progress", desc: "Progress bar of media", color: "bg-purple-500" },
   stopwatch: { label: "Stopwatch", desc: "Elapsed time from stopwatch", color: "bg-orange-500" },
-  heartrate: { label: "Heart Rate", desc: "Pulsoid / HypeRate / Stromno heart rate", color: "bg-rose-500" },
+  heartrate: { label: "Heart Rate", desc: "Bluetooth / Pulsoid / HypeRate / Stromno heart rate", color: "bg-rose-500" },
   osc: { label: "Avatar Param", desc: "VRChat OSC parameter value", color: "bg-emerald-500" },
   hotkey: { label: "Hotkey State", desc: "Hotkey toggled / pressed state", color: "bg-yellow-500" },
   process: { label: "Session Time", desc: "Process session duration / state", color: "bg-cyan-500" },

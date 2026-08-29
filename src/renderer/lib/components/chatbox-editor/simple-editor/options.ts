@@ -62,6 +62,10 @@ export const hrFields = [
   { value: "AverageHR", label: "Average HR (windowed)" },
   { value: "MaxHR", label: "Session Maximum HR" },
   { value: "MinHR", label: "Session Minimum HR" },
+  { value: "Battery", label: "Device Battery % (Bluetooth)" },
+  { value: "HasContact", label: "Skin Contact (Bluetooth)" },
+  { value: "DeviceName", label: "Device Name (Bluetooth)" },
+  { value: "SensorLocation", label: "Worn On (Bluetooth)" },
 ] as const;
 
 export const processFields = [

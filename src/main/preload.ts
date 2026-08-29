@@ -110,6 +110,57 @@ export interface SystemInfoResponse {
   error?: string;
 }
 
+export interface BleScanResult {
+  /** `AA:BB:CC:DD:EE:FF`. Stable per device, and what you connect with. */
+  address: string;
+  name: string | null;
+  rssi: number | null;
+  /** Whether the advertisement listed the 0x180D heart rate service. */
+  hrService: boolean;
+}
+
+export interface BleDeviceState {
+  address: string;
+  connected: boolean;
+  connecting: boolean;
+  /** True while packets are still arriving. False means connected but silent. */
+  active?: boolean;
+  name?: string;
+  /** Chest, Wrist, Finger and so on. Cosmetic, and often missing. */
+  sensorLocation?: string;
+  bpm?: number;
+  /** Null when the device does not report skin contact at all. */
+  contact?: boolean | null;
+  rrIntervalsMs?: number[];
+  battery?: number;
+  lastPacketAt?: number;
+  error?: string;
+}
+
+export interface BleState {
+  /** Whether the sidecar process is alive. */
+  running: boolean;
+  adapter: string | null;
+  scanning: boolean;
+  error?: string;
+  devices: BleDeviceState[];
+  scanResults: BleScanResult[];
+}
+
+/** Raw sidecar events, plus a `state` snapshot emitted after each one. */
+export type BleEvent =
+  | { type: 'state'; state: BleState }
+  | { type: 'ready'; adapter: string }
+  | { type: 'scan_started' }
+  | { type: 'scan_stopped' }
+  | { type: 'scan_result'; address: string; name: string | null; rssi: number | null; hr_service: boolean }
+  | { type: 'connecting'; address: string }
+  | { type: 'connected'; address: string; name: string | null; sensor_location: string | null }
+  | { type: 'hr'; address: string; bpm: number; contact: boolean | null; energy_kj?: number; rr_ms: number[]; ts: number }
+  | { type: 'battery'; address: string; percent: number }
+  | { type: 'disconnected'; address: string; reason: string }
+  | { type: 'error'; address?: string; message: string };
+
 export interface HttpRequestOptions {
   url: string;
   method?: string;
@@ -241,6 +292,14 @@ export interface PreloadElectronAPI {
   http: {
     request: (options: HttpRequestOptions) => Promise<HttpRequestResult>;
   };
+  ble: {
+    scan: (options?: { seconds?: number; all?: boolean }) => Promise<BleState>;
+    stopScan: () => Promise<BleState>;
+    connect: (address: string) => Promise<BleState>;
+    disconnect: (address: string) => Promise<BleState>;
+    getState: () => Promise<BleState>;
+    onEvent: (callback: (event: BleEvent) => void) => () => void;
+  };
   speech: {
     start: (options?: { port?: number; config?: Partial<SpeechServerConfig> }) => Promise<{ success: boolean; url?: string; port?: number; error?: string }>;
     stop: () => Promise<{ success: boolean }>;
@@ -342,6 +401,18 @@ const api: PreloadElectronAPI = {
   },
   http: {
     request: (options: HttpRequestOptions) => ipcRenderer.invoke('http:request', options) as Promise<HttpRequestResult>,
+  },
+  ble: {
+    scan: (options = {}) => ipcRenderer.invoke('ble:scan', options) as Promise<BleState>,
+    stopScan: () => ipcRenderer.invoke('ble:stopScan') as Promise<BleState>,
+    connect: (address: string) => ipcRenderer.invoke('ble:connect', address) as Promise<BleState>,
+    disconnect: (address: string) => ipcRenderer.invoke('ble:disconnect', address) as Promise<BleState>,
+    getState: () => ipcRenderer.invoke('ble:getState') as Promise<BleState>,
+    onEvent: (callback) => {
+      const listener = (_e: unknown, event: BleEvent) => callback(event);
+      ipcRenderer.on('ble:event', listener as any);
+      return () => ipcRenderer.removeListener('ble:event', listener as any);
+    },
   },
   speech: {
     start: (options = {}) => ipcRenderer.invoke('speech:start', options) as Promise<{ success: boolean; url?: string; port?: number; error?: string }>,

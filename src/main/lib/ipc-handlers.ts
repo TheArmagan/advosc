@@ -7,6 +7,13 @@ import { executeMediaCommand } from './media';
 import { getMainWindow } from './window';
 import { getProcessStartTime, getOpenVRTrackers } from './advosc-utils';
 import { getSystemInfo } from './system-monitor';
+import {
+  connectBleDevice,
+  disconnectBleDevice,
+  getBleState,
+  startBleScan,
+  stopBleScan,
+} from './ble-heart-rate';
 import { performHttpRequest, type HttpRequestOptions } from './http-request';
 import {
   getSpeechServerState,
@@ -275,6 +282,19 @@ export function setupIpcHandlers(port: OSC): void {
   ipcMain.handle('utils:systemInfo', () => {
     return getSystemInfo();
   });
+
+  // BLE heart rate IPC handlers
+  ipcMain.handle('ble:scan', (_event, options: { seconds?: number; all?: boolean } = {}) => {
+    return startBleScan(options);
+  });
+
+  ipcMain.handle('ble:stopScan', () => stopBleScan());
+
+  ipcMain.handle('ble:connect', (_event, address: string) => connectBleDevice(address));
+
+  ipcMain.handle('ble:disconnect', (_event, address: string) => disconnectBleDevice(address));
+
+  ipcMain.handle('ble:getState', () => getBleState());
 
   // Global shortcuts IPC handlers
   const shortcutCallbacks = new Map<string, string>(); // accelerator -> callback id

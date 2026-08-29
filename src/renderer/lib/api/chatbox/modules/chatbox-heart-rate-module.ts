@@ -4,6 +4,7 @@ import {
   createConnection,
   isSourceConfigured,
   type HeartRateConnection,
+  type HeartRateExtras,
   type HeartRatePlatform,
   type HeartRateSource,
 } from "./heart-rate/providers";
@@ -31,6 +32,8 @@ interface FeedState {
   allTimeMin?: number;
   lastAccess: number;
   lastError?: string;
+  /** Battery, contact and device name. Only the BLE platform fills these in. */
+  extras: HeartRateExtras;
 }
 
 export class ChatboxHeartRateModule extends ChatboxModule {
@@ -42,7 +45,7 @@ export class ChatboxHeartRateModule extends ChatboxModule {
       id: "HeartRate",
       name: "Heart Rate",
       description:
-        "Live heart rate from Pulsoid, HypeRate, Stromno or any custom WebSocket feed. Add your sources below and reference them by name.",
+        "Live heart rate from a Bluetooth band or strap, Pulsoid, HypeRate, Stromno, or any custom WebSocket feed.",
       Component: ChatboxHeartRateSettings,
       examplePlaceholders: {
         "Source;HeartRate": {
@@ -70,6 +73,28 @@ export class ChatboxHeartRateModule extends ChatboxModule {
           value: "55",
           description: "The all-time minimum heart rate recorded this session.",
           fillText: "HeartRate;${1:sourceName};MinHR",
+        },
+        "Source;Battery": {
+          value: "84",
+          description: "Battery percentage of the device. Bluetooth sources only.",
+          fillText: "HeartRate;${1:sourceName};Battery",
+        },
+        "Source;HasContact": {
+          value: "true",
+          description:
+            "Whether the device reports skin contact. Bluetooth sources only, and true when the device does not report it.",
+          fillText: "HeartRate;${1:sourceName};HasContact",
+        },
+        "Source;DeviceName": {
+          value: "Xiaomi Smart Band 10 Pro",
+          description: "Advertised name of the device. Bluetooth sources only.",
+          fillText: "HeartRate;${1:sourceName};DeviceName",
+        },
+        "Source;SensorLocation": {
+          value: "Wrist",
+          description:
+            "Where the device is worn (Chest, Wrist, Finger, and so on), when it reports it. Bluetooth sources only.",
+          fillText: "HeartRate;${1:sourceName};SensorLocation",
         },
       },
     });
@@ -132,6 +157,7 @@ export class ChatboxHeartRateModule extends ChatboxModule {
       isOnline: false,
       history: [],
       lastAccess: Date.now(),
+      extras: {},
     };
 
     state.connection = createConnection(source, {
@@ -155,6 +181,9 @@ export class ChatboxHeartRateModule extends ChatboxModule {
       },
       onOffline: () => {
         state.isOnline = false;
+      },
+      onExtras: (extras) => {
+        state.extras = { ...state.extras, ...extras };
       },
       onError: (error) => {
         console.error("HeartRate socket error:", error);
@@ -206,10 +235,20 @@ export class ChatboxHeartRateModule extends ChatboxModule {
   }
 
   /** Live connection status for the settings UI. */
-  getStatus(name: string): { connected: boolean; heartRate?: number; error?: string } {
+  getStatus(name: string): {
+    connected: boolean;
+    heartRate?: number;
+    error?: string;
+    extras?: HeartRateExtras;
+  } {
     const state = this.feeds.get(name);
     if (!state) return { connected: false };
-    return { connected: state.isOnline, heartRate: state.lastHeartRate, error: state.lastError };
+    return {
+      connected: state.isOnline,
+      heartRate: state.lastHeartRate,
+      error: state.lastError,
+      extras: state.extras,
+    };
   }
 
   /** Keeps a source connected while its card is open in the settings UI. */
@@ -254,6 +293,16 @@ export class ChatboxHeartRateModule extends ChatboxModule {
         return state.allTimeMax !== undefined ? state.allTimeMax.toString() : "0";
       case "MinHR":
         return state.allTimeMin !== undefined ? state.allTimeMin.toString() : "0";
+      case "Battery":
+        return state.extras.battery !== undefined ? state.extras.battery.toString() : "0";
+      case "HasContact":
+        // Devices that do not support the contact bit report nothing, and "unknown" is
+        // closer to worn than to not worn.
+        return (state.extras.contact ?? true).toString();
+      case "DeviceName":
+        return state.extras.deviceName ?? "";
+      case "SensorLocation":
+        return state.extras.sensorLocation ?? "";
       default:
         return "";
     }
@@ -287,6 +336,26 @@ export class ChatboxHeartRateModule extends ChatboxModule {
         value: "55",
         description: `Session minimum heart rate from "${name}".`,
         fillText: `HeartRate;${name};MinHR`,
+      };
+      placeholders[`${name};Battery`] = {
+        value: "84",
+        description: `Battery percentage of the "${name}" device. Bluetooth sources only.`,
+        fillText: `HeartRate;${name};Battery`,
+      };
+      placeholders[`${name};HasContact`] = {
+        value: "true",
+        description: `Whether "${name}" reports skin contact. Bluetooth sources only.`,
+        fillText: `HeartRate;${name};HasContact`,
+      };
+      placeholders[`${name};DeviceName`] = {
+        value: "Xiaomi Smart Band 10 Pro",
+        description: `Advertised name of the "${name}" device. Bluetooth sources only.`,
+        fillText: `HeartRate;${name};DeviceName`,
+      };
+      placeholders[`${name};SensorLocation`] = {
+        value: "Wrist",
+        description: `Where "${name}" is worn, when the device reports it. Bluetooth sources only.`,
+        fillText: `HeartRate;${name};SensorLocation`,
       };
     }
 

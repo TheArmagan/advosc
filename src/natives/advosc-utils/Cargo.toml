@@ -25,6 +25,11 @@ openvr = "0.8"
 openvr_sys = "=2.1.3"
 sysinfo = "0.33"
 nvml-wrapper = "0.10"
+# BLE heart rate. btleplug drives WinRT's GATT stack, so no dongle or driver swap.
+btleplug = "0.11"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std"] }
+futures = "0.3"
+uuid = "1"
 
 [profile.release]
 opt-level = "z"
