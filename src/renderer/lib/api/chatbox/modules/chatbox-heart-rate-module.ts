@@ -103,7 +103,25 @@ export class ChatboxHeartRateModule extends ChatboxModule {
 
     // Dropping or re-configuring a source must drop its live socket too. This subscribes
     // directly instead of using `onValuesChanged`, which the module registry takes over.
-    this.values.subscribe(() => this.pruneStaleFeeds());
+    // The first call fires synchronously with the stored values, which is what brings
+    // saved Bluetooth devices up at app start.
+    this.values.subscribe(() => {
+      this.pruneStaleFeeds();
+      this.connectBleSources();
+    });
+  }
+
+  /**
+   * Bluetooth devices connect as soon as the app starts, rather than waiting for a
+   * template to reference them or for the settings tab to be opened. A band takes a while
+   * to find and connect, and it has to reconnect every time it stops broadcasting, so
+   * leaving that until first use means the first render always reads 0.
+   */
+  private connectBleSources() {
+    for (const [name, source] of Object.entries(this.getSources())) {
+      if (source?.platform !== "ble" || !isSourceConfigured(source)) continue;
+      this.getOrCreateFeed(name, source);
+    }
   }
 
   // ---------------------------------------------------------------- sources
@@ -226,10 +244,13 @@ export class ChatboxHeartRateModule extends ChatboxModule {
     const fifteenMinutesAgo = now - 15 * 60 * 1000;
 
     for (const [key, state] of [...this.feeds.entries()]) {
-      if (state.lastAccess < oneMinuteAgo) {
-        this.disconnectFeed(key);
-      } else {
+      // Bluetooth feeds are held open for the whole session. Dropping and re-pairing a
+      // band between renders would cost seconds of reconnect every time.
+      const keepOpen = state.source.platform === "ble" || state.lastAccess >= oneMinuteAgo;
+      if (keepOpen) {
         state.history = state.history.filter((entry) => entry.timestamp >= fifteenMinutesAgo);
+      } else {
+        this.disconnectFeed(key);
       }
     }
   }
