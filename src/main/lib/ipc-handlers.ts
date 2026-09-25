@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, globalShortcut, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
@@ -64,6 +64,25 @@ export function setupIpcHandlers(port: OSC): void {
     // remove BOM if present
     text = text.replace(/\uFEFF/g, '');
     return JSON.parse(text);
+  });
+
+  // Files: read binary (async), used for decoding audio in the renderer
+  ipcMain.handle('files:readBinary', async (_event, filePath: string) => {
+    if (!fs.existsSync(filePath)) return null;
+    const buf = await fs.promises.readFile(filePath);
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  });
+
+  // Dialog: pick audio files
+  ipcMain.handle('dialog:openAudioFiles', async () => {
+    const win = getMainWindow();
+    const options: Electron.OpenDialogOptions = {
+      title: 'Add sounds',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'webm', 'opus'] }],
+    };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    return result.canceled ? [] : result.filePaths;
   });
 
   // Files: find files recursively (basic, no external filter for security)

@@ -17,6 +17,7 @@
   } from "../../options";
   import SourceInput from "../SourceInput.svelte";
   import { chatbox } from "$lib/api/chatbox";
+  import { soundEngine } from "$lib/api/sound-effects/engine";
   import type { ChatboxHeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
   import type {
     Block,
@@ -27,6 +28,7 @@
     OVRTrackerBlock,
     ProcessBlock,
     ShortcutBlock,
+    SoundBlock,
     StopwatchBlock,
     UpdateBlock,
     WeatherBlock,
@@ -43,6 +45,8 @@
     getShortcutNames: () => string[];
     getShortcutParamCount: (name: string) => number;
   } = $props();
+
+  const librarySounds = soundEngine.sounds;
 
   function getHeartRateSourceNames(): string[] {
     const module = chatbox.modules.get("HeartRate") as
@@ -530,5 +534,38 @@
         />
       </div>
     </div>
+  </div>
+{:else if block.type === "sound"}
+  {@const current = block as SoundBlock}
+  <div class="flex gap-1.5 flex-wrap">
+    <div class="flex flex-col gap-0.5 min-w-44">
+      <Label class="text-xs text-muted-foreground">Sound</Label>
+      <Select.Root
+        type="single"
+        value={current.soundName}
+        onValueChange={(v) => upd(current.id, { soundName: v ?? "" })}
+      >
+        <Select.Trigger class="w-52">
+          {current.soundName || "Pick a sound"}
+        </Select.Trigger>
+        <Select.Content>
+          {#each $librarySounds as sound (sound.id)}
+            <Select.Item value={sound.name}>{sound.name}</Select.Item>
+          {/each}
+          {#if $librarySounds.length === 0}
+            <p class="text-xs text-muted-foreground p-2">
+              Add sounds in the Sound Effects tab first.
+            </p>
+          {/if}
+        </Select.Content>
+      </Select.Root>
+    </div>
+    <SourceInput
+      label="Play when this turns true (leave empty to play once)"
+      widthClass="flex-1 min-w-56"
+      placeholder="/avatar/parameters/Booped, [[Hotkey:IsPressed:boop]]"
+      value={current.condition}
+      onChange={(value) => upd(current.id, { condition: value })}
+    />
   </div>
 {/if}

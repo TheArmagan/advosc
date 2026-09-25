@@ -278,6 +278,26 @@ The same key press resets the stopwatch to zero and starts it. So one tap of Hom
 
 ---
 
+## Placeholders that do things
+
+Most placeholders turn into text. The Sound module's are different: they play a sound and turn into nothing.
+
+```
+{{Sound;Play;boop;[[OSCData:/avatar/parameters/Booped]]}}
+```
+
+The last part is a condition, and it's an inner placeholder like any other. The sound plays once when the condition turns true, and then waits for it to go false before it can play again. So holding a boop doesn't replay the sound every time the chatbox renders.
+
+Any inner placeholder works as the condition. This one plays an airhorn when you tap a hotkey from the Hotkey module. The timeout is longer than the 2.2 second render so the press is never missed:
+
+```
+{{Sound;Play;airhorn;[[Hotkey:IsPressed:Horn:2500]]}}
+```
+
+Leave the condition off and it plays once when the placeholder first shows up, which is handy inside a shortcut that only outputs something some of the time.
+
+---
+
 ## Cheat sheet
 
 | Syntax | Called | For |

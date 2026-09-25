@@ -248,6 +248,11 @@ function renderBlock(block: Block, autoShortcuts: Record<string, string>): strin
     }
     case "random":
       return `{{Number;Random;${block.numberType};${sourceToValueArg(block.min, block.id, "min", autoShortcuts)};${sourceToValueArg(block.max, block.id, "max", autoShortcuts)}}}`;
+    case "sound": {
+      if (!block.soundName.trim()) return "";
+      const condition = sourceToValueArg(block.condition, block.id, "condition", autoShortcuts);
+      return `{{Sound;Play;${esc(block.soundName)}${condition ? ";" + condition : ""}}}`;
+    }
     case "condition": {
       const oscOpMap: Record<string, string> = {
         "osc-eq": "==",

@@ -181,6 +181,8 @@ export function createBlock(type: BlockType): Block {
         min: "1",
         max: "100",
       };
+    case "sound":
+      return { id: newId(), type: "sound", soundName: "", condition: "" };
     case "condition":
       return {
         id: newId(),
@@ -231,6 +233,7 @@ export const meta: Record<BlockType, BlockMeta> = {
   numbercalc: { label: "Number Calc", desc: "Clamp, map, round, abs, more", color: "bg-orange-500" },
   random: { label: "Random Number", desc: "Random int or float range", color: "bg-orange-400" },
   condition: { label: "Condition", desc: "Show A or B based on a rule", color: "bg-fuchsia-500" },
+  sound: { label: "Play Sound", desc: "Play a sound effect when a condition turns true", color: "bg-violet-400" },
 };
 
 export const menuGroups: MenuGroup[] = [
@@ -239,7 +242,7 @@ export const menuGroups: MenuGroup[] = [
   { label: "Display", keys: ["progbar", "healthbar", "starrating", "toggle", "numberformat"] },
   { label: "Animate", keys: ["marquee", "bounce", "typewriter", "blink", "eachone"] },
   { label: "Logic", keys: ["condition"] },
-  { label: "VRChat", keys: ["hotkey", "osc", "ovrtracker"] },
+  { label: "VRChat", keys: ["hotkey", "osc", "ovrtracker", "sound"] },
   { label: "Tools", keys: ["stopwatch", "process", "weather", "shortcut", "numbercalc", "random"] },
 ];
 
@@ -275,6 +278,7 @@ export const knownTypes = new Set<BlockType>([
   "numbercalc",
   "random",
   "condition",
+  "sound",
 ]);
 
 export const SIMPLE_EDITOR_STORAGE_KEY = "SimpleEditor;Blocks";

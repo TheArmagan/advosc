@@ -361,6 +361,8 @@ template  the thing you actually see
 
 **Debug mode.** Turn on `debugMode` in settings to watch placeholders resolve in the console. This is usually faster than staring at the template.
 
+**Sound placeholders fire per occurrence.** Each `{{Sound;Play;...}}` in your template remembers its own last condition, so two copies of the same one fire independently. It also means a Sound placeholder inside a shortcut fires wherever that shortcut is used, including the shortcut preview in the Modules tab.
+
 **Inner syntax in parameters.** When you pass a placeholder as a parameter, use the inner form:
 
 ```

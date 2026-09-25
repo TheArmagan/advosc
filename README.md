@@ -520,6 +520,28 @@ A line that only appears while you are talking:
 
 </details>
 
+<details>
+<summary><strong>🔊 Sound</strong> :: play sound effects from your library</summary>
+
+Plays sounds you added in the Sound Effects tab. The action placeholders render as nothing, so you can drop them anywhere in a template. They fire once when the optional condition turns true, then wait for it to go false again. Without a condition they fire once when the placeholder shows up. A placeholder that stays in your template does not replay every 2.2 seconds.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Sound;Play;boop;condition}}` | | Plays `boop` when the condition turns true |
+| `{{Sound;Stop;boop;condition}}` | | Stops every playing copy of `boop` |
+| `{{Sound;StopAll;condition}}` | | Stops every sound |
+| `{{Sound;Volume;50;condition}}` | | Sets the master volume, 0 to 100 |
+| `{{Sound;IsPlaying;boop}}` | `true` | `boop` is playing right now |
+| `{{Sound;Playing}}` | `boop, vine boom` | Names of everything playing right now |
+
+Play a boop sound whenever someone boops you:
+
+```
+{{Sound;Play;boop;[[OSCData:/avatar/parameters/Booped]]}}
+```
+
+</details>
+
 New to the syntax? The [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) walks through the two-layer system from scratch, and [the expert one](./LEARN_PLACEHOLDERS_EXPERT.md) goes further once that clicks.
 
 ---
@@ -560,6 +582,16 @@ There is also parameter forwarding, so you can drive your size from inside your 
 </p>
 
 Take any chatbox template value and send it to an OSC address on a timer. The value field accepts any placeholder, so `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` both work. Pick the target path by hand or straight from the current avatar's schema, cast to `Float`, `Int`, `Bool` or `String`, optionally remap numbers from one range to another (`0..1` to `0..255`, say), and give each rule its own interval down to 100 ms.
+
+### Sound Effects
+
+A soundboard that reacts to your avatar. It lives in its own tab in the chatbox editor, next to the OSC Forwarder.
+
+Add audio files to the library and give each one a name. Each sound gets a play button, its own volume, a cooldown so it can't be spammed, an optional global hotkey, and an option to send an OSC value while it plays (for example `SoundPlaying=true`, then `false` when it ends) so an avatar animation can follow along. Sounds layer on top of each other if you trigger them again. The files stay where they are on disk and are not part of template exports.
+
+Triggers are the fun part. A trigger has a template, a match, and a list of sounds. When the template result starts matching, one of the sounds plays at random. The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). Triggers are checked the moment OSC comes in, so short parameter flips still get caught.
+
+You can pick the output device, so a virtual audio cable can send the sounds into your VRChat mic. There's also a master volume, a mute button, a Stop all button with its own hotkey, and an option to stop everything and hold new sounds while you're muted in VRChat.
 
 ---
 

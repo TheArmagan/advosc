@@ -283,6 +283,10 @@ export interface PreloadElectronAPI {
       options?: { ignoreInitial?: boolean }
     ) => () => void;
     findFiles: (dirPath: string) => Promise<string[]>;
+    readBinary: (filePath: string) => Promise<ArrayBuffer | null>;
+  };
+  dialog: {
+    openAudioFiles: () => Promise<string[]>;
   };
   utils: {
     getStartTime: (processName: string) => Promise<StartTimeResponse>;
@@ -393,6 +397,10 @@ const api: PreloadElectronAPI = {
       };
     },
     findFiles: (dirPath: string) => ipcRenderer.invoke('files:findFiles', dirPath) as Promise<string[]>,
+    readBinary: (filePath: string) => ipcRenderer.invoke('files:readBinary', filePath) as Promise<ArrayBuffer | null>,
+  },
+  dialog: {
+    openAudioFiles: () => ipcRenderer.invoke('dialog:openAudioFiles') as Promise<string[]>,
   },
   utils: {
     getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
