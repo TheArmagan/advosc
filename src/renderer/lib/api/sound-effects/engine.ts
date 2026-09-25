@@ -29,6 +29,10 @@ export interface SoundTriggerRule {
   /** "1", "> 0.5", "!= idle"... a bare value means "=" */
   match: string;
   soundIds: string[];
+  /** Keep looping the picked sound while the rule matches. */
+  loop: boolean;
+  /** Cut the sound off as soon as the rule stops matching. */
+  stopOnUnmatch: boolean;
 }
 
 export interface SoundSettings {
@@ -62,7 +66,7 @@ function defaultSoundFields(): Omit<SoundEntry, "id" | "name" | "path"> {
 }
 
 export function defaultRule(): SoundTriggerRule {
-  return { id: makeId(), enabled: true, template: "", match: "1", soundIds: [] };
+  return { id: makeId(), enabled: true, template: "", match: "1", soundIds: [], loop: false, stopOnUnmatch: false };
 }
 
 const defaultSettings: SoundSettings = {
@@ -276,18 +280,21 @@ function isBlocked(): boolean {
   return s.muted || (s.stopOnVrcMute && vrcMuted);
 }
 
-/** Play a library sound by name (case-insensitive) or id. Resolves to whether it started. */
-async function play(ref: string): Promise<boolean> {
+/**
+ * Play a library sound by name (case-insensitive) or id.
+ * Resolves to the id of the new playback (for `stopVoice`), or null if it didn't start.
+ */
+async function play(ref: string, options: { loop?: boolean } = {}): Promise<number | null> {
   const sound = findSound(ref);
-  if (!sound || isBlocked()) return false;
+  if (!sound || isBlocked()) return null;
 
   const now = Date.now();
-  if (sound.cooldownMs > 0 && now - (lastPlayedAt.get(sound.id) ?? 0) < sound.cooldownMs) return false;
+  if (sound.cooldownMs > 0 && now - (lastPlayedAt.get(sound.id) ?? 0) < sound.cooldownMs) return null;
   // Set before loading so rapid triggers during a decode still respect the cooldown.
   lastPlayedAt.set(sound.id, now);
 
   const buffer = await loadBuffer(sound);
-  if (!buffer || isBlocked()) return false;
+  if (!buffer || isBlocked()) return null;
 
   const c = getContext();
   const gain = c.createGain();
@@ -295,6 +302,7 @@ async function play(ref: string): Promise<boolean> {
   gain.connect(master!);
   const source = c.createBufferSource();
   source.buffer = buffer;
+  source.loop = !!options.loop;
   source.connect(gain);
 
   const id = ++voiceSeq;
@@ -309,13 +317,22 @@ async function play(ref: string): Promise<boolean> {
   source.start();
   publishPlaying();
   if (wasSilent) sendOscPulse(sound.id, true);
-  return true;
+  return id;
 }
 
-function playRandom(refs: string[]): Promise<boolean> {
+function playRandom(refs: string[], options: { loop?: boolean } = {}): Promise<number | null> {
   const available = refs.filter((r) => findSound(r));
-  if (available.length === 0) return Promise.resolve(false);
-  return play(available[Math.floor(Math.random() * available.length)]);
+  if (available.length === 0) return Promise.resolve(null);
+  return play(available[Math.floor(Math.random() * available.length)], options);
+}
+
+/** Stop one playback started by `play`. */
+function stopVoice(id: number) {
+  const voice = voices.get(id);
+  if (!voice) return;
+  try {
+    voice.source.stop();
+  } catch { }
 }
 
 function stopVoices(filter: (v: Voice) => boolean) {
@@ -503,6 +520,7 @@ export const soundEngine = {
   play,
   playRandom,
   stop,
+  stopVoice,
   stopAll,
   isPlaying,
   playingNames,

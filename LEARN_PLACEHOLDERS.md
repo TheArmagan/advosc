@@ -294,6 +294,8 @@ Any inner placeholder works as the condition. This one plays an airhorn when you
 {{Sound;Play;airhorn;[[Hotkey:IsPressed:Horn:2500]]}}
 ```
 
+Swap `Play` for `Loop` and the sound repeats for as long as the condition is true, then stops when it turns false. Keep in mind the chatbox only renders every 2.2 seconds, so a loop can run up to that long after the condition flips. The Triggers section in the Sound Effects tab reacts right away if you need it tighter.
+
 Leave the condition off and it plays once when the placeholder first shows up, which is handy inside a shortcut that only outputs something some of the time.
 
 ---

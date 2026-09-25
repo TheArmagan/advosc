@@ -12,6 +12,8 @@ const ACTIVE_WINDOW_MS = 5000;
 
 export class ChatboxSoundModule extends ChatboxModule {
   private edges = new Map<string, { lastSeen: number; lastCond: boolean }>();
+  /** Looping playbacks started by `Loop` placeholders, per occurrence. */
+  private loops = new Map<string, { voice: number | null; lastSeen: number }>();
 
   constructor() {
     super({
@@ -23,6 +25,11 @@ export class ChatboxSoundModule extends ChatboxModule {
           value: "",
           description: "Plays a sound once when the optional condition turns true.",
           fillText: "Sound;Play;${1:soundName};${2:[[OSCData:/avatar/parameters/Booped]]}"
+        },
+        "Loop;SoundName;Condition": {
+          value: "",
+          description: "Loops a sound while the condition is true and stops it when the condition turns false or the placeholder goes away.",
+          fillText: "Sound;Loop;${1:soundName};${2:[[OSCData:/avatar/parameters/Booped]]}"
         },
         "Stop;SoundName;Condition": {
           value: "",
@@ -62,6 +69,31 @@ export class ChatboxSoundModule extends ChatboxModule {
       const cutoff = Date.now() - 60_000;
       for (const [key, edge] of this.edges) if (edge.lastSeen < cutoff) this.edges.delete(key);
     }, 30_000);
+
+    // A Loop placeholder that stopped being rendered (its branch went away) stops its sound.
+    setInterval(() => {
+      const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+      for (const [key, loop] of this.loops) if (loop.lastSeen < cutoff) this.stopLoop(key);
+    }, 1000);
+  }
+
+  private stopLoop(key: string) {
+    const loop = this.loops.get(key);
+    if (!loop) return;
+    this.loops.delete(key);
+    if (loop.voice !== null) soundEngine.stopVoice(loop.voice);
+  }
+
+  private startLoop(key: string, name: string) {
+    this.stopLoop(key);
+    const entry = { voice: null as number | null, lastSeen: Date.now() };
+    this.loops.set(key, entry);
+    soundEngine.play(name, { loop: true }).then((voice) => {
+      if (voice === null) return;
+      // Stopped or restarted while the file was loading.
+      if (this.loops.get(key) !== entry) soundEngine.stopVoice(voice);
+      else entry.voice = voice;
+    });
   }
 
   /** True once per false-to-true change of `cond` for this placeholder occurrence. */
@@ -83,6 +115,18 @@ export class ChatboxSoundModule extends ChatboxModule {
       case "Play":
         if (params[0] && this.shouldFire(key, condAt(1))) soundEngine.play(params[0]);
         return "";
+      case "Loop": {
+        const cond = condAt(1);
+        const fire = this.shouldFire(key, cond);
+        if (!cond || !params[0]) {
+          this.stopLoop(key);
+          return "";
+        }
+        const loop = this.loops.get(key);
+        if (loop) loop.lastSeen = Date.now();
+        if (fire) this.startLoop(key, params[0]);
+        return "";
+      }
       case "Stop":
         if (params[0] && this.shouldFire(key, condAt(1))) soundEngine.stop(params[0]);
         return "";

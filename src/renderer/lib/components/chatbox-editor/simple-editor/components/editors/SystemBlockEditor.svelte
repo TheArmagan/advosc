@@ -561,11 +561,20 @@
       </Select.Root>
     </div>
     <SourceInput
-      label="Play when this turns true (leave empty to play once)"
+      label={current.loop
+        ? "Loop while this is true (leave empty to always loop)"
+        : "Play when this turns true (leave empty to play once)"}
       widthClass="flex-1 min-w-56"
       placeholder="/avatar/parameters/Booped, [[Hotkey:IsPressed:boop]]"
       value={current.condition}
       onChange={(value) => upd(current.id, { condition: value })}
     />
   </div>
+  <label class="flex items-center gap-2 cursor-pointer select-none">
+    <Checkbox
+      checked={!!current.loop}
+      onCheckedChange={(v) => upd(current.id, { loop: !!v })}
+    />
+    <span class="text-xs">Loop while true, stop when it turns false</span>
+  </label>
 {/if}

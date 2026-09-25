@@ -528,6 +528,7 @@ Plays sounds you added in the Sound Effects tab. The action placeholders render 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{Sound;Play;boop;condition}}` | | Plays `boop` when the condition turns true |
+| `{{Sound;Loop;boop;condition}}` | | Loops `boop` while the condition is true, stops it when it turns false |
 | `{{Sound;Stop;boop;condition}}` | | Stops every playing copy of `boop` |
 | `{{Sound;StopAll;condition}}` | | Stops every sound |
 | `{{Sound;Volume;50;condition}}` | | Sets the master volume, 0 to 100 |
@@ -587,9 +588,9 @@ Take any chatbox template value and send it to an OSC address on a timer. The va
 
 A soundboard that reacts to your avatar. It lives in its own tab in the chatbox editor, next to the OSC Forwarder.
 
-Add audio files to the library and give each one a name. Each sound gets a play button, its own volume, a cooldown so it can't be spammed, an optional global hotkey, and an option to send an OSC value while it plays (for example `SoundPlaying=true`, then `false` when it ends) so an avatar animation can follow along. Sounds layer on top of each other if you trigger them again. The files stay where they are on disk and are not part of template exports.
+Add audio files to the library and give each one a name. Each sound gets a play button, its own volume, a cooldown so it can't be spammed, an optional global hotkey (press Esc on the hotkey button to clear it), and an option to send an OSC value while it plays (for example `SoundPlaying=true`, then `false` when it ends) so an avatar animation can follow along. Sounds layer on top of each other if you trigger them again. The files stay where they are on disk and are not part of template exports.
 
-Triggers are the fun part. A trigger has a template, a match, and a list of sounds. When the template result starts matching, one of the sounds plays at random. The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). Triggers are checked the moment OSC comes in, so short parameter flips still get caught.
+Triggers are the fun part. A trigger has a template, a match, and a list of sounds. When the template result starts matching, one of the sounds plays at random. By default it plays to the end, but a trigger can also loop the sound while it matches, or cut it off the moment it stops matching. The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). Triggers are checked the moment OSC comes in, so short parameter flips still get caught.
 
 You can pick the output device, so a virtual audio cable can send the sounds into your VRChat mic. There's also a master volume, a mute button, a Stop all button with its own hotkey, and an option to stop everything and hold new sounds while you're muted in VRChat.
 

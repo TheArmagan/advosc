@@ -14,6 +14,34 @@ const lastResultsStore = writable<Record<string, string>>({});
 
 const lastMatched = new Map<string, boolean>();
 const evaluating = new Set<string>();
+/** Playbacks a rule started that should end when it stops matching (loop or stop-on-unmatch). */
+const ruleVoices = new Map<string, Set<number>>();
+
+function stopRuleVoices(id: string) {
+  const set = ruleVoices.get(id);
+  if (!set) return;
+  ruleVoices.delete(id);
+  for (const voice of set) soundEngine.stopVoice(voice);
+}
+
+function fireRule(rule: SoundTriggerRule) {
+  soundEngine.playRandom(rule.soundIds, { loop: rule.loop }).then((voice) => {
+    if (voice === null) return;
+    const current = get(rulesStore).find((r) => r.id === rule.id);
+    if (!current) {
+      soundEngine.stopVoice(voice);
+      return;
+    }
+    if (!current.loop && !current.stopOnUnmatch) return;
+    // The value may have flipped back while the file was loading.
+    if (lastMatched.get(rule.id) !== true) {
+      soundEngine.stopVoice(voice);
+      return;
+    }
+    if (!ruleVoices.has(rule.id)) ruleVoices.set(rule.id, new Set());
+    ruleVoices.get(rule.id)!.add(voice);
+  });
+}
 
 async function evaluateRule(rule: SoundTriggerRule) {
   if (!rule.enabled || !rule.template.trim() || evaluating.has(rule.id)) return;
@@ -34,7 +62,8 @@ async function evaluateRule(rule: SoundTriggerRule) {
 
     // `previous === undefined` is the first look at this rule: seed it without firing,
     // so a param that is already on doesn't play a sound when the app starts.
-    if (matched && previous === false) soundEngine.playRandom(current.soundIds);
+    if (matched && previous === false) fireRule(current);
+    else if (!matched) stopRuleVoices(rule.id);
   } catch (e) {
     console.error("SoundEffects", "Trigger rule failed", rule.template, e);
   } finally {
@@ -66,12 +95,16 @@ function addRule() {
 
 function updateRule(id: string, patch: Partial<SoundTriggerRule>) {
   // Editing what a rule checks starts it fresh, so typing a match value doesn't fire sounds.
-  if ("template" in patch || "match" in patch || "enabled" in patch) lastMatched.delete(id);
+  if ("template" in patch || "match" in patch || "enabled" in patch || "loop" in patch) {
+    lastMatched.delete(id);
+    stopRuleVoices(id);
+  }
   rulesStore.update((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 }
 
 function removeRule(id: string) {
   lastMatched.delete(id);
+  stopRuleVoices(id);
   rulesStore.update((prev) => prev.filter((r) => r.id !== id));
   lastResultsStore.update((prev) => {
     const next = { ...prev };

@@ -11,6 +11,8 @@
     onRecord?: (accelerator: string) => void;
     placeholder?: string;
     allowEmpty?: boolean;
+    /** Esc clears the shortcut instead of just cancelling the recording. */
+    clearOnEscape?: boolean;
   }
 
   let {
@@ -18,6 +20,7 @@
     onRecord,
     placeholder = "Click to record",
     allowEmpty = true,
+    clearOnEscape = false,
     class: className,
     variant = "outline",
     size = "default",
@@ -132,17 +135,28 @@
   }
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (!isRecording) return;
+    if (!isRecording) {
+      if (event.key === "Escape" && clearOnEscape && allowEmpty && value) {
+        event.preventDefault();
+        value = "";
+        onRecord?.("");
+      }
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
 
     const key = normalizeKey(event.key);
 
-    // Escape cancels recording without saving
+    // Escape cancels recording, and clears the shortcut when asked to
     if (event.key === "Escape") {
       isRecording = false;
       currentKeys.clear();
+      if (clearOnEscape && allowEmpty) {
+        value = "";
+        onRecord?.("");
+      }
       buttonRef?.blur();
       return;
     }

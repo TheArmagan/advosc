@@ -69,7 +69,7 @@ export type HeartRateBlock = {
   avgSeconds: string;
 };
 export type OSCBlock = { id: string; type: "osc"; address: string };
-export type SoundBlock = { id: string; type: "sound"; soundName: string; condition: string };
+export type SoundBlock = { id: string; type: "sound"; soundName: string; condition: string; loop?: boolean };
 export type HotkeyBlock = {
   id: string;
   type: "hotkey";

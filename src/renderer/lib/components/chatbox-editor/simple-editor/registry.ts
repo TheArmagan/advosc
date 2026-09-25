@@ -182,7 +182,7 @@ export function createBlock(type: BlockType): Block {
         max: "100",
       };
     case "sound":
-      return { id: newId(), type: "sound", soundName: "", condition: "" };
+      return { id: newId(), type: "sound", soundName: "", condition: "", loop: false };
     case "condition":
       return {
         id: newId(),
@@ -233,7 +233,7 @@ export const meta: Record<BlockType, BlockMeta> = {
   numbercalc: { label: "Number Calc", desc: "Clamp, map, round, abs, more", color: "bg-orange-500" },
   random: { label: "Random Number", desc: "Random int or float range", color: "bg-orange-400" },
   condition: { label: "Condition", desc: "Show A or B based on a rule", color: "bg-fuchsia-500" },
-  sound: { label: "Play Sound", desc: "Play a sound effect when a condition turns true", color: "bg-violet-400" },
+  sound: { label: "Play Sound", desc: "Play or loop a sound effect from a condition", color: "bg-violet-400" },
 };
 
 export const menuGroups: MenuGroup[] = [

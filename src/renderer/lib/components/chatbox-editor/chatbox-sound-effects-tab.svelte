@@ -204,6 +204,8 @@
               size="sm"
               class="h-8 text-xs"
               placeholder="None"
+              clearOnEscape
+              title="Click to record, Esc to clear"
               value={$settings.stopAllHotkey}
               onRecord={(acc) =>
                 soundEffects.updateSettings({ stopAllHotkey: acc })}
@@ -351,6 +353,8 @@
                 size="sm"
                 class="h-8 text-xs"
                 placeholder="None"
+                clearOnEscape
+                title="Click to record, Esc to clear"
                 value={sound.hotkey}
                 onRecord={(acc) =>
                   soundEffects.updateSound(sound.id, { hotkey: acc })}
@@ -466,7 +470,7 @@
         <span class="text-sm font-medium">Triggers</span>
         <span class="text-xs text-muted-foreground">
           Plays a random pick from the chosen sounds when the template result
-          starts matching.
+          starts matching. By default the sound plays to the end.
         </span>
       </div>
       <Button variant="outline" size="sm" onclick={soundEffects.addRule}>
@@ -607,6 +611,30 @@
                 </Select.Content>
               </Select.Root>
             </div>
+          </div>
+
+          <div class="flex gap-4 flex-wrap">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={rule.loop}
+                onCheckedChange={(v) =>
+                  soundEffects.updateRule(rule.id, { loop: !!v })}
+              />
+              <span class="text-xs">Loop while it matches</span>
+            </label>
+            <label
+              class="flex items-center gap-2 select-none"
+              class:cursor-pointer={!rule.loop}
+              class:opacity-50={rule.loop}
+            >
+              <Checkbox
+                checked={rule.loop || rule.stopOnUnmatch}
+                disabled={rule.loop}
+                onCheckedChange={(v) =>
+                  soundEffects.updateRule(rule.id, { stopOnUnmatch: !!v })}
+              />
+              <span class="text-xs">Stop right away when it stops matching</span>
+            </label>
           </div>
         </div>
       </Card.Root>

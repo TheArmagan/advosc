@@ -251,7 +251,7 @@ function renderBlock(block: Block, autoShortcuts: Record<string, string>): strin
     case "sound": {
       if (!block.soundName.trim()) return "";
       const condition = sourceToValueArg(block.condition, block.id, "condition", autoShortcuts);
-      return `{{Sound;Play;${esc(block.soundName)}${condition ? ";" + condition : ""}}}`;
+      return `{{Sound;${block.loop ? "Loop" : "Play"};${esc(block.soundName)}${condition ? ";" + condition : ""}}}`;
     }
     case "condition": {
       const oscOpMap: Record<string, string> = {
