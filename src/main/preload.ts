@@ -3,7 +3,14 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Local watcher event names we propagate from main
 type WatchEventName = 'add' | 'change' | 'unlink';
 
-export type MediaCommand = 'skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
+export interface OSCIncomingMessage {
+  address: string;
+  args: (number | string | boolean | null | undefined)[];
+  /** OSC type tag per arg ('i', 'f', 's', 'T', 'F', 'N'), parallel to `args`. */
+  types?: string[];
+}
+
+export type MediaCommand ='skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
 
 export interface MediaInfo {
   title?: string;
@@ -263,7 +270,7 @@ export interface PreloadElectronAPI {
   osc: {
     send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
     sendCustom: (address: string, args: { value: (number | string | boolean | null | undefined), type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => void;
-    onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => () => void;
+    onMessage: (callback: (message: OSCIncomingMessage) => void) => () => void;
     getSources: () => Promise<OSCSourceConfig[]>;
     getDefaultSources: () => Promise<OSCSourceConfig[]>;
     getStatus: () => Promise<OSCSourceStatus[]>;
@@ -360,8 +367,8 @@ const api: PreloadElectronAPI = {
     sendCustom: (address: string, args: { value: number | string | boolean | null | undefined, type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => {
       ipcRenderer.invoke('osc:sendCustom', address, args);
     },
-    onMessage: (callback: (message: { address: string; args: (number | string | boolean | null | undefined)[] }) => void) => {
-      const listener = (_e: unknown, message: { address: string; args: any[] }) => callback(message);
+    onMessage: (callback: (message: OSCIncomingMessage) => void) => {
+      const listener = (_e: unknown, message: OSCIncomingMessage) => callback(message);
       ipcRenderer.on('osc:message', listener as any);
       return () => ipcRenderer.removeListener('osc:message', listener as any);
     },

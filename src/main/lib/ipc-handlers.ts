@@ -212,7 +212,8 @@ export function setupIpcHandlers(port: OSC): void {
     if (!message || !message.address) return;
     const msg = {
       address: message.address,
-      args: message.args.map((arg: any) => arg.value)
+      args: message.args.map((arg: any) => arg.value),
+      types: message.args.map((arg: any) => arg.type)
     };
     BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('osc:message', msg));
   });
