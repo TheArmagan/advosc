@@ -6,11 +6,34 @@ export type PlaceholdersRecord = Record<string, {
   fillText?: string;
 }>;
 
+export interface ModuleInputParam {
+  id: string;
+  label: string;
+  type: "text" | "number" | "boolean" | "select";
+  /** Only for `select`. */
+  options?: { value: string; label: string }[];
+  placeholder?: string;
+  optional?: boolean;
+}
+
+/**
+ * Something other parts of the app can tell a module to do, like Stopwatch Start. The UI finds
+ * these through `options.inputs`, so a new one needs no UI work. Param values are strings
+ * because they come from templates, which are resolved before the module sees them.
+ */
+export interface ModuleInput {
+  id: string;
+  label: string;
+  description: string;
+  params: ModuleInputParam[];
+}
+
 export interface ChatboxModuleOptions {
   id: string;
   name: string;
   description: string;
   examplePlaceholders: PlaceholdersRecord;
+  inputs?: ModuleInput[];
   /** Settings UI. Only the renderer's client sets this, so it stays typed loosely here. */
   Component?: any;
   constants?: Record<string, any>;
@@ -69,5 +92,10 @@ export class ChatboxModule {
 
   getPreCalculatedPlaceholders(): PlaceholdersRecord {
     return {};
+  }
+
+  /** Runs one of `options.inputs`. Only engine modules do anything here. */
+  runInput(inputId: string, args: Record<string, string>): Promise<void> | void {
+    throw new Error(`Module ${this.options.id} has no input ${inputId}`);
   }
 }

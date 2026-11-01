@@ -25,6 +25,9 @@ function acquireInstanceLock(): boolean {
 }
 
 function start() {
+  // Has to happen before 'ready'. See `gpuAcceleration` in bootstrap.ts.
+  if (!getBootstrap().gpuAcceleration) app.disableHardwareAcceleration();
+
   // With no listener, Electron quits when the last window closes. The app lives in the tray,
   // and the engine keeps working with no window at all.
   app.on('window-all-closed', () => {});

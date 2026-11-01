@@ -9,7 +9,7 @@ const TRAY_ICON_SIZE = 16;
 let tray: Tray | null = null;
 let restartToUpdate: (() => void) | null = null;
 
-function rebuildMenu() {
+export function rebuildMenu() {
   if (!tray) return;
 
   const template: Electron.MenuItemConstructorOptions[] = [

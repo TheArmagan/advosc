@@ -5,6 +5,7 @@ import type {
   OSCSourceConfig,
   OSCSourcesResult,
   OSCSourceStatus,
+  StartupSettings,
 } from '../shared/native-types';
 
 export type * from '../shared/native-types';
@@ -43,6 +44,11 @@ export interface PreloadElectronAPI {
   };
   shell: {
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+  };
+  startup: {
+    get: () => Promise<StartupSettings>;
+    set: (patch: Partial<Pick<StartupSettings, 'startHidden' | 'gpuAcceleration'>>) => Promise<StartupSettings>;
+    restart: () => void;
   };
   version: string;
 }
@@ -171,6 +177,11 @@ const api: PreloadElectronAPI = {
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,
+  },
+  startup: {
+    get: () => ipcRenderer.invoke('startup:get'),
+    set: (patch) => ipcRenderer.invoke('startup:set', { ...patch }),
+    restart: () => ipcRenderer.send('startup:restart'),
   },
   get version() {
     if (version === null) {

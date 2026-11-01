@@ -254,3 +254,10 @@ export interface OSCSourceStatus {
 export type OSCSourcesResult =
   | { success: true; sources: OSCSourceConfig[]; status: OSCSourceStatus[] }
   | { success: false; error: string };
+
+export interface StartupSettings {
+  startHidden: boolean;
+  gpuAcceleration: boolean;
+  /** The saved GPU setting differs from the one this run started with. */
+  restartNeeded: boolean;
+}

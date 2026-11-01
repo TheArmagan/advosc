@@ -19,11 +19,17 @@ export interface WindowBounds {
 
 export interface Bootstrap {
   startHidden: boolean;
+  /**
+   * Off by default. Chromium's GPU process keeps its video memory after the last window is
+   * destroyed, so closing to tray alone frees none. With acceleration off it uses none at all.
+   * Electron only reads this before 'ready', so changing it needs a restart.
+   */
+  gpuAcceleration: boolean;
   bounds: WindowBounds | null;
   panicLatched: boolean;
 }
 
-const defaults: Bootstrap = { startHidden: false, bounds: null, panicLatched: false };
+const defaults: Bootstrap = { startHidden: false, gpuAcceleration: false, bounds: null, panicLatched: false };
 
 let current: Bootstrap | null = null;
 
