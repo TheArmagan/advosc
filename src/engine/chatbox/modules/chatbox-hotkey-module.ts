@@ -121,11 +121,15 @@ export class ChatboxHotkeyModule extends HotkeyConfig {
     this.statesStore.set(Object.fromEntries(this.hotkeyStates));
   }
 
+  /** Reading never adds an entry, so this is safe in a read-only evaluation. */
   private getHotkeyState(hotkeyName: string): HotkeyState {
-    if (!this.hotkeyStates.has(hotkeyName)) {
-      this.hotkeyStates.set(hotkeyName, { lastPressedAt: 0, isToggled: false });
-    }
-    return this.hotkeyStates.get(hotkeyName)!;
+    return this.hotkeyStates.get(hotkeyName) ?? { lastPressedAt: 0, isToggled: false };
+  }
+
+  /** Goes through the shortcuts system so a Stopwatch bound to this hotkey reacts as well. */
+  runInput(inputId: string, args: Record<string, string>) {
+    if (inputId !== "press") return super.runInput(inputId, args);
+    if (args.name) shortcuts.trigger(`${HOTKEY_PREFIX}${args.name}`);
   }
 
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {

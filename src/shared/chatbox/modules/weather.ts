@@ -187,6 +187,9 @@ export const weatherOptions: ChatboxModuleOptions = {
       fillText: "Weather;Unit;${1|Temperature,Wind,Precipitation|}",
     },
   },
+  inputs: [
+    { id: "refresh", label: "Refresh", description: "Fetches the weather again on its next read.", params: [] },
+  ],
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */

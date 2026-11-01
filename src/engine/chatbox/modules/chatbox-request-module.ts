@@ -3,6 +3,7 @@ import { moduleValues } from "../module-values";
 import { RequestConfig } from "$shared/chatbox/modules/request";
 import { chatbox } from "..";
 import type { PlaceholdersRecord } from "$shared/chatbox/module-base";
+import { canReachNetwork, isReadOnly, reportNoData } from "../eval-context";
 import { RequestSocket } from "./request/socket";
 import {
   clampRefreshSeconds,
@@ -379,10 +380,28 @@ export class ChatboxRequestModule extends RequestConfig {
 
   // ------------------------------------------------------------ placeholders
 
+  runInput(inputId: string, args: Record<string, string>) {
+    if (inputId !== "refresh") return super.runInput(inputId, args);
+    this.refresh(args.source ?? "");
+  }
+
+  /**
+   * Whether this read may go out on the network. A rule keeps a source's feed alive, paced by
+   * the source's own refresh time, as long as fetching it can't change anything. A source that
+   * POSTs could, so read-only rules only see what something else already fetched. Previews run
+   * on every keystroke and never go out at all.
+   */
+  private mayFetch(source: RequestSource): boolean {
+    if (!canReachNetwork()) return false;
+    if (!isReadOnly() || source.kind === "websocket") return true;
+    return ["GET", "HEAD"].includes((source.method || "GET").toUpperCase());
+  }
+
   /** Resolves a placeholder's first parameter into a feed, creating it if needed. */
   private async getFeed(name: string): Promise<FeedState | null> {
     const source = this.getSources()[name];
     if (!isSourceConfigured(source)) return null;
+    if (!this.mayFetch(source)) return this.feeds.get(name) ?? null;
     return source.kind === "websocket"
       ? await this.getSocketFeed(name, source)
       : await this.getHttpFeed(name, source);
@@ -409,7 +428,14 @@ export class ChatboxRequestModule extends RequestConfig {
       if (!isSourceConfigured(source)) return "(Request source is not configured)";
 
       const feed = await this.getFeed(name);
-      if (!feed) return "";
+      if (!feed) {
+        reportNoData(`Nothing has fetched the ${name} source yet.`);
+        return "";
+      }
+
+      if ((key === "Value" || key === "Text" || key === "Has") && (feed.error || !feed.lastUpdate)) {
+        reportNoData(`The ${name} source has no data right now.`);
+      }
 
       return this.readFeed(feed, key, params.slice(1));
     } catch (e) {
@@ -465,8 +491,16 @@ export class ChatboxRequestModule extends RequestConfig {
       refreshSeconds: clampRefreshSeconds(refresh ?? 60),
     };
 
-    const feed = await this.getHttpFeed(`${INLINE_PREFIX}${target}`, source);
-    if (feed.error && !feed.lastUpdate) return "";
+    const feedKey = `${INLINE_PREFIX}${target}`;
+    const feed = this.mayFetch(source) ? await this.getHttpFeed(feedKey, source) : this.feeds.get(feedKey);
+    if (!feed) {
+      reportNoData("Nothing has fetched this address yet.");
+      return "";
+    }
+    if (feed.error && !feed.lastUpdate) {
+      reportNoData("This address has no data right now.");
+      return "";
+    }
     return formatValue(readPath(feed.parsed, path));
   }
 

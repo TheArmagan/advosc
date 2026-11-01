@@ -51,6 +51,28 @@ const methods: { [M in HostMethodName]: (...args: Parameters<HostMethods[M]>) =>
     return result.canceled ? [] : result.filePaths;
   },
 
+  'dialog.saveBackup': async (defaultName) => {
+    const win = getMainWindow();
+    const options: Electron.SaveDialogOptions = {
+      title: 'Save backup',
+      defaultPath: defaultName,
+      filters: [{ name: 'ADVOSC backup', extensions: ['json'] }],
+    };
+    const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+    return result.canceled || !result.filePath ? null : result.filePath;
+  },
+
+  'dialog.openBackup': async () => {
+    const win = getMainWindow();
+    const options: Electron.OpenDialogOptions = {
+      title: 'Restore backup',
+      properties: ['openFile'],
+      filters: [{ name: 'ADVOSC backup', extensions: ['json'] }],
+    };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    return result.canceled ? null : result.filePaths[0] ?? null;
+  },
+
   // Only reached for URLs the engine built itself, like the local speech page, which is why
   // plain http is allowed here but not in the renderer's `shell:openExternal`.
   'shell.openExternal': async (url) => {

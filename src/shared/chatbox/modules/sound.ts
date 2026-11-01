@@ -40,5 +40,31 @@ export const soundOptions: ChatboxModuleOptions = {
       description: "Names of the sounds playing right now, separated by commas.",
       fillText: "Sound;Playing"
     },
-  }
+  },
+  inputs: [
+    {
+      id: "play",
+      label: "Play",
+      description: "Plays a sound once.",
+      params: [{ id: "sound", label: "Sound", type: "text", placeholder: "soundName" }],
+    },
+    {
+      id: "stop",
+      label: "Stop",
+      description: "Stops every playing copy of a sound.",
+      params: [{ id: "sound", label: "Sound", type: "text", placeholder: "soundName" }],
+    },
+    {
+      id: "stopAll",
+      label: "Stop all",
+      description: "Stops every playing sound.",
+      params: [],
+    },
+    {
+      id: "volume",
+      label: "Set volume",
+      description: "Sets the master volume, 0 to 100.",
+      params: [{ id: "volume", label: "Volume", type: "number", placeholder: "50" }],
+    },
+  ],
 };

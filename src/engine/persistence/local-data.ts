@@ -4,6 +4,7 @@ import {
   KEY_PREFIX,
   loadStore,
   saveStore,
+  serializeStore,
   type StoreEntries,
   type StoreMeta,
 } from "./file-store";
@@ -21,11 +22,13 @@ const FLUSH_RETRY_MS = 1000;
 const loaded = loadStore(engineConfig.dataDir);
 if (loaded.source === "backup") console.warn("Loaded settings from the backup file.");
 
-const meta: StoreMeta | null = loaded.meta;
+let meta: StoreMeta | null = loaded.meta;
 const entries = new Map<string, string>(Object.entries(loaded.entries));
 
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let dirtySince = 0;
+/** A restore replaced the file. What's in memory is out of date and must not overwrite it. */
+let frozen = false;
 
 type ChangeListener = (key: string, json: string | null) => void;
 const changeListeners = new Set<ChangeListener>();
@@ -39,6 +42,7 @@ function flushNow() {
     clearTimeout(flushTimer);
     flushTimer = null;
   }
+  if (frozen) dirtySince = 0;
   if (!dirtySince) return;
 
   try {
@@ -131,6 +135,37 @@ export const localData = {
   /** What the legacy import recorded, such as the old audio outputs. */
   getMeta(): StoreMeta | null {
     return meta;
+  },
+  /** True when there are changes the file doesn't have, such as after a flush that failed. */
+  isDirty(): boolean {
+    return dirtySince !== 0;
+  },
+  isFrozen(): boolean {
+    return frozen;
+  },
+  /** The whole store as it stands, in the on-disk format. */
+  serialize(): string {
+    return serializeStore(meta, Object.fromEntries(entries));
+  },
+  /**
+   * Replaces the file for the next start, in one atomic write. From here on nothing else gets
+   * saved, because a later flush of what's in memory would undo the restore.
+   */
+  replaceFile(nextMeta: StoreMeta | null, nextEntries: StoreEntries) {
+    saveStore(engineConfig.dataDir, nextMeta, nextEntries);
+    frozen = true;
+  },
+  /** Main sees this at the next launch and runs the legacy import again. */
+  requestReimport() {
+    const migration: StoreMeta["migration"] = meta?.migration ?? {
+      done: false,
+      at: 0,
+      source: "empty",
+      keys: 0,
+      quarantined: 0,
+    };
+    meta = { schema: 1, migration: { ...migration, done: false, reimport: true } };
+    scheduleFlush();
   },
   filePath: path.join(engineConfig.dataDir, "advosc-data.json"),
 };

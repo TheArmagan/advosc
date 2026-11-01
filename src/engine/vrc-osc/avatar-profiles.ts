@@ -29,6 +29,10 @@ export const avatarProfiles = {
     return profile;
   },
 
+  getProfile(id: string): AvatarProfile | undefined {
+    return get(profilesStore).find((p) => p.id === id);
+  },
+
   loadProfile(id: string): boolean {
     const profile = get(profilesStore).find((p) => p.id === id);
     if (!profile) return false;

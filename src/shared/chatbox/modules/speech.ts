@@ -193,6 +193,11 @@ export const speechOptions: ChatboxModuleOptions = {
       fillText: "Speech;Error",
     },
   },
+  inputs: [
+    { id: "clear", label: "Clear text", description: "Clears what's been heard so far.", params: [] },
+    { id: "listen", label: "Start listening", description: "Opens the mic on the recognition page.", params: [] },
+    { id: "stopListening", label: "Stop listening", description: "Closes the mic on the recognition page.", params: [] },
+  ],
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */

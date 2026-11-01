@@ -6,6 +6,7 @@ import { chatbox } from "..";
 import type { PlaceholdersRecord } from "$shared/chatbox/module-base";
 import { shortcuts, type ShortcutTriggerEvent } from "../../shortcuts";
 import { HOTKEY_PREFIX } from "$shared/chatbox/modules/hotkey";
+import { isReadOnly } from "../eval-context";
 
 interface StopwatchState {
   startTime: number;      // When the stopwatch was started (0 = not started)
@@ -217,8 +218,34 @@ export class ChatboxStopwatchModule extends StopwatchConfig {
     }
   }
 
+  runInput(inputId: string, args: Record<string, string>) {
+    const name = args.name ?? "";
+    if (!name) return;
+
+    switch (inputId) {
+      case "start": return this.startStopwatch(name);
+      case "pause": return this.pauseStopwatch(name);
+      case "toggle": return this.toggleStopwatch(name);
+      case "reset": return this.resetStopwatch(name);
+      case "stop": return this.stopStopwatch(name);
+      case "resetStart": return this.resetStartStopwatch(name);
+      default: return super.runInput(inputId, args);
+    }
+  }
+
   async getPlaceholderValue(key: string, ...params: string[]): Promise<string> {
     [key, ...params] = await chatbox.fillTemplates([key, ...params], "[[:]]", false, chatbox.getInstanceKey());
+
+    // Reading a stopwatch creates it, so a read-only evaluation of a name that doesn't exist
+    // answers as if it did and leaves nothing behind.
+    if (isReadOnly() && params[0] && !this.stopwatches.has(params[0])) {
+      switch (key) {
+        case "ElapsedMs": return "0";
+        case "IsRunning":
+        case "IsPaused": return "false";
+        default: return "";
+      }
+    }
 
     switch (key) {
       case "ElapsedMs": {

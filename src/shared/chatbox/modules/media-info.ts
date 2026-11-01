@@ -37,5 +37,12 @@ export const mediaInfoOptions: ChatboxModuleOptions = {
       value: "Some lyric line",
       description: "The current line of lyrics being displayed."
     }
-  }
+  },
+  inputs: [
+    { id: "toggle", label: "Play or pause", description: "Pauses what's playing, or resumes it.", params: [] },
+    { id: "resume", label: "Play", description: "Resumes what's playing.", params: [] },
+    { id: "pause", label: "Pause", description: "Pauses what's playing.", params: [] },
+    { id: "next", label: "Next track", description: "Skips to the next track.", params: [] },
+    { id: "previous", label: "Previous track", description: "Goes back to the previous track.", params: [] },
+  ]
 };

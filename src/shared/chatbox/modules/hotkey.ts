@@ -18,7 +18,15 @@ export const hotkeyOptions: ChatboxModuleOptions = {
       description: "Returns 'true' if the hotkey toggle state is on, 'false' otherwise. Each press toggles the state.",
       fillText: "Hotkey;IsToggled;${1:hotkeyName}"
     }
-  }
+  },
+  inputs: [
+    {
+      id: "press",
+      label: "Press",
+      description: "Acts as if you pressed the hotkey, including any stopwatch bound to it.",
+      params: [{ id: "name", label: "Hotkey", type: "text", placeholder: "hotkeyName" }],
+    },
+  ],
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
