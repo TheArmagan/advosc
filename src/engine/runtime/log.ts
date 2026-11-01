@@ -26,7 +26,7 @@ function write(level: string, args: unknown[]) {
 }
 
 /** Sends everything the engine prints to userData/logs as well as stdout, which main forwards in dev. */
-export function installLogging() {
+function installLogging() {
   fs.mkdirSync(engineConfig.logDir, { recursive: true });
   rotateIfLarge();
 
@@ -54,3 +54,6 @@ export function installLogging() {
 
   setInterval(rotateIfLarge, 60 * 60 * 1000).unref();
 }
+
+// On import, because loading settings happens during imports and can have something to say.
+installLogging();
