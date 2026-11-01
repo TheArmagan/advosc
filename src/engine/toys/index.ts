@@ -78,11 +78,13 @@ export function getToySettings() {
   return normalizeSettings(get(toySettings));
 }
 
-/** The module's Panic input. Stops here right away, then lets main latch, which it always owns. */
+/**
+ * The module's Panic input. Stops here right away and tells main at the same moment, because
+ * main owns the latch and a slow toy here mustn't hold up the Stop it sends directly.
+ */
 export async function requestPanic() {
   if (!getToySettings().enabled) return;
-  await toyService.panic();
-  await hostCall("panic.trigger");
+  await Promise.all([toyService.panic(), hostCall("panic.trigger")]);
 }
 
 async function testLovense(host: string, port: number): ReturnType<ToysApi["testLovense"]> {

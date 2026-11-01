@@ -49,21 +49,26 @@ function filePath() {
   return path.join(resolveDataDir(), 'bootstrap.json');
 }
 
-function readFile(file: string): Partial<Bootstrap> | null {
+/** Undefined when the file doesn't exist, null when it exists and can't be read. */
+function readFile(file: string): Partial<Bootstrap> | null | undefined {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const value = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    return value && typeof value === 'object' ? value : null;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {};
-    return null;
+    return (error as NodeJS.ErrnoException).code === 'ENOENT' ? undefined : null;
   }
 }
 
 export function getBootstrap(): Bootstrap {
   if (current) return current;
-  const stored = readFile(filePath()) ?? readFile(`${filePath()}.bak`);
-  // A file that exists and can't be read might have held a set latch. Wrongly asking for a
-  // re-arm costs a click, and wrongly clearing it could start a toy after a panic.
-  current = stored ? { ...defaults, ...stored } : { ...defaults, panicLatched: true };
+  const stored = readFile(filePath());
+  if (stored === null) {
+    // It might have held a set latch, and `.bak` is one write older so it can't say otherwise.
+    // Wrongly asking for a re-arm costs a click. Wrongly clearing it could undo a panic.
+    current = { ...defaults, ...readFile(`${filePath()}.bak`), panicLatched: true };
+  } else {
+    current = { ...defaults, ...stored };
+  }
   return current!;
 }
 
