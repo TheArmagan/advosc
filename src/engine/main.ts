@@ -19,6 +19,7 @@ import { startMediaMonitor, stopMediaMonitor } from "./services/media";
 import { stopSystemMonitor } from "./services/system-monitor";
 import { stopBleHeartRate } from "./services/ble-heart-rate";
 import { stopSpeechServer } from "./services/speech-server";
+import { startToys, stopToysForShutdown } from "./toys";
 
 async function boot() {
   const { safeMode, version } = engineConfig;
@@ -39,6 +40,7 @@ async function boot() {
   startSoundEffects();
   startAutomations({ safeMode });
   registerRpc();
+  startToys({ safeMode });
 
   const flushData = () => {
     (chatbox.modules.get("Var") as ChatboxVarModule).persist();
@@ -58,6 +60,8 @@ async function boot() {
     await stopSpeechServer();
   });
   onShutdown(flushData);
+  // Last registered runs first, so toys stop before anything else happens on the way out.
+  onShutdown(stopToysForShutdown);
 
   markReady();
   announceReady();

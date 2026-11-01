@@ -7,6 +7,7 @@ import type {
   OSCSourceStatus,
   StartupSettings,
 } from '../shared/native-types';
+import type { PanicApi, PanicState } from '../shared/toys';
 
 export type * from '../shared/native-types';
 
@@ -50,6 +51,8 @@ export interface PreloadElectronAPI {
     set: (patch: Partial<Pick<StartupSettings, 'startHidden' | 'gpuAcceleration'>>) => Promise<StartupSettings>;
     restart: () => void;
   };
+  /** Plain IPC to main, never through the engine, so it works with the engine hung or dead. */
+  panic: PanicApi;
   version: string;
 }
 
@@ -182,6 +185,17 @@ const api: PreloadElectronAPI = {
     get: () => ipcRenderer.invoke('startup:get'),
     set: (patch) => ipcRenderer.invoke('startup:set', { ...patch }),
     restart: () => ipcRenderer.send('startup:restart'),
+  },
+  panic: {
+    get: () => ipcRenderer.invoke('panic:get'),
+    trigger: () => ipcRenderer.invoke('panic:trigger'),
+    rearm: () => ipcRenderer.invoke('panic:rearm'),
+    setHotkey: (accelerator) => ipcRenderer.invoke('panic:setHotkey', accelerator),
+    onChange: (callback) => {
+      const listener = (_e: unknown, state: PanicState) => callback(state);
+      ipcRenderer.on('panic:changed', listener as any);
+      return () => ipcRenderer.removeListener('panic:changed', listener as any);
+    },
   },
   get version() {
     if (version === null) {
