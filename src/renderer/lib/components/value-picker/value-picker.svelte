@@ -237,9 +237,8 @@
   let previewText = $state<string | null>(null);
   let previewFailed = $state(false);
   let onScreen = $state(false);
-  // `backgroundThrottling` is off for this window, so `document.hidden` stays false even when it's
-  // minimized or hidden. Focus does change, so that's what keeps a preview from polling there.
-  let focused = $state(document.hasFocus());
+  // Keeps a preview from polling while the window is minimized.
+  let pageVisible = $state(!document.hidden);
 
   const wantsPreview = $derived(preview && hasPlaceholders(value));
 
@@ -252,13 +251,9 @@
 
   $effect(() => {
     if (!preview) return;
-    const update = () => (focused = document.hasFocus());
-    window.addEventListener("focus", update);
-    window.addEventListener("blur", update);
-    return () => {
-      window.removeEventListener("focus", update);
-      window.removeEventListener("blur", update);
-    };
+    const update = () => (pageVisible = !document.hidden);
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
   });
 
   $effect(() => {
@@ -270,7 +265,7 @@
     if (!onScreen) return;
 
     const template = value;
-    const repeat = focused;
+    const repeat = pageVisible;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
 
