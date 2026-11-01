@@ -215,12 +215,12 @@
   }
 </script>
 
-<div class="flex flex-col gap-6 p-2 h-[calc(100vh-8rem)] overflow-auto">
+<div class="flex flex-col gap-6 p-2">
   <!-- OSC Sources -->
   <section class="flex flex-col gap-3">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <RadioIcon class="size-4 text-muted-foreground" />
+        <RadioIcon class="size-4 shrink-0 text-muted-foreground" />
         <div class="flex flex-col">
           <span class="text-sm font-medium">OSC Sources</span>
           <span class="text-xs text-muted-foreground">

@@ -111,11 +111,11 @@
   );
 </script>
 
-<div class="flex flex-col gap-4 p-2 h-[calc(100vh-8rem)] overflow-auto">
+<div class="flex flex-col gap-4 p-2">
   <!-- Output -->
   <section class="flex flex-col gap-2">
     <div class="flex items-center gap-2">
-      <Volume2Icon class="size-4 text-muted-foreground" />
+      <Volume2Icon class="size-4 shrink-0 text-muted-foreground" />
       <span class="text-sm text-muted-foreground flex-1">
         Play sounds from your library with the soundboard, hotkeys, trigger
         rules or the Sound placeholder.

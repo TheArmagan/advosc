@@ -554,7 +554,7 @@
           {/each}
           {#if $librarySounds.length === 0}
             <p class="text-xs text-muted-foreground p-2">
-              Add sounds in the Sound Effects tab first.
+              Add sounds on the Sound Effects page first.
             </p>
           {/if}
         </Select.Content>
