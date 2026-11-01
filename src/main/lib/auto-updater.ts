@@ -1,4 +1,6 @@
 import { app, autoUpdater, dialog } from 'electron';
+import { offerRestartToUpdate } from './tray';
+import { getMainWindow } from './window';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -36,8 +38,23 @@ export function startAutoUpdater(): void {
     console.error('Update check failed:', err.message);
   });
 
+  let checkTimer: NodeJS.Timeout | null = null;
+
   autoUpdater.on('update-downloaded', (_event, _notes, releaseName) => {
-    dialog.showMessageBox({
+    // One update on disk is enough. In a long tray session, carrying on would download the
+    // next release too and stack another prompt on top of this one.
+    if (checkTimer) {
+      clearInterval(checkTimer);
+      checkTimer = null;
+    }
+
+    offerRestartToUpdate(() => autoUpdater.quitAndInstall());
+
+    // No window means the user is in a game. The tray item is there when they want it.
+    const window = getMainWindow();
+    if (!window) return;
+
+    dialog.showMessageBox(window, {
       type: 'info',
       buttons: ['Restart now', 'Later'],
       defaultId: 0,
@@ -53,5 +70,5 @@ export function startAutoUpdater(): void {
   // Squirrel installs the update in the background and only tells us once it is
   // on disk, so checking on a timer costs the user nothing.
   autoUpdater.checkForUpdates();
-  setInterval(() => autoUpdater.checkForUpdates(), CHECK_INTERVAL_MS);
+  checkTimer = setInterval(() => autoUpdater.checkForUpdates(), CHECK_INTERVAL_MS);
 }

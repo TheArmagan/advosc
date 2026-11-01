@@ -1,3 +1,5 @@
+export { weatherDailyFields } from "$shared/simple-editor/template";
+
 export const timePresets = [
   { value: "HH:mm", label: "14:30" },
   { value: "HH:mm:ss", label: "14:30:00" },
@@ -113,21 +115,6 @@ export const weatherFields = [
   { value: "Sunrise", label: "Sunrise (formatted)" },
   { value: "Sunset", label: "Sunset (formatted)" },
 ] as const;
-
-/** Fields that read from the daily forecast, so they take a day offset. */
-export const weatherDailyFields = new Set([
-  "High",
-  "Low",
-  "DailyCondition",
-  "DailyEmoji",
-  "DailyCode",
-  "PrecipitationChance",
-  "PrecipitationSum",
-  "UVIndex",
-  "Sunrise",
-  "Sunset",
-  "Date",
-]);
 
 export const conditionSources = [
   { value: "mediaplaying", label: "Media is Playing" },

@@ -1,53 +1,17 @@
-import { writable, get } from "svelte/store";
-import { localData } from "$lib/api/local-data";
-import { avatarOSC } from "./avatar-osc";
-
-export type AvatarProfile = {
-  id: string;
-  name: string;
-  avatarId: string;
-  avatarName: string;
-  parameters: Record<string, number>;
-  createdAt: number;
-  updatedAt: number;
-};
+import { generateProfileId, type AvatarProfile } from "$shared/avatar-osc";
+import { get } from "$shared/store";
+import { call, fire, synced } from "../engine";
 
 const STORAGE_KEY = "AvatarProfiles";
 
-const profilesStore = writable<AvatarProfile[]>(localData.get(STORAGE_KEY, []));
-
-profilesStore.subscribe((profiles) => {
-  localData.set(STORAGE_KEY, profiles);
-});
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
+const profilesStore = synced<AvatarProfile[]>(STORAGE_KEY, []);
 
 export const avatarProfiles = {
   profiles: profilesStore,
 
-  saveCurrentProfile(name: string): AvatarProfile | null {
-    const schema = get(avatarOSC.schema);
-    const parameters = get(avatarOSC.parameters);
-    const avatarId = avatarOSC.lastAvatarId;
-
-    if (!avatarId) {
-      return null;
-    }
-
-    const profile: AvatarProfile = {
-      id: generateId(),
-      name,
-      avatarId,
-      avatarName: schema?.name || "Unknown Avatar",
-      parameters: { ...parameters },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    profilesStore.update((profiles) => [...profiles, profile]);
-    return profile;
+  /** Needs the live parameter values, which only the engine holds. */
+  saveCurrentProfile(name: string): Promise<AvatarProfile | null> {
+    return call("avatarProfiles.saveCurrentProfile", name);
   },
 
   updateProfile(id: string, updates: Partial<Pick<AvatarProfile, "name" | "parameters">>): boolean {
@@ -84,18 +48,8 @@ export const avatarProfiles = {
   },
 
   loadProfile(id: string): boolean {
-    const profiles = get(profilesStore);
-    const profile = profiles.find((p) => p.id === id);
-
-    if (!profile) {
-      return false;
-    }
-
-    // Apply all parameters from the profile
-    for (const [address, value] of Object.entries(profile.parameters)) {
-      avatarOSC.setParameter(address, value);
-    }
-
+    if (!get(profilesStore).some((p) => p.id === id)) return false;
+    fire("avatarProfiles.loadProfile", id);
     return true;
   },
 
@@ -123,7 +77,7 @@ export const avatarProfiles = {
       }
 
       const profile: AvatarProfile = {
-        id: generateId(),
+        id: generateProfileId(),
         name: parsed.name,
         avatarId: parsed.avatarId,
         avatarName: parsed.avatarName || "Unknown Avatar",
@@ -151,7 +105,7 @@ export const avatarProfiles = {
       const validProfiles: AvatarProfile[] = parsed
         .filter((p) => p.name && p.avatarId && p.parameters)
         .map((p) => ({
-          id: generateId(),
+          id: generateProfileId(),
           name: p.name,
           avatarId: p.avatarId,
           avatarName: p.avatarName || "Unknown Avatar",

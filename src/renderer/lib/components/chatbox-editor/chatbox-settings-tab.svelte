@@ -13,17 +13,17 @@
   let bulkImportOpen = $state(false);
   let bulkImportValue = $state("");
 
-  function handleExport() {
-    const allValues = chatbox.getAllValues();
+  async function handleExport() {
+    const allValues = await chatbox.getAllValues();
     const json = JSON.stringify(allValues, null, 2);
     navigator.clipboard.writeText(json);
     toast.success("Chatbox settings exported to clipboard!");
   }
 
-  function handleImport() {
+  async function handleImport() {
     try {
       const parsed = JSON.parse(bulkImportValue);
-      chatbox.setAllValues(parsed);
+      await chatbox.setAllValues(parsed);
       toast.success("Chatbox settings imported successfully!");
       bulkImportOpen = false;
       bulkImportValue = "";

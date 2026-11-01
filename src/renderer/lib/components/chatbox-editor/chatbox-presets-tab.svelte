@@ -72,8 +72,8 @@
     saveOpen = true;
   }
 
-  function handleSave() {
-    const preset = chatboxPresets.savePreset(saveName, saveDescription);
+  async function handleSave() {
+    const preset = await chatboxPresets.savePreset(saveName, saveDescription);
     saveOpen = false;
     toast.success(`Saved "${preset.name}".`);
   }
@@ -85,18 +85,18 @@
     applyOpen = true;
   }
 
-  function handleApply() {
+  async function handleApply() {
     if (!applyTarget) return;
-    if (backupBeforeApply) chatboxPresets.savePreset(backupName);
+    if (backupBeforeApply) await chatboxPresets.savePreset(backupName);
     const name = applyTarget.name;
-    const ok = chatboxPresets.applyPreset(applyTarget.id);
+    const ok = await chatboxPresets.applyPreset(applyTarget.id);
     applyOpen = false;
     if (ok) toast.success(`Switched to "${name}".`);
     else toast.error("That template no longer exists.");
   }
 
-  function handleUpdate(preset: ChatboxPreset) {
-    chatboxPresets.updatePreset(preset.id);
+  async function handleUpdate(preset: ChatboxPreset) {
+    await chatboxPresets.updatePreset(preset.id);
     toast.success(`Updated "${preset.name}" with your current setup.`);
   }
 

@@ -12,7 +12,6 @@
     buildTemplateState,
     getShortcutParamCount,
     getUserShortcutNames,
-    syncAutoShortcuts,
   } from "./template";
   import type { Block, BlockType } from "./types";
 
@@ -67,7 +66,6 @@
 
   $effect(() => {
     const state = buildTemplateState(blocks);
-    syncAutoShortcuts(state.autoShortcuts);
     originalTemplate = state.template;
     if (isActive && !isOverwriteActive) {
       $settings.template = state.template;
