@@ -73,8 +73,6 @@ export interface ToySettings {
   enabled: boolean;
   /** 0 to 1. Applies to every level from every source, manual test buttons included. */
   maxLevel: number;
-  /** Electron accelerator. The enable flow won't finish without one. */
-  panicHotkey: string;
   /** Pause `live` and `while` output after this much OSC silence. 0 turns it off. */
   silencePauseSec: number;
   stopOnAvatarChange: boolean;
@@ -88,7 +86,6 @@ export interface ToySettings {
 export const defaultToySettings: ToySettings = {
   enabled: false,
   maxLevel: 0.5,
-  panicHotkey: "",
   silencePauseSec: 120,
   stopOnAvatarChange: false,
   lovensePc: { enabled: true },
@@ -155,7 +152,39 @@ export interface ToyRuleSink {
   onRearm(listener: () => void): () => void;
 }
 
-/** Engine RPC surface for toys, under the `toys.` prefix. */
+/** What main holds about panic. `hotkey` is an Electron accelerator, "" when unset. */
+export interface PanicState {
+  latched: boolean;
+  hotkey: string;
+}
+
+export interface PanicHotkeyResult {
+  ok: boolean;
+  /** Plain words, shown as they are. Set when the hotkey couldn't be registered. */
+  error?: string;
+  state: PanicState;
+}
+
+/**
+ * Exposed as `window.ADVOSCNative.panic`, and handled in main, never through the engine. Panic
+ * has to work when the engine is hung, and the hotkey has to fire with no engine at all, so
+ * this goes over plain IPC and both values live in `bootstrap.json`.
+ */
+export interface PanicApi {
+  get(): Promise<PanicState>;
+  /** Latches, stops every toy, and returns once main has done its part. Safe to call twice. */
+  trigger(): Promise<PanicState>;
+  /** Clears the latch. `while` and `live` rules stay muted until their source goes inactive once. */
+  rearm(): Promise<PanicState>;
+  /** Registers it first and only saves on success. An empty string clears it. */
+  setHotkey(accelerator: string): Promise<PanicHotkeyResult>;
+  onChange(callback: (state: PanicState) => void): () => void;
+}
+
+/**
+ * Engine RPC surface for toys, under the `toys.` prefix. Panic isn't here: see `PanicApi`.
+ * `stopAll` is a plain stop that doesn't latch.
+ */
 export interface ToysApi {
   getTransports(): ToyTransportStatus[];
   getToys(): ToyInfo[];
@@ -165,15 +194,13 @@ export interface ToysApi {
   /** Short manual test with its own lease, always under the cap. */
   test(toyId: string, feature: ToyFeature, level: number): Promise<void>;
   stopAll(): Promise<void>;
-  /** Clears the latch. `while` and `live` rules stay muted until their source goes inactive once. */
-  rearm(): Promise<void>;
 }
 
 /** Mirror key for `ToysState`. */
 export const MIRROR_TOYS = "Toys;State";
 
+/** Comes from the engine, so it can go stale. Read panic state from `PanicApi` instead. */
 export interface ToysState {
-  panicLatched: boolean;
   transports: ToyTransportStatus[];
   toys: ToyInfo[];
   /** Why output is paused right now, if it is. */
