@@ -31,6 +31,8 @@ export interface ToyInfo {
   /** 0 to 100, null when the device doesn't report it. */
   battery: number | null;
   connected: boolean;
+  /** True when every feature has a single step, so the device stays off below a 100% cap. */
+  onOff?: boolean;
 }
 
 export type ToyTransportState = "disabled" | "connecting" | "connected" | "error";

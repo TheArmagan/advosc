@@ -139,14 +139,18 @@ export class IntifaceTransport implements EngineToyTransport {
   }
 
   private toyList(): ToyInfo[] {
-    return [...this.devices.values()].map((device) => ({
-      id: device.toyId,
-      name: device.name,
-      transport: this.id,
-      features: [...new Set([...device.scalars, ...device.rotators].map((actuator) => actuator.feature))],
-      battery: device.battery,
-      connected: true,
-    }));
+    return [...this.devices.values()].map((device) => {
+      const actuators = [...device.scalars, ...device.rotators];
+      return {
+        id: device.toyId,
+        name: device.name,
+        transport: this.id,
+        features: [...new Set(actuators.map((actuator) => actuator.feature))],
+        battery: device.battery,
+        connected: true,
+        ...(actuators.length && actuators.every((actuator) => actuator.steps === 1) ? { onOff: true } : {}),
+      };
+    });
   }
 
   private emitToys() {
