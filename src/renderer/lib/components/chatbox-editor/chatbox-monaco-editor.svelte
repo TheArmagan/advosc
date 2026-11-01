@@ -325,11 +325,17 @@
     }
   });
 
+  // Monaco loads asynchronously, so the user can leave the page before it's ready. The
+  // container is gone by then, and creating an editor on it would throw.
+  let destroyed = false;
+
   onMount(async () => {
     // Load monaco-worker (for worker setup)
     await import("../../editor/monaco-worker");
     // Get monaco from monaco-lib
     monaco = (await import("../../editor/monaco-lib")).default;
+
+    if (destroyed) return;
 
     // Register highlighting (only for the first instance, avoid duplicate registration)
     try {
@@ -381,6 +387,7 @@
   });
 
   onDestroy(() => {
+    destroyed = true;
     // Dispose highlighting only if this instance registered it
     if (highlightDisposable && isHighlightingRegistered) {
       highlightDisposable?.dispose();
