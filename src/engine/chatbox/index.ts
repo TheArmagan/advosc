@@ -64,7 +64,7 @@ async function incrementCallCount(moduleId: string, ...params: string[]) {
   callsMadeMap.set(fullKey, currentCount + 1);
   if (currentCount >= 500) {
     if (!ignoreSet.has(fullKey)) {
-      console.warn("Chatbox", `Preventing recursive calls for module ${moduleId}, ${params.join(", ")} due to excessive calls (${currentCount + 1})`);
+      console.warn("Chatbox", `Preventing recursive calls for module ${moduleId} due to excessive calls (${currentCount + 1})`);
       notify.warning("Chatbox", {
         description: `Prevented recursive calls for module ${moduleId}, ${params.join(", ")} due to excessive calls (${currentCount + 1}). This may indicate a user-made bug in the module.`,
         duration: 1000,

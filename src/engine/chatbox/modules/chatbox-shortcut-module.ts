@@ -22,7 +22,7 @@ export class ChatboxShortcutModule extends ShortcutConfig {
     }
 
     if (chatbox.getSettings().debugMode) {
-      console.log("Chatbox > Shortcut Module", `Filling shortcut "${key}" with params:`, params);
+      console.log("Chatbox > Shortcut Module", `Filling shortcut "${key}" with ${params.length} params.`);
     }
     // Scope the expansion to this occurrence: using the same shortcut twice must give
     // each copy its own state instead of both driving a single shared animation.

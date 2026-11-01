@@ -33,8 +33,13 @@ export interface SoundSettings {
   /** 0-100 */
   masterVolume: number;
   muted: boolean;
-  /** "" is the Windows default output */
+  /**
+   * The browser's origin-salted id from before native playback. Kept as it was for rollback.
+   * Nothing reads it except the one-time move to `outputDevice`.
+   */
   outputDeviceId: string;
+  /** An empty id is the Windows default. Unset until the old device has been moved over. */
+  outputDevice?: { id: string; name: string };
   stopOnVrcMute: boolean;
   stopAllHotkey: string;
 }

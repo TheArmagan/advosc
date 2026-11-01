@@ -25,7 +25,7 @@ export class ChatboxExpressionModule extends ChatboxModule {
       });
       return typeof result !== "undefined" && result ? (trueValue || String(result)) : falseValue;
     } catch (e) {
-      console.error("Chatbox", "Failed to evaluate expression", expr, e);
+      console.error("Chatbox", "Failed to evaluate an expression:", (e as Error).message);
       if (chatbox.getSettings().debugMode) {
         notify.error("Chatbox > Expr Module", {
           description: `Failed to evaluate expression "${expr}": ${(e as Error).message}`,

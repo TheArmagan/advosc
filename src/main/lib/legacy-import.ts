@@ -46,10 +46,10 @@ interface LocalStorageDump {
   audioOutputs: AudioOutputRecord[];
 }
 
-function migratePageUrl() {
+function loadMigratePage(page: BrowserWindow) {
   return isDev
-    ? 'http://localhost:5173/migrate.html'
-    : `file://${path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'migrate.html').replace(/\\/g, '/')}`;
+    ? page.loadURL('http://localhost:5173/migrate.html')
+    : page.loadFile(path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'migrate.html'));
 }
 
 function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -66,7 +66,7 @@ async function dumpLocalStorage(): Promise<LocalStorageDump> {
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
   });
   try {
-    await withTimeout(page.loadURL(migratePageUrl()), 'Loading the import page');
+    await withTimeout(loadMigratePage(page), 'Loading the import page');
     return await withTimeout(page.webContents.executeJavaScript(DUMP_SCRIPT), 'Reading localStorage');
   } finally {
     page.destroy();

@@ -10,12 +10,15 @@ import {
   type SoundSettings,
   type SoundTriggerRule,
 } from "$shared/sound-effects";
+import { AudioSidecar, migrateLegacyDevice, resolveDeviceId, type AudioEvent } from "../audio";
 import { native } from "../native";
+import { localData } from "../persistence/local-data";
+import { onShutdown } from "../runtime/host";
 import { notify } from "../runtime/notify";
+import { nativeExePath } from "../services/natives";
 import { shortcuts } from "../shortcuts";
 import { mirror, synced } from "../sync/hub";
 import { avatarOSC } from "../vrc-osc";
-import { createUnavailableBackend, type AudioBackend } from "./audio-backend";
 
 export { defaultRule, isTruthy, makeId, matches };
 export type { SoundEntry, SoundSettings, SoundTriggerRule };
@@ -56,32 +59,55 @@ function findSound(ref: string): SoundEntry | undefined {
 // Audio
 // ---------------------------------------------------------------------------
 
-let backend: AudioBackend = createUnavailableBackend();
-let appliedDeviceId: string | null = null;
-
-/** The sidecar client takes over from the stub through this. */
-export function setAudioBackend(next: AudioBackend) {
-  backend = next;
-}
+let audio: AudioSidecar;
 
 function applyMasterGain() {
   const s = get(settingsStore);
-  backend.setMasterGain(s.muted ? 0 : Math.max(0, Math.min(100, s.masterVolume)) / 100);
+  audio.setMaster(s.muted ? 0 : Math.max(0, Math.min(100, s.masterVolume)) / 100);
 }
+
+let appliedDeviceId: string | null = null;
 
 async function applyOutputDevice() {
-  const deviceId = get(settingsStore).outputDeviceId;
-  if (appliedDeviceId === deviceId) return;
-  appliedDeviceId = deviceId;
-  try {
-    await backend.setOutputDevice(deviceId ? { id: deviceId, name: "" } : null);
-  } catch (e) {
-    console.warn("SoundEffects", "Could not use output device, falling back to default", e);
-    await backend.setOutputDevice(null).catch(() => {});
+  const saved = get(settingsStore).outputDevice;
+  if (!saved || appliedDeviceId === saved.id) return;
+  appliedDeviceId = saved.id;
+
+  if (!saved.id) {
+    audio.setDevice("");
+    return;
   }
+  const { devices } = await audio.listDevices();
+  audio.setDevice(resolveDeviceId(saved, devices));
 }
 
-const loaded = new Map<string, { path: string; promise: Promise<boolean> }>();
+/**
+ * Moves the output picked in the old browser build over to a real device, once. The old id
+ * means nothing here, so the label the import recorded is all there is to go on.
+ */
+async function migrateOutputDevice() {
+  const settings = get(settingsStore);
+  if (settings.outputDevice) return;
+
+  const legacyId = settings.outputDeviceId;
+  const recorded = localData.getMeta()?.migration?.audioOutputs ?? [];
+  const label = recorded.find((output) => output.deviceId === legacyId)?.label ?? "";
+
+  const { devices } = await audio.listDevices();
+  // Nothing to compare against yet, so try again on the next `ready`.
+  if (legacyId && !devices.length) return;
+
+  const migrated = migrateLegacyDevice({ deviceId: legacyId, label }, devices);
+  if (!migrated) {
+    notify.warning("Sound Effects", {
+      description: `Couldn't find ${label || "your old output device"}, so sounds will use the Windows default.`,
+    });
+  }
+  settingsStore.update((prev) => ({ ...prev, outputDevice: migrated ?? { id: "", name: "" } }));
+}
+
+/** Sound id to the path handed to the sidecar. Decoding is costly, so only a new path reloads. */
+const loaded = new Map<string, string>();
 
 function setError(id: string, message: string | null) {
   errorsStore.update((prev) => {
@@ -92,38 +118,44 @@ function setError(id: string, message: string | null) {
   });
 }
 
-function loadSound(sound: SoundEntry): Promise<boolean> {
-  const cached = loaded.get(sound.id);
-  if (cached && cached.path === sound.path) return cached.promise;
-
-  const promise = (async () => {
-    try {
-      if (!sound.path) throw new Error("No file selected");
-      await backend.load(sound.id, sound.path);
-      setError(sound.id, null);
-      return true;
-    } catch (e) {
-      setError(sound.id, (e as Error)?.message || "Could not load this file");
-      return false;
-    }
-  })();
-  loaded.set(sound.id, { path: sound.path, promise });
-  return promise;
+function loadSound(sound: SoundEntry) {
+  if (!sound.path) {
+    setError(sound.id, "No file selected");
+    return;
+  }
+  if (loaded.get(sound.id) === sound.path) return;
+  loaded.set(sound.id, sound.path);
+  setError(sound.id, null);
+  audio.load(sound.id, sound.path);
 }
 
-const voices = new Map<number, string>();
+interface Voice {
+  soundId: string;
+  gain: number;
+  loop: boolean;
+  /** The sidecar's voice, or null for a loop waiting out a sidecar crash. */
+  sidecarVoice: number | null;
+}
+
+/**
+ * Keyed by an id of our own, not the sidecar's. A loop that dies with the sidecar comes back as
+ * a new sidecar voice, and whoever is holding this id (a rule, a Loop placeholder) can stop it
+ * without knowing that happened.
+ */
+const voices = new Map<number, Voice>();
+const bySidecarVoice = new Map<number, number>();
 let voiceSeq = 0;
 const lastPlayedAt = new Map<string, number>();
 
 function voiceCount(soundId: string): number {
   let n = 0;
-  for (const id of voices.values()) if (id === soundId) n++;
+  for (const v of voices.values()) if (v.soundId === soundId) n++;
   return n;
 }
 
 function publishPlaying() {
   const counts: Record<string, number> = {};
-  for (const id of voices.values()) counts[id] = (counts[id] ?? 0) + 1;
+  for (const v of voices.values()) counts[v.soundId] = (counts[v.soundId] ?? 0) + 1;
   playingStore.set(counts);
 }
 
@@ -149,12 +181,79 @@ function isBlocked(): boolean {
   return s.muted || (s.stopOnVrcMute && vrcMuted);
 }
 
-function handleVoiceEnded(voice: number) {
-  const soundId = voices.get(voice);
-  if (soundId === undefined) return;
-  voices.delete(voice);
+function startSidecarVoice(id: number, voice: Voice) {
+  voice.sidecarVoice = audio.play(voice.soundId, { gain: voice.gain, loop: voice.loop });
+  bySidecarVoice.set(voice.sidecarVoice, id);
+}
+
+function endVoice(id: number) {
+  const voice = voices.get(id);
+  if (!voice) return;
+  voices.delete(id);
+  if (voice.sidecarVoice !== null) bySidecarVoice.delete(voice.sidecarVoice);
   publishPlaying();
-  if (voiceCount(soundId) === 0) sendOscPulse(soundId, false);
+  if (voiceCount(voice.soundId) === 0) sendOscPulse(voice.soundId, false);
+}
+
+let deviceFallbackShown = false;
+
+function handleAudioEvent(event: AudioEvent) {
+  switch (event.type) {
+    case "ready":
+      void migrateOutputDevice().then(applyOutputDevice).catch((e) => {
+        console.warn("SoundEffects", "Could not set the output device", e);
+      });
+      break;
+
+    case "loaded":
+      setError(event.id, null);
+      // The sidecar only sends this again after a restart. Don't restart loops any sooner than
+      // this: starting a voice from the exit itself would respawn past the sidecar's backoff.
+      for (const [id, voice] of voices) {
+        if (voice.soundId === event.id && voice.sidecarVoice === null) startSidecarVoice(id, voice);
+      }
+      break;
+
+    case "load_error":
+      setError(event.id, event.message);
+      for (const [id, voice] of voices) {
+        if (voice.soundId === event.id && voice.sidecarVoice === null) endVoice(id);
+      }
+      break;
+
+    case "voice_ended": {
+      const id = bySidecarVoice.get(event.voice);
+      if (id === undefined) break;
+      bySidecarVoice.delete(event.voice);
+
+      const voice = voices.get(id);
+      if (voice?.loop && event.reason === "sidecar_exit") voice.sidecarVoice = null;
+      else endVoice(id);
+      break;
+    }
+
+    case "device_changed":
+      if (event.reason === "device_restored") deviceFallbackShown = false;
+      if (event.fallback && !deviceFallbackShown) {
+        deviceFallbackShown = true;
+        const name = get(settingsStore).outputDevice?.name || "Your output device";
+        notify.warning("Sound Effects", {
+          description: `${name} isn't available, so sounds are using the Windows default until it's back.`,
+        });
+      }
+      if (event.reason === "no_device") {
+        notify.warning("Sound Effects", { description: "No audio output device could be opened." });
+      }
+      break;
+
+    case "error":
+      console.error("Audio sidecar error:", event.message);
+      break;
+
+    case "sidecar_exit":
+      console.warn(`Audio sidecar exited (code ${event.code}).`);
+      break;
+  }
 }
 
 /**
@@ -170,26 +269,23 @@ async function play(ref: string, options: { loop?: boolean } = {}): Promise<numb
   // Set before loading so rapid triggers during a decode still respect the cooldown.
   lastPlayedAt.set(sound.id, now);
 
-  const ready = await loadSound(sound);
-  if (!ready || isBlocked()) return null;
+  // Covers a sound added a moment ago. A play sent during a decode waits for it.
+  loadSound(sound);
+  if (get(errorsStore)[sound.id]) return null;
 
   const id = ++voiceSeq;
   const wasSilent = voiceCount(sound.id) === 0;
-  voices.set(id, sound.id);
+  const voice: Voice = {
+    soundId: sound.id,
+    gain: Math.max(0, Math.min(100, sound.volume)) / 100,
+    loop: !!options.loop,
+    sidecarVoice: null,
+  };
+  voices.set(id, voice);
+  startSidecarVoice(id, voice);
   publishPlaying();
   if (wasSilent) sendOscPulse(sound.id, true);
-
-  try {
-    await backend.play(id, sound.id, {
-      gain: Math.max(0, Math.min(100, sound.volume)) / 100,
-      loop: !!options.loop,
-    });
-    return id;
-  } catch (e) {
-    setError(sound.id, (e as Error)?.message || "Could not play this file");
-    handleVoiceEnded(id);
-    return null;
-  }
+  return id;
 }
 
 function playRandom(refs: string[], options: { loop?: boolean } = {}): Promise<number | null> {
@@ -200,12 +296,17 @@ function playRandom(refs: string[], options: { loop?: boolean } = {}): Promise<n
 
 /** Stop one playback started by `play`. */
 function stopVoice(id: number) {
-  if (voices.has(id)) backend.stopVoice(id);
+  const voice = voices.get(id);
+  if (!voice) return;
+  // The sidecar's `voice_ended` finishes the job. A loop waiting out a crash has nothing to
+  // stop, so it ends here.
+  if (voice.sidecarVoice !== null) audio.stop(voice.sidecarVoice);
+  else endVoice(id);
 }
 
 function stopVoices(filter: (soundId: string) => boolean) {
-  for (const [voice, soundId] of voices) {
-    if (filter(soundId)) backend.stopVoice(voice);
+  for (const [id, voice] of voices) {
+    if (filter(voice.soundId)) stopVoice(id);
   }
 }
 
@@ -235,12 +336,8 @@ function setMasterVolume(volume: number) {
 }
 
 async function listAudioOutputs(): Promise<{ deviceId: string; label: string }[]> {
-  try {
-    const devices = await backend.listDevices();
-    return devices.map((device) => ({ deviceId: device.id, label: device.name }));
-  } catch {
-    return [];
-  }
+  const { devices } = await audio.listDevices();
+  return devices.map((device) => ({ deviceId: device.id, label: device.name }));
 }
 
 // ---------------------------------------------------------------------------
@@ -275,7 +372,7 @@ async function pickFiles() {
 function removeSound(id: string) {
   stopVoices((soundId) => soundId === id);
   loaded.delete(id);
-  backend.unload(id);
+  audio.unload(id);
   setError(id, null);
   soundsStore.update((prev) => prev.filter((s) => s.id !== id));
   rulesStore.update((prev) =>
@@ -287,7 +384,7 @@ function reload(id: string) {
   loaded.delete(id);
   setError(id, null);
   const sound = get(soundsStore).find((s) => s.id === id);
-  if (sound) void loadSound(sound);
+  if (sound) loadSound(sound);
 }
 
 // ---------------------------------------------------------------------------
@@ -359,11 +456,20 @@ export function startSoundEngine() {
   mirror("SoundEffects;Playing", playingStore, 50);
   mirror("SoundEffects;VrcMuted", vrcMutedStore);
 
-  backend.onVoiceEnded(handleVoiceEnded);
+  audio = new AudioSidecar(nativeExePath("advosc-audio.exe"));
+  audio.onEvent(handleAudioEvent);
+  onShutdown(() => audio.shutdown());
+
+  // Nothing to move, so there's no reason to start the sidecar just to work that out.
+  if (!get(settingsStore).outputDevice && !get(settingsStore).outputDeviceId) {
+    settingsStore.update((prev) => ({ ...prev, outputDevice: { id: "", name: "" } }));
+  }
 
   settingsStore.subscribe(() => {
     applyMasterGain();
-    void applyOutputDevice();
+    void applyOutputDevice().catch((e) => {
+      console.warn("SoundEffects", "Could not set the output device", e);
+    });
   });
 
   // Load new or changed files up front so the first trigger doesn't wait, and so the library
@@ -373,9 +479,9 @@ export function startSoundEngine() {
     for (const id of loaded.keys()) {
       if (ids.has(id)) continue;
       loaded.delete(id);
-      backend.unload(id);
+      audio.unload(id);
     }
-    for (const sound of sounds) void loadSound(sound);
+    for (const sound of sounds) loadSound(sound);
   });
 
   native.osc.onMessage((message) => {

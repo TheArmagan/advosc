@@ -58,6 +58,9 @@ function scheduleFlush() {
   flushTimer = setTimeout(flushNow, wait);
 }
 
+// Nothing may change for a long time, and the main file shouldn't stay missing until then.
+if (loaded.source === "backup") scheduleFlush();
+
 function changed(key: string, json: string | null) {
   scheduleFlush();
   for (const listener of changeListeners) listener(key, json);

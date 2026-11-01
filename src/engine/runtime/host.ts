@@ -102,7 +102,10 @@ function handleMessage(message: MainToEngine, ports: MessagePortMain[]) {
       for (const handler of shortcutHandlers) handler(message.id);
       break;
     case "shutdown":
-      void runShutdownHooks().finally(() => send({ t: "shutdown-done" }));
+      void runShutdownHooks().finally(() => {
+        console.log("Engine shut down cleanly.");
+        send({ t: "shutdown-done" });
+      });
       break;
   }
 }

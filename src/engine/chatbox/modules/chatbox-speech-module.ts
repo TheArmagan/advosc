@@ -2,7 +2,7 @@ import { native } from "../../native";
 import { moduleValues } from "../module-values";
 import { emptyLiveState, SpeechConfig, type SpeechLiveState } from "$shared/chatbox/modules/speech";
 import { getProviderInfo, type TranslationProviderId } from "$shared/chatbox/translate-providers";
-import { hasClients, mirror } from "../../sync/hub";
+import { mirror } from "../../sync/hub";
 import { get, writable } from "$shared/store";
 import { chatbox } from "..";
 import type { PlaceholdersRecord } from "$shared/chatbox/module-base";

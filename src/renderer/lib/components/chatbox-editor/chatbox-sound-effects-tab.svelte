@@ -51,9 +51,11 @@
       );
   });
 
+  const outputDeviceId = $derived($settings.outputDevice?.id ?? "");
+
   const outputLabel = $derived(
-    $settings.outputDeviceId
-      ? (outputs.find((o) => o.deviceId === $settings.outputDeviceId)?.label ??
+    outputDeviceId
+      ? (outputs.find((o) => o.deviceId === outputDeviceId)?.label ??
           "Device not found, using default")
       : "Windows default",
   );
@@ -138,11 +140,12 @@
             <div class="flex gap-2">
               <Select.Root
                 type="single"
-                value={$settings.outputDeviceId || "default"}
-                onValueChange={(v) =>
-                  soundEffects.updateSettings({
-                    outputDeviceId: !v || v === "default" ? "" : v,
-                  })}
+                value={outputDeviceId || "default"}
+                onValueChange={(v) => {
+                  const id = !v || v === "default" ? "" : v;
+                  const name = outputs.find((o) => o.deviceId === id)?.label ?? "";
+                  soundEffects.updateSettings({ outputDevice: { id, name } });
+                }}
               >
                 <Select.Trigger class="h-8 text-xs flex-1 min-w-0">
                   <span class="truncate">{outputLabel}</span>

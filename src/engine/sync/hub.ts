@@ -32,7 +32,6 @@ const handlers = new Map<string, Handler>();
 const syncedStores = new Map<string, Writable<any>>();
 const mirrors = new Map<string, () => unknown>();
 const streams = new Map<string, () => Record<string, unknown>>();
-const streamListeners = new Set<() => void>();
 
 let ready = false;
 /** The write being applied right now, so it isn't echoed straight back to its sender. */
@@ -113,7 +112,6 @@ function setSubscribed(client: Client, key: string, subscribed: boolean) {
   } else {
     client.subs.delete(key);
   }
-  for (const listener of streamListeners) listener();
 }
 
 function handleMessage(client: Client, raw: string) {
@@ -155,6 +153,7 @@ export function addClient(id: number, port: MessagePortMain) {
     welcomed: false,
   };
   clients.set(id, client);
+  console.log(`Window ${id} connected.`);
   port.on("message", (event) => handleMessage(client, event.data as string));
   port.on("close", () => removeClient(id));
   port.start();
@@ -162,7 +161,7 @@ export function addClient(id: number, port: MessagePortMain) {
 
 function removeClient(id: number) {
   if (!clients.delete(id)) return;
-  for (const listener of streamListeners) listener();
+  console.log(`Window ${id} disconnected, ${clients.size} left.`);
 }
 
 /** Everything is wired up, so windows waiting on `hello` can be answered. */

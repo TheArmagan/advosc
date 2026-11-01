@@ -26,7 +26,7 @@ interface StreamEntry {
 const streams = new Map<string, StreamEntry>();
 
 let onWelcome: ((info: EngineInfo) => void) | null = null;
-let welcomed = false;
+const infoListeners = new Set<(info: EngineInfo) => void>();
 
 function post(message: ClientMessage) {
   bridge.send(JSON.stringify(message));
@@ -63,9 +63,9 @@ function handleWelcome(message: Extract<EngineMessage, { t: "welcome" }>) {
     if (entry.subscribers > 0 && !document.hidden) post({ t: "sub", k: key });
   }
 
-  welcomed = true;
   onWelcome?.(message.info);
   onWelcome = null;
+  for (const listener of infoListeners) listener(message.info);
 }
 
 function handleMessage(json: string) {
@@ -112,8 +112,9 @@ export function connectEngine(): Promise<EngineInfo> {
   });
 }
 
-export function isEngineConnected() {
-  return welcomed;
+/** Fires each time an engine picks this window up, so a restart can be noticed. */
+export function onEngineInfo(listener: (info: EngineInfo) => void) {
+  infoListeners.add(listener);
 }
 
 /** Calls a method on the engine. Rejects if the engine answers with an error or restarts. */

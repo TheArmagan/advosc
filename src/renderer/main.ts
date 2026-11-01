@@ -1,9 +1,20 @@
 // @ts-nocheck
 
 import { toast } from 'svelte-sonner';
-import { connectEngine } from './lib/api/engine';
+import { connectEngine, onEngineInfo } from './lib/api/engine';
 
 const CONNECT_TIMEOUT_MS = 20000;
+
+let safeModeShown = false;
+
+function showSafeMode(info) {
+  if (!info.safeMode || safeModeShown) return;
+  safeModeShown = true;
+  toast.warning('Safe mode', {
+    description: "ADVOSC kept crashing, so the chatbox, forwarder and sound rules are off until you restart it.",
+    duration: Infinity,
+  });
+}
 
 /**
  * Stores read their first value when they're created, and the app imports all of them, so
@@ -28,12 +39,9 @@ async function start() {
   const [{ mount }, { default: App }] = await Promise.all([import('svelte'), import('./main.svelte')]);
   mount(App, { target });
 
-  if (info.safeMode) {
-    toast.warning('Safe mode', {
-      description: "ADVOSC kept crashing, so the chatbox, forwarder and sound rules are off until you restart it.",
-      duration: Infinity,
-    });
-  }
+  // The engine can land in safe mode while this window is open, so a single check isn't enough.
+  showSafeMode(info);
+  onEngineInfo(showSafeMode);
 }
 
 start();
