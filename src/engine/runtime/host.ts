@@ -33,6 +33,11 @@ const shortcutHandlers = new Set<(id: string) => void>();
 const shutdownHooks: (() => void | Promise<void>)[] = [];
 let shutdownStarted = false;
 
+export type ToyHostMessage = Extract<MainToEngine, { t: "panic" | "rearm" | "toys-stop" }>;
+let onToyMessage: ((message: ToyHostMessage) => void) | null = null;
+/** Main can panic during boot. Nothing is running yet, so it's answered and replayed later. */
+const earlyToyMessages: ToyHostMessage[] = [];
+
 function send(message: EngineToMain) {
   parent.postMessage(message);
 }
@@ -54,6 +59,15 @@ export function setClientHandler(handler: ClientHandler) {
 
 export function onHostShortcut(handler: (id: string) => void) {
   shortcutHandlers.add(handler);
+}
+
+export function setToyHostHandler(handler: (message: ToyHostMessage) => void) {
+  onToyMessage = handler;
+  for (const message of earlyToyMessages.splice(0)) handler(message);
+}
+
+export function ackPanic(id: number) {
+  send({ t: "panic-ack", id });
 }
 
 /**
@@ -100,6 +114,16 @@ function handleMessage(message: MainToEngine, ports: MessagePortMain[]) {
     }
     case "shortcut":
       for (const handler of shortcutHandlers) handler(message.id);
+      break;
+    case "panic":
+    case "rearm":
+    case "toys-stop":
+      if (onToyMessage) {
+        onToyMessage(message);
+      } else {
+        earlyToyMessages.push(message);
+        if (message.t === "panic") ackPanic(message.id);
+      }
       break;
     case "shutdown":
       void runShutdownHooks().finally(() => {

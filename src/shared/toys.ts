@@ -140,9 +140,16 @@ export interface ToyTransport {
 export interface ToyRuleSink {
   /** Whether a toy action may start. False while the panic latch is set. */
   readonly armed: boolean;
-  /** A `live` rule's mapped level, 0 to 1. Holds a lease, so a rule that goes quiet stops by itself. */
+  /**
+   * A `live` rule's mapped level, 0 to 1. Holds a 2 s lease, so a rule that goes quiet stops by
+   * itself. A source holding steady still has to call this at least once a second.
+   */
   link(ruleId: string, target: ToyTarget, level: number): void;
-  run(ruleId: string, action: Exclude<ToyAction, { kind: "link" }>): void;
+  /**
+   * `mode` says whether OSC silence may pause this run: `while` pauses and `edge` doesn't. Left
+   * out, it counts as `while`, the side that stops more.
+   */
+  run(ruleId: string, action: Exclude<ToyAction, { kind: "link" }>, mode?: "edge" | "while"): void;
   /** The rule ended, was disabled, or was edited. Drops everything it holds. */
   release(ruleId: string): void;
   /**
@@ -156,6 +163,8 @@ export interface ToyRuleSink {
 export interface PanicState {
   latched: boolean;
   hotkey: string;
+  /** Set when the saved hotkey couldn't be registered, so it won't fire right now. Plain words. */
+  hotkeyError?: string;
 }
 
 export interface PanicHotkeyResult {

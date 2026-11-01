@@ -2,12 +2,22 @@ import { dialog, globalShortcut, shell } from 'electron';
 import type { HostMethodName, HostMethods } from '../../shared/engine-protocol';
 import { getMainWindow } from './window';
 import { sendShortcutTriggered } from './engine-host';
+import { isPanicAccelerator, setToyFailsafe, triggerPanic } from './panic';
 
 /** accelerator -> callback id, for the accelerators the current engine registered. */
 const shortcutCallbacks = new Map<string, string>();
 
+/** Whether a Hotkey module binding holds this key, under any spelling of it. */
+export function isEngineShortcut(matches: (accelerator: string) => boolean) {
+  return [...shortcutCallbacks.keys()].some(matches);
+}
+
 const methods: { [M in HostMethodName]: (...args: Parameters<HostMethods[M]>) => ReturnType<HostMethods[M]> | Promise<ReturnType<HostMethods[M]>> } = {
   'shortcut.register': (accelerator, callbackId) => {
+    // Registering again would replace the callback, and panic has to stay on its key.
+    if (isPanicAccelerator(accelerator)) {
+      return { success: false, accelerator, error: 'That shortcut is your panic hotkey.' };
+    }
     try {
       if (shortcutCallbacks.has(accelerator)) globalShortcut.unregister(accelerator);
       const success = globalShortcut.register(accelerator, () => sendShortcutTriggered(callbackId));
@@ -20,7 +30,7 @@ const methods: { [M in HostMethodName]: (...args: Parameters<HostMethods[M]>) =>
 
   'shortcut.unregister': (accelerator) => {
     try {
-      globalShortcut.unregister(accelerator);
+      if (!isPanicAccelerator(accelerator)) globalShortcut.unregister(accelerator);
       shortcutCallbacks.delete(accelerator);
       return { success: true, accelerator };
     } catch (error) {
@@ -28,9 +38,10 @@ const methods: { [M in HostMethodName]: (...args: Parameters<HostMethods[M]>) =>
     }
   },
 
+  // Only what the engine registered. `globalShortcut.unregisterAll` would take panic with it.
   'shortcut.unregisterAll': () => {
     try {
-      globalShortcut.unregisterAll();
+      for (const accelerator of shortcutCallbacks.keys()) globalShortcut.unregister(accelerator);
       shortcutCallbacks.clear();
       return { success: true };
     } catch (error) {
@@ -61,6 +72,13 @@ const methods: { [M in HostMethodName]: (...args: Parameters<HostMethods[M]>) =>
       return { success: false, error: String(error) };
     }
   },
+
+  'panic.trigger': async () => {
+    const { latched } = await triggerPanic('the Lovense module');
+    return { latched };
+  },
+
+  'toys.setFailsafe': (failsafe) => setToyFailsafe(failsafe),
 };
 
 export function handleHostCall(method: HostMethodName, args: unknown[]): Promise<unknown> {

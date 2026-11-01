@@ -7,6 +7,7 @@ import { onSafeModeChanged, startEngine, stopEngine } from './lib/engine-host';
 import { runLegacyImport } from './lib/legacy-import';
 import { getBootstrap } from './lib/bootstrap';
 import { isDev } from './lib/paths';
+import { setupPanic } from './lib/panic';
 import { destroyTray, setupTray } from './lib/tray';
 
 /** Sent through the single instance lock by an uninstall, so a tray instance lets go of its files. */
@@ -49,6 +50,9 @@ function start() {
   });
 
   app.whenReady().then(async () => {
+    // First of all: panic has to work however far the rest of startup gets.
+    setupPanic();
+
     // Before the engine, which needs the data file in place.
     await runLegacyImport();
 

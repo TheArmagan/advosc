@@ -25,6 +25,7 @@ import { ChatboxSystemModule } from "./modules/chatbox-system-module";
 import { ChatboxRequestModule } from "./modules/chatbox-request-module";
 import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
 import { ChatboxSoundModule } from "./modules/chatbox-sound-module";
+import { ChatboxLovenseModule } from "../toys/lovense-module";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -376,6 +377,7 @@ export function startChatbox(options: { safeMode: boolean }) {
   registerChatboxModule(new ChatboxRequestModule());
   registerChatboxModule(new ChatboxSpeechModule());
   registerChatboxModule(new ChatboxSoundModule());
+  registerChatboxModule(new ChatboxLovenseModule());
 
   runPulsoidMigration();
   updatePlaceholders();

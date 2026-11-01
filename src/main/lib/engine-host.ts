@@ -15,6 +15,7 @@ import {
 } from '../../shared/engine-protocol';
 import { isDev, nativesDir, resolveDataDir } from './paths';
 import { handleHostCall, resetHostState } from './host-api';
+import { directStop, isPanicLatched } from './panic';
 
 const HEARTBEAT_MS = 500;
 /** How long a hung engine gets. Short while it's driving something, so toys can't run away. */
@@ -33,8 +34,16 @@ const CRASH_LIMIT = 5;
 
 /** Longest a clean quit waits for the engine to stop toys and flush. */
 export const SHUTDOWN_TIMEOUT_MS = 2500;
+/** An engine that can't confirm a panic this fast is treated as hung and killed. */
+const PANIC_ACK_MS = 300;
 
 let child: UtilityProcess | null = null;
+/** Any engine after the first replaces one that died. */
+let spawnCount = 0;
+let nextPanicId = 1;
+const pendingPanics = new Map<number, () => void>();
+/** The direct Stop from the last engine exit, so a respawn or a quit can wait for it. */
+let exitStop: Promise<void> = Promise.resolve();
 let stopping = false;
 let safeMode = false;
 let answered = false;
@@ -64,6 +73,8 @@ function buildConfig(): EngineConfig {
     isDev,
     safeMode,
     version: app.getVersion(),
+    panicLatched: isPanicLatched(),
+    toysMuted: spawnCount > 0,
   };
 }
 
@@ -126,6 +137,9 @@ function handleMessage(message: EngineToMain) {
     case 'shutdown-done':
       shutdownDone?.();
       break;
+    case 'panic-ack':
+      pendingPanics.get(message.id)?.();
+      break;
   }
 }
 
@@ -152,17 +166,23 @@ function handleExit(code: number) {
   // `kill()` also reports code 0, so the code can't say whether this was on purpose. Only
   // `stopping` can. The shortcuts registered for this engine died with its callbacks.
   resetHostState();
+  for (const settle of [...pendingPanics.values()]) settle();
   shutdownDone?.();
   if (stopping) return;
+
+  // Whatever the engine was running is now nobody's. This is what ends it short of `timeSec`.
+  exitStop = directStop();
 
   const now = Date.now();
   exitTimes = [...exitTimes.filter((time) => now - time < CRASH_WINDOW_MS), now];
   console.error(`Engine exited with code ${code} (${exitTimes.length} in the last minute).`);
   if (exitTimes.length > CRASH_LIMIT) setSafeMode(true);
 
-  setTimeout(() => {
+  // The new engine isn't allowed to start until the old one's output is known to be stopped.
+  const delay = new Promise((resolve) => setTimeout(resolve, RESPAWN_DELAY_MS));
+  void Promise.all([delay, exitStop]).then(() => {
     if (!stopping) spawnEngine();
-  }, RESPAWN_DELAY_MS);
+  });
 }
 
 function spawnEngine() {
@@ -173,6 +193,7 @@ function spawnEngine() {
     stdio: 'pipe',
     env: { ...process.env, [ENGINE_CONFIG_ENV]: JSON.stringify(buildConfig()) },
   });
+  spawnCount++;
 
   child.stdout?.on('data', (data: Buffer) => process.stdout.write(`[engine] ${data}`));
   child.stderr?.on('data', (data: Buffer) => process.stderr.write(`[engine] ${data}`));
@@ -193,6 +214,9 @@ export function startEngine() {
 
   powerMonitor.on('suspend', () => {
     graceUntil = Date.now() + RESUME_GRACE_MS;
+    // Nothing can renew or stop anything once the PC is asleep.
+    post({ t: 'toys-stop' });
+    void directStop();
   });
   powerMonitor.on('resume', () => {
     graceUntil = Date.now() + RESUME_GRACE_MS;
@@ -204,11 +228,45 @@ export function sendShortcutTriggered(id: string) {
   post({ t: 'shortcut', id });
 }
 
-/** Asks the engine to stop toys and flush, then makes sure it's gone. Safe to call once it's gone. */
+/**
+ * Tells the engine to latch and stop, and settles once it has answered or been killed for not
+ * answering. A kill goes through `handleExit`, which sends the direct Stop and respawns with the
+ * latch set. Nothing to do when there's no engine: the next one starts latched anyway.
+ */
+export function panicEngine(): Promise<void> {
+  const engine = child;
+  if (!engine) return Promise.resolve();
+
+  const id = nextPanicId++;
+  return new Promise((resolve) => {
+    const settle = () => {
+      clearTimeout(timer);
+      pendingPanics.delete(id);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      console.error('Engine did not confirm a panic, killing it.');
+      settle();
+      engine.kill();
+    }, PANIC_ACK_MS);
+
+    pendingPanics.set(id, settle);
+    post({ t: 'panic', id });
+  });
+}
+
+export function rearmEngine() {
+  post({ t: 'rearm' });
+}
+
+/**
+ * Asks the engine to stop toys and flush, makes sure it's gone, then sends a direct Stop of its
+ * own. The app stays open until that's done. Safe to call once the engine is gone.
+ */
 export function stopEngine(): Promise<void> {
   stopping = true;
   const engine = child;
-  if (!engine) return Promise.resolve();
+  if (!engine) return exitStop;
 
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
@@ -220,7 +278,7 @@ export function stopEngine(): Promise<void> {
       clearTimeout(timer);
       shutdownDone = null;
       engine.kill();
-      resolve();
+      void directStop().finally(resolve);
     };
 
     shutdownDone = finish;

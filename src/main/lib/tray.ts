@@ -2,6 +2,7 @@ import { app, Menu, nativeImage, Tray } from 'electron';
 import iconUrl from '../../../build/icon.png?inline';
 import { getBootstrap, updateBootstrap } from './bootstrap';
 import { isSafeMode, onSafeModeChanged } from './engine-host';
+import { isPanicLatched, onPanicChanged, rearmPanic, toyControlEnabled, triggerPanic } from './panic';
 import { showMainWindow } from './window';
 
 const TRAY_ICON_SIZE = 16;
@@ -21,6 +22,13 @@ export function rebuildMenu() {
     template.push({ label: 'Restart to update', click: restartToUpdate }, { type: 'separator' });
   }
 
+  // Hidden until toys are on, like the rest of toy control. A set latch always shows.
+  if (isPanicLatched()) {
+    template.push({ label: 'Re-arm toys', click: () => rearmPanic() }, { type: 'separator' });
+  } else if (toyControlEnabled()) {
+    template.push({ label: 'Panic: stop all toys', click: () => void triggerPanic('the tray') }, { type: 'separator' });
+  }
+
   template.push(
     {
       label: 'Start hidden',
@@ -33,7 +41,8 @@ export function rebuildMenu() {
   );
 
   tray.setContextMenu(Menu.buildFromTemplate(template));
-  tray.setToolTip(isSafeMode() ? 'ADVOSC (safe mode)' : 'ADVOSC');
+  const notes = [isSafeMode() && 'safe mode', isPanicLatched() && 'panic on'].filter(Boolean);
+  tray.setToolTip(notes.length ? `ADVOSC (${notes.join(', ')})` : 'ADVOSC');
 }
 
 export function setupTray() {
@@ -46,6 +55,7 @@ export function setupTray() {
   rebuildMenu();
 
   onSafeModeChanged(rebuildMenu);
+  onPanicChanged(rebuildMenu);
 }
 
 /** Adds the item once an update is on disk. */
