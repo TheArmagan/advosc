@@ -334,6 +334,8 @@ export class ToyService {
     // Nothing says what survived the outage, so everything active goes out again.
     if (status.state === "connected") {
       for (const output of slot.sent.values()) output.renewAt = 0;
+      // Now the working scheme is known, so main's direct Stop can try it first.
+      this.publishRoutes();
     }
     this.publish();
     this.refreshActive();
