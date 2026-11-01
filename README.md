@@ -15,9 +15,11 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="License">
 </p>
 
-ADVOSC is a desktop app for VRChat OSC. It started because I wanted a nicer chatbox than the ones I could find, and it grew from there: a chatbox template engine you can build with blocks or write by hand, avatar parameter control and profiles, avatar scaling, and an OSC forwarder.
+ADVOSC is a desktop app for VRChat OSC. It started because I wanted a nicer chatbox than the ones I could find, and it grew from there: a chatbox template engine you can build with blocks or write by hand, modules that feed live data to the whole app, automations that react to it, avatar parameter control and profiles, avatar scaling, and an OSC forwarder.
 
 Windows only, since a few parts (media info, trackers, hardware sensors) talk to Windows APIs directly.
+
+Closing the window keeps ADVOSC running in the tray, and everything keeps working with no window open. See [Running in the tray](#running-in-the-tray).
 
 Grab a build from [Releases](https://github.com/TheArmagan/advosc/releases/latest), or come say hi on [Discord](https://discord.gg/spfmB7S78n) if something breaks.
 
@@ -97,7 +99,9 @@ Imported templates just land in your list. Nothing switches until you say so.
 
 ## Modules
 
-Both editors run on the same 15 modules. Click one to see what it does.
+Modules are where live data comes from. They aren't only for the chatbox: the same placeholders work in automations, the OSC Forwarder, and anywhere else that takes a value. Many of them also have inputs, which are things the rest of the app can tell them to do, like starting a stopwatch. Inputs are listed on the Modules page and you can run them from an automation.
+
+Click one to see what it does.
 
 <details>
 <summary><strong>🎵 Media Info</strong> :: whatever you are listening to</summary>
@@ -523,7 +527,7 @@ A line that only appears while you are talking:
 <details>
 <summary><strong>🔊 Sound</strong> :: play sound effects from your library</summary>
 
-Plays sounds you added in the Sound Effects tab. The action placeholders render as nothing, so you can drop them anywhere in a template. They fire once when the optional condition turns true, then wait for it to go false again. Without a condition they fire once when the placeholder shows up. A placeholder that stays in your template does not replay every 2.2 seconds.
+Plays sounds you added on the Sound Effects page. The action placeholders render as nothing, so you can drop them anywhere in a template. They fire once when the optional condition turns true, then wait for it to go false again. Without a condition they fire once when the placeholder shows up. A placeholder that stays in your template does not replay every 2.2 seconds.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
@@ -543,11 +547,84 @@ Play a boop sound whenever someone boops you:
 
 </details>
 
+<details>
+<summary><strong>📦 Variables</strong> :: named values you can set and read anywhere</summary>
+
+A place to keep a value for later. An automation sets it, and anything that takes a placeholder can read it. Variables survive a restart, and they're not part of presets or share codes.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Var;mood}}` | `sleepy` | The variable's value, or nothing if it isn't set |
+| `{{Var;mood;fine}}` | `fine` | The variable's value, or the default if it isn't set |
+
+To set one, add a **Set a variable** action to an automation.
+
+</details>
+
+<details>
+<summary><strong>🔌 Lovense</strong> :: connected toys, once you've turned toy control on</summary>
+
+Off until you turn on toy control in Settings. Reading these never starts a toy.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Lovense;Connected}}` | `true` | At least one toy is connected |
+| `{{Lovense;ToyCount}}` | `1` | How many toys are connected |
+| `{{Lovense;Toys}}` | `Lush, Hush` | Names of the connected toys |
+| `{{Lovense;Battery;Lush}}` | `80` | A toy's battery, or the lowest one if you don't name a toy |
+| `{{Lovense;Status}}` | `Ready` | `Ready`, `Paused`, or `Panic` |
+
+Its inputs are **Panic** and **Stop**, so an automation can stop everything from inside VR.
+
+</details>
+
 New to the syntax? The [Placeholder Learning Guide](./LEARN_PLACEHOLDERS.md) walks through the two-layer system from scratch, and [the expert one](./LEARN_PLACEHOLDERS_EXPERT.md) goes further once that clicks.
 
 ---
 
 ## Beyond the chatbox
+
+### Automations
+
+An automation watches a value and does something when it changes. The value can be any placeholder or an avatar parameter, so "when someone boops me, play a sound" and "while my heart rate is above 120, set this parameter" are both one rule.
+
+A rule runs in one of three modes:
+
+| Mode | What it does |
+|------|--------------|
+| **Once** | Fires one time each time the value starts matching |
+| **While it matches** | Starts when the value starts matching, and ends when it stops |
+| **Live** | Keeps following the value, mapped from one range to another |
+
+The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). A rule can then do any mix of: play a sound, send OSC, set an avatar parameter, load an avatar profile, run a module input, set a variable, or control a toy. Live rules can only send OSC, set a parameter, set a variable, or link a toy, since the others don't make sense on a value that changes all the time.
+
+Rules that read an avatar parameter react the moment OSC comes in, so short flips still get caught. A rule that fires too fast gets turned off with a note saying so, which stops two rules from setting each other off forever. Reset it from the page when you've fixed the cause.
+
+If you had triggers in Sound Effects, they've been moved here for you.
+
+### Toy control
+
+Off by default. ADVOSC doesn't connect to anything until you turn it on in Settings, and the Lovense page stays hidden until then. Turning it on asks you to set a panic hotkey that actually works and a max strength, which starts at 50%.
+
+There are three ways to connect, and you can use more than one:
+
+| Connection | What you need |
+|------------|---------------|
+| **Lovense Remote on this PC** | Lovense Remote running, with Game Mode on |
+| **Lovense Remote on your phone** | Phone and PC on the same network, Game Mode on, then type in the IP and port it shows |
+| **Intiface Central** | Intiface running on this PC. Also works with toys that aren't Lovense |
+
+Toys are driven by automations, so anything ADVOSC can read can drive one. A **Live** rule can link an avatar float to strength, a **Once** rule can pulse for a few seconds, and rules can play Lovense's presets or your own patterns on one toy, several, or all of them.
+
+Safety works like this:
+
+- **Panic stop** is in the title bar, on the Lovense page, in the tray menu, on your hotkey, and available as a module input for VR. It stops everything and stays stopped until you re-arm. After a re-arm, rules that were running stay quiet until their value goes inactive once, so nothing jumps back on.
+- **Max strength** applies to everything, including test buttons and patterns.
+- **Commands run out by themselves.** Lovense toys get short commands that keep being renewed, so if ADVOSC crashes or your PC dies, the toy stops within a few seconds.
+- **ADVOSC stops toys when VRChat closes.** If OSC goes quiet for a while it pauses Live and While rules and picks back up on the next message. Stopping on avatar change is optional.
+- **Toy rules never leave your PC.** Share codes always strip them, and a share code someone gives you has them stripped again on import. Other rules from a share arrive turned off, and toy rules in an imported settings file arrive turned off too.
+
+Intiface can't run a command for a limited time, so it's safer to set a ping time in Intiface Central. ADVOSC shows a warning if it isn't set.
 
 ### Avatar OSC control
 
@@ -582,17 +659,29 @@ There is also parameter forwarding, so you can drive your size from inside your 
   <img src="./screenshots/osc-forwarder.png" alt="OSC Forwarder" width="700">
 </p>
 
-Take any chatbox template value and send it to an OSC address on a timer. The value field accepts any placeholder, so `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` both work. Pick the target path by hand or straight from the current avatar's schema, cast to `Float`, `Int`, `Bool` or `String`, optionally remap numbers from one range to another (`0..1` to `0..255`, say), and give each rule its own interval down to 100 ms.
+Take any placeholder value and send it to an OSC address on a timer. The value field accepts any placeholder, so `{{OSCData;/avatar/parameters/X}}` or `{{Time;Now;HH:mm}}` both work. Pick the target path by hand or straight from the current avatar's schema, cast to `Float`, `Int`, `Bool` or `String`, optionally remap numbers from one range to another (`0..1` to `0..255`, say), and give each rule its own interval down to 100 ms.
 
 ### Sound Effects
 
-A soundboard that reacts to your avatar. It lives in its own tab in the chatbox editor, next to the OSC Forwarder.
+A soundboard that reacts to your avatar.
 
 Add audio files to the library and give each one a name. Each sound gets a play button, its own volume, a cooldown so it can't be spammed, an optional global hotkey (press Esc on the hotkey button to clear it), and an option to send an OSC value while it plays (for example `SoundPlaying=true`, then `false` when it ends) so an avatar animation can follow along. Sounds layer on top of each other if you trigger them again. The files stay where they are on disk and are not part of template exports.
 
-Triggers are the fun part. A trigger has a template, a match, and a list of sounds. When the template result starts matching, one of the sounds plays at random. By default it plays to the end, but a trigger can also loop the sound while it matches, or cut it off the moment it stops matching. The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). Triggers are checked the moment OSC comes in, so short parameter flips still get caught.
+To make a sound react to something, add a **Play a sound** action to an [automation](#automations). It plays one of its sounds at random, and a While rule can loop the sound or cut it off when the value stops matching.
 
 You can pick the output device, so a virtual audio cable can send the sounds into your VRChat mic. There's also a master volume, a mute button, a Stop all button with its own hotkey, and an option to stop everything and hold new sounds while you're muted in VRChat.
+
+Most audio formats work: mp3, wav, flac, ogg, opus, webm, m4a and aac. HE-AAC files play with the high end missing, HE-AACv2 files don't play, and AAC files have a small gap when they loop. A file that can't play shows why next to its name.
+
+### Running in the tray
+
+Closing the window sends ADVOSC to the tray, and everything keeps running with no window at all. To really quit, use **Quit** in the tray menu. **Start hidden** skips the window on launch.
+
+ADVOSC doesn't use your GPU by default, so it takes up no video memory while you're in game. This matters because closing a window doesn't give video memory back on its own. If the window feels choppy, turn on **GPU acceleration** in Settings and restart.
+
+### Backups
+
+ADVOSC keeps a daily backup of your settings, seven days back. Settings > Backup has those, plus exporting everything to a file and restoring it. Exports include your API keys and tokens, so don't post them anywhere.
 
 ---
 
@@ -604,11 +693,11 @@ Local speech recognition with Whisper, as an offline alternative to the browser 
 
 ## Development
 
-Bun, Electron, Svelte 5, and a bit of Rust for the Windows-only bits.
+Bun, Electron, Svelte 5, and a bit of Rust for the Windows-only bits and audio.
 
 ```bash
 bun install     # deps
-bun run dev     # main + preload + renderer + electron, all watching
+bun run dev     # main + preload + engine + renderer + electron, all watching
 bun run build   # production build into dist/
 bun run package # distributable
 ```

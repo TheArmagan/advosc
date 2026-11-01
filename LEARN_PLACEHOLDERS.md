@@ -294,9 +294,33 @@ Any inner placeholder works as the condition. This one plays an airhorn when you
 {{Sound;Play;airhorn;[[Hotkey:IsPressed:Horn:2500]]}}
 ```
 
-Swap `Play` for `Loop` and the sound repeats for as long as the condition is true, then stops when it turns false. Keep in mind the chatbox only renders every 2.2 seconds, so a loop can run up to that long after the condition flips. The Triggers section in the Sound Effects tab reacts right away if you need it tighter.
+Swap `Play` for `Loop` and the sound repeats for as long as the condition is true, then stops when it turns false. Keep in mind the chatbox only renders every 2.2 seconds, so a loop can run up to that long after the condition flips. An automation reacts right away if you need it tighter.
 
 Leave the condition off and it plays once when the placeholder first shows up, which is handy inside a shortcut that only outputs something some of the time.
+
+---
+
+## Placeholders outside the chatbox
+
+Placeholders aren't only for chatbox text. Anywhere the app asks for a value, you can use one: automations, the OSC Forwarder, and most Simple Editor blocks. Those fields suggest placeholders as you type and show a live preview.
+
+An automation watches a value and does something when it matches. Set the value to:
+
+```
+{{HeartRate;MyBand;HeartRate}}
+```
+
+`MyBand` is whatever you named your source in the Heart Rate module. Set the match to `> 120` and add a sound action, and that's a sound that plays when your heart rate goes over 120.
+
+Automation values and previews are read only, so a placeholder that normally does something, like `{{Sound;Play;boop}}`, won't play anything there. Use an action instead.
+
+To keep a value for later, use a variable. An automation's **Set a variable** action stores it, and this reads it back anywhere, even after a restart:
+
+```
+{{Var;mood;fine}}
+```
+
+The last part is what you get if `mood` hasn't been set yet.
 
 ---
 
@@ -308,6 +332,7 @@ Leave the condition off and it plays once when the placeholder first shows up, w
 | `[[Module:Param]]` | inner | values you pass into another placeholder |
 | `{{Shortcut;Name}}` | shortcut call | reusing a chunk you named |
 | `{{Expr;cond;yes;no}}` | expression | if/else |
+| `{{Var;name;default}}` | variable | a value you saved for later |
 
 ---
 

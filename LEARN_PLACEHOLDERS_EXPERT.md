@@ -357,11 +357,11 @@ template  the thing you actually see
 {{Shortcut;MyShortcut;Hello\; World}}
 ```
 
-**Recursion.** ADVOSC caps the same call at 500 per second and temporarily ignores whatever tripped it, so a shortcut that calls itself will not take the app down. It will still ruin your chatbox, so watch out for accidental loops.
+**Recursion.** ADVOSC limits how deep one render can go and how many placeholders it can resolve, so a shortcut that calls itself will not take the app down. It will still ruin your chatbox, so watch out for accidental loops.
 
 **Debug mode.** Turn on `debugMode` in settings to watch placeholders resolve in the console. This is usually faster than staring at the template.
 
-**Sound placeholders fire per occurrence.** Each `{{Sound;Play;...}}` in your template remembers its own last condition, so two copies of the same one fire independently. It also means a Sound placeholder inside a shortcut fires wherever that shortcut is used, including the shortcut preview in the Modules tab.
+**Sound placeholders fire per occurrence.** Each `{{Sound;Play;...}}` in your template remembers its own last condition, so two copies of the same one fire independently. It also means a Sound placeholder inside a shortcut fires wherever that shortcut is used in a template. Previews and automation values are read only, so nothing fires there.
 
 **Inner syntax in parameters.** When you pass a placeholder as a parameter, use the inner form:
 
