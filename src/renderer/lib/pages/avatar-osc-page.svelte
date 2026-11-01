@@ -20,6 +20,7 @@
   import LinkDrawer from "$lib/components/avatar-osc/link-drawer.svelte";
   import SendPanel from "$lib/components/avatar-osc/send-panel.svelte";
   import SchemaPanel from "$lib/components/avatar-osc/schema-panel.svelte";
+  import VirtualList from "$lib/components/virtual-list.svelte";
   import {
     buildParameterList,
     scoreParameter,
@@ -53,6 +54,14 @@
     type: "Type",
   };
   const FLASH_MS = 500;
+
+  type ListRow = { kind: "header"; label: string } | { kind: "item"; item: ParameterListItem };
+
+  // ParameterRow is h-14 (56px), and the rest of the slot is the gap between rows.
+  const ROW_HEIGHT = 60;
+  const HEADER_HEIGHT = 28;
+  const rowHeight = (row: ListRow) => (row.kind === "header" ? HEADER_HEIGHT : ROW_HEIGHT);
+  const rowKey = (row: ListRow) => (row.kind === "header" ? `\0${row.label}` : row.item.address);
 
   let view = $state<ViewSettings>({
     sort: "name",
@@ -116,6 +125,17 @@
     return { pinned, rest, total: items.length };
   });
 
+  const listRows = $derived.by<ListRow[]>(() => {
+    const { pinned, rest } = visible;
+    const toRows = (items: ParameterListItem[]) => items.map((item): ListRow => ({ kind: "item", item }));
+    if (!pinned.length) return toRows(rest);
+    return [
+      { kind: "header", label: "Pinned" },
+      ...toRows(pinned),
+      ...(rest.length ? [{ kind: "header", label: "Everything else" } as const, ...toRows(rest)] : []),
+    ];
+  });
+
   const filtersActive = $derived(
     view.typeFilter !== "All" || view.hideBuiltins || view.onlySchema || view.onlyActive,
   );
@@ -151,7 +171,7 @@
   });
 </script>
 
-{#snippet row(item: ParameterListItem)}
+{#snippet parameterRow(item: ParameterListItem)}
   <ParameterRow
     {item}
     sendType={effectiveType(item)}
@@ -316,22 +336,17 @@
       </div>
 
       {#if visible.total}
-        {#if visible.pinned.length}
-          <div class="flex flex-col gap-1">
-            <div class="px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Pinned</div>
-            {#each visible.pinned as item (item.address)}
-              {@render row(item)}
-            {/each}
-          </div>
-          {#if visible.rest.length}
-            <div class="px-1 pt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Everything else</div>
-          {/if}
-        {/if}
-        <div class="flex flex-col gap-1">
-          {#each visible.rest as item (item.address)}
-            {@render row(item)}
-          {/each}
-        </div>
+        <VirtualList items={listRows} height={rowHeight} key={rowKey}>
+          {#snippet row(entry)}
+            {#if entry.kind === "header"}
+              <div class="flex h-full items-end px-1 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {entry.label}
+              </div>
+            {:else}
+              {@render parameterRow(entry.item)}
+            {/if}
+          {/snippet}
+        </VirtualList>
       {:else if allItems.length}
         <div class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
           Nothing matches.

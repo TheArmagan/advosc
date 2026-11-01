@@ -5,11 +5,16 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { BracesIcon, CopyIcon, RefreshCwIcon, SearchIcon, TableIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
+  import VirtualList from "$lib/components/virtual-list.svelte";
   import TypeBadge from "./type-badge.svelte";
   import { buildParameterList, scoreParameter } from "./parameter-search";
 
   const schema = avatarOSC.schema;
   const schemaIndex = avatarOSC.schemaIndex;
+
+  const COLUMNS = "grid grid-cols-[minmax(0,1fr)_4.5rem_6rem_minmax(0,1.5fr)]";
+  // 32px of row plus its top border.
+  const ROW_HEIGHT = 33;
 
   let query = $state("");
   let raw = $state(false);
@@ -72,31 +77,29 @@
         <pre class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-md bg-muted/40 p-3 text-xs">{JSON.stringify($schema, null, 2)}</pre>
       {:else}
         <div class="overflow-hidden rounded-md border">
-          <table class="w-full text-sm">
-            <thead class="bg-muted/40 text-left text-xs text-muted-foreground">
-              <tr>
-                <th class="px-3 py-2 font-medium">Name</th>
-                <th class="px-3 py-2 font-medium">Type</th>
-                <th class="px-3 py-2 font-medium">Direction</th>
-                <th class="px-3 py-2 font-medium">Address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each rows as row (row.address)}
-                {@const entry = $schemaIndex[row.address]}
-                <tr class="border-t">
-                  <td class="px-3 py-1.5 [overflow-wrap:anywhere]">{row.name}</td>
-                  <td class="px-3 py-1.5"><TypeBadge type={row.type} /></td>
-                  <td class="px-3 py-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                    {entry.writable && entry.readable ? "In and out" : entry.writable ? "In only" : "Out only"}
-                  </td>
-                  <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">{row.address}</td>
-                </tr>
-              {:else}
-                <tr><td colspan="4" class="px-3 py-6 text-center text-muted-foreground">Nothing matches "{query}".</td></tr>
-              {/each}
-            </tbody>
-          </table>
+          <div class="{COLUMNS} bg-muted/40 text-xs font-medium text-muted-foreground">
+            <div class="px-3 py-2">Name</div>
+            <div class="px-3 py-2">Type</div>
+            <div class="px-3 py-2">Direction</div>
+            <div class="px-3 py-2">Address</div>
+          </div>
+          {#if rows.length}
+            <VirtualList items={rows} height={ROW_HEIGHT} key={(item) => item.address}>
+              {#snippet row(item)}
+                {@const entry = $schemaIndex[item.address]}
+                <div class="{COLUMNS} h-full items-center border-t text-sm">
+                  <div class="truncate px-3" title={item.name}>{item.name}</div>
+                  <div class="px-3"><TypeBadge type={item.type} /></div>
+                  <div class="whitespace-nowrap px-3 text-xs text-muted-foreground">
+                    {entry?.writable && entry?.readable ? "In and out" : entry?.writable ? "In only" : "Out only"}
+                  </div>
+                  <div class="truncate px-3 font-mono text-xs text-muted-foreground" title={item.address}>{item.address}</div>
+                </div>
+              {/snippet}
+            </VirtualList>
+          {:else}
+            <div class="border-t px-3 py-6 text-center text-sm text-muted-foreground">Nothing matches "{query}".</div>
+          {/if}
         </div>
       {/if}
     </Card.Content>

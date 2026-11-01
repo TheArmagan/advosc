@@ -69,7 +69,7 @@
 </script>
 
 <div
-  class="group flex items-center gap-3 rounded-md border px-2 py-1.5 transition-colors duration-500
+  class="group flex h-14 items-center gap-3 rounded-md border px-2 transition-colors duration-500
     {locked ? 'border-red-500/60' : animating ? 'border-green-500/60' : linkCount ? 'border-orange-500/50' : ''}
     {flash ? 'bg-primary/5 duration-75' : 'bg-muted/30'}"
 >
