@@ -12,8 +12,6 @@ export type ValueToken = {
   /** Where the text this completion replaces begins. */
   start: number;
   query: string;
-  /** Whether the caret is inside a `{{...}}`, which is where only `[[...]]` can go. */
-  nested: boolean;
 };
 
 export type ValueInsertion = {
@@ -39,25 +37,24 @@ function isOpen(before: string, open: string, close: string) {
 /** What's being typed at the caret, or null when it's only a plain value. */
 export function findToken(text: string, caret: number): ValueToken | null {
   const before = text.slice(0, caret);
-  const outerStart = isOpen(before, "{{", "}}");
-  const nested = outerStart !== -1;
-
   const innerStart = isOpen(before, "[[", "]]");
   if (innerStart !== -1) {
-    return { kind: "inner", start: innerStart, query: before.slice(innerStart + 2), nested };
+    return { kind: "inner", start: innerStart, query: before.slice(innerStart + 2) };
   }
-  if (nested) {
-    return { kind: "outer", start: outerStart, query: before.slice(outerStart + 2), nested };
+
+  const outerStart = isOpen(before, "{{", "}}");
+  if (outerStart !== -1) {
+    return { kind: "outer", start: outerStart, query: before.slice(outerStart + 2) };
   }
 
   const address = /(?:^|\s)(\/\S*)$/.exec(before);
   if (address) {
-    return { kind: "address", start: caret - address[1].length, query: address[1], nested };
+    return { kind: "address", start: caret - address[1].length, query: address[1] };
   }
 
   const word = /[A-Za-z_][\w]*$/.exec(before);
   if (word && word[0].length >= MIN_WORD_LENGTH) {
-    return { kind: "word", start: caret - word[0].length, query: word[0], nested };
+    return { kind: "word", start: caret - word[0].length, query: word[0] };
   }
   return null;
 }
@@ -170,7 +167,15 @@ export function filterSuggestions(
       .slice(0, MAX_SUGGESTIONS);
   }
 
-  const placeholders = modules.filter((suggestion) => matchesPlaceholder(suggestion, token.query));
+  // Module names that start with what was typed come before ones that only contain it.
+  const typed = token.query.toLowerCase();
+  const placeholders = modules
+    .filter((suggestion) => matchesPlaceholder(suggestion, token.query))
+    .sort(
+      (a, b) =>
+        Number(b.label.toLowerCase().startsWith(typed)) -
+        Number(a.label.toLowerCase().startsWith(typed)),
+    );
   return [...placeholders, ...(/[;:]/.test(token.query) ? [] : scored)].slice(0, MAX_SUGGESTIONS);
 }
 
@@ -182,7 +187,10 @@ export function applySuggestion(
   suggestion: ValueSuggestion,
 ): { value: string; selectStart: number; selectEnd: number } {
   const start = token?.start ?? caret;
-  const inner = token?.kind === "inner" || !!token?.nested;
+  // Only `[[...]]` can go inside a `{{...}}`, which matters when browsing with no token.
+  const inner = token
+    ? token.kind === "inner"
+    : isOpen(value.slice(0, caret), "{{", "}}") !== -1;
   const insertion = suggestion.build(inner);
 
   let end = caret;

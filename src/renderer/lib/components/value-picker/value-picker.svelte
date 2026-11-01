@@ -27,7 +27,7 @@
   } from "./value-suggestions";
 
   const PREVIEW_DEBOUNCE_MS = 300;
-  /** Values like the time keep moving after you stop typing. */
+  /** Values like the time keep moving after you stop typing, so this repeats while you're here. */
   const PREVIEW_REFRESH_MS = 1000;
   const POPUP_GAP = 4;
   const POPUP_MIN_WIDTH = 320;
@@ -237,7 +237,9 @@
   let previewText = $state<string | null>(null);
   let previewFailed = $state(false);
   let onScreen = $state(false);
-  let pageShown = $state(!document.hidden);
+  // `backgroundThrottling` is off for this window, so `document.hidden` stays false even when it's
+  // minimized or hidden. Focus does change, so that's what keeps a preview from polling there.
+  let focused = $state(document.hasFocus());
 
   const wantsPreview = $derived(preview && hasPlaceholders(value));
 
@@ -250,9 +252,13 @@
 
   $effect(() => {
     if (!preview) return;
-    const update = () => (pageShown = !document.hidden);
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
+    const update = () => (focused = document.hasFocus());
+    window.addEventListener("focus", update);
+    window.addEventListener("blur", update);
+    return () => {
+      window.removeEventListener("focus", update);
+      window.removeEventListener("blur", update);
+    };
   });
 
   $effect(() => {
@@ -261,9 +267,10 @@
       previewFailed = false;
       return;
     }
-    if (!onScreen || !pageShown) return;
+    if (!onScreen) return;
 
     const template = value;
+    const repeat = focused;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
 
@@ -277,7 +284,7 @@
         if (stopped) return;
         previewFailed = true;
       }
-      timer = setTimeout(run, PREVIEW_REFRESH_MS);
+      if (repeat) timer = setTimeout(run, PREVIEW_REFRESH_MS);
     }
 
     timer = setTimeout(run, PREVIEW_DEBOUNCE_MS);
