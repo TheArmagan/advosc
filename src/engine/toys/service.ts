@@ -246,7 +246,8 @@ export class ToyService {
   }
 
   private createTransport(id: ToyTransportId, route: unknown): EngineToyTransport {
-    return id === "intiface" ? new IntifaceTransport(route as string) : new LovenseTransport(id, route as LovenseRoute);
+    if (id === "intiface") return new IntifaceTransport(route as string, this.muteOnRegister);
+    return new LovenseTransport(id, route as LovenseRoute);
   }
 
   /** Serialized, because a slow retire must finish before its replacement connects. */

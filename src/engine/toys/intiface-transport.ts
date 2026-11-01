@@ -119,7 +119,16 @@ export class IntifaceTransport implements EngineToyTransport {
     toys: new Set(),
   };
 
-  constructor(private url: string) {}
+  /**
+   * `stopOnConnect` is for an engine replacing one that died. Whatever that engine was running
+   * only ends if the server stops devices on close, which isn't verified, and this is the first
+   * connection that can ask directly. It's a stop, so it's fine after a crash. A latched engine
+   * never gets this far, because it doesn't connect at all.
+   */
+  constructor(
+    private url: string,
+    private stopOnConnect = false,
+  ) {}
 
   on<E extends keyof ToyTransportEvents>(event: E, listener: ToyTransportEvents[E]) {
     const set = this.listeners[event] as Set<ToyTransportEvents[E]>;
@@ -245,6 +254,13 @@ export class IntifaceTransport implements EngineToyTransport {
     const list = await this.request({ RequestDeviceList: {} });
     this.devices.clear();
     for (const raw of Array.isArray(list?.Devices) ? list.Devices : []) this.addDevice(raw);
+
+    if (this.stopOnConnect) {
+      this.stopOnConnect = false;
+      await this.request({ StopAllDevices: {} }).catch((error) => {
+        console.warn(`Couldn't stop Intiface devices after a restart: ${error.message}`);
+      });
+    }
 
     this.setStatus(hasPing ? { state: "connected" } : { state: "connected", error: NO_PING_WARNING });
     this.emitToys();
