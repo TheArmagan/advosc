@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const ovrTrackersOptions: ChatboxModuleOptions = {
+export const ovrTrackersOptions: ModuleOptions = {
   id: "OVRTrackers",
   name: "OpenVR Trackers",
   description: "OpenVR tracker information including battery level, charging status, and device details.",

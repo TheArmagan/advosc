@@ -1,11 +1,11 @@
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import { lovenseOptions } from "$shared/chatbox/modules/lovense";
 import { moduleValues } from "../chatbox/module-values";
 import { chatbox } from "../chatbox";
 import { getToysState, getToySettings, requestPanic, toyService } from ".";
 
 /** Reads only. Output goes through Automations, so no placeholder here can move a toy. */
-export class ChatboxLovenseModule extends ChatboxModule {
+export class LovenseModule extends AppModule {
   constructor() {
     super(lovenseOptions, moduleValues("Lovense"));
   }

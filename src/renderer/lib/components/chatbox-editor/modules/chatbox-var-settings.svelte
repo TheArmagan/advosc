@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatboxVarModule } from "$lib/api/chatbox/modules/chatbox-var-module";
+  import type { VarModule } from "$lib/api/chatbox/modules/chatbox-var-module";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import { Trash2Icon, VariableIcon } from "@lucide/svelte";
@@ -7,7 +7,7 @@
   const {
     module,
   }: {
-    module: ChatboxVarModule;
+    module: VarModule;
   } = $props();
 
   const values = module.values;

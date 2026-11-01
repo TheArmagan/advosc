@@ -3,7 +3,7 @@ import type { WeatherLocation, WeatherSnapshot } from "$shared/chatbox/weather";
 import { callModule, fire } from "../../engine";
 import { moduleValues } from "../module-client";
 
-export class ChatboxWeatherModule extends WeatherConfig {
+export class WeatherModule extends WeatherConfig {
   constructor() {
     super(moduleValues("Weather"));
   }

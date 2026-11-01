@@ -1,4 +1,4 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 import { defaultUnits, type WeatherLocation, type WeatherUnits } from "../weather";
 
@@ -6,7 +6,7 @@ const MIN_REFRESH_MINUTES = 1;
 const MAX_REFRESH_MINUTES = 180;
 const DEFAULT_REFRESH_MINUTES = 10;
 
-export const weatherOptions: ChatboxModuleOptions = {
+export const weatherOptions: ModuleOptions = {
   id: "Weather",
   name: "Weather",
   description:
@@ -193,7 +193,7 @@ export const weatherOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class WeatherConfig extends ChatboxModule {
+export class WeatherConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(weatherOptions, values);
   }

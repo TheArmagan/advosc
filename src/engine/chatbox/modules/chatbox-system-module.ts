@@ -2,7 +2,7 @@ import { native } from "../../native";
 import { moduleValues } from "../module-values";
 import { systemOptions } from "$shared/chatbox/modules/system";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import type { SystemGpuInfo, SystemInfo } from "$shared/native-types";
 
 export type { SystemInfo, SystemGpuInfo };
@@ -16,7 +16,7 @@ const CACHE_TTL = 1000;
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
 type ByteUnit = (typeof BYTE_UNITS)[number];
 
-export class ChatboxSystemModule extends ChatboxModule {
+export class SystemModule extends AppModule {
   private cache: SystemInfo | null = null;
   private cachedAt = 0;
   private pending: Promise<SystemInfo | null> | null = null;

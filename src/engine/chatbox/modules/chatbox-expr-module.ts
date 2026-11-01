@@ -2,10 +2,10 @@ import { moduleValues } from "../module-values";
 import { exprOptions } from "$shared/chatbox/modules/expr";
 import { notify } from "../../runtime/notify";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import simpleEval from 'simple-eval';
 
-export class ChatboxExpressionModule extends ChatboxModule {
+export class ExpressionModule extends AppModule {
   constructor() {
     super(exprOptions, moduleValues("Expr"));
   }

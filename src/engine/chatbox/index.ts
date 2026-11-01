@@ -3,31 +3,31 @@ import { ruleUsesToys, type AllValues } from "$shared/chatbox/preset-share";
 import { cleanTemplate, splitParams, type ChatboxPlaceholder, type ChatboxSettings } from "$shared/template-syntax";
 import { notify } from "../runtime/notify";
 import mapReplace from "stuffs/lib/mapReplace";
-import type { ChatboxModule } from "$shared/chatbox/module-base";
-import { ChatboxOSCDataModule } from "./modules/chatbox-osc-data-module";
-import { ChatboxMediaInfoModule } from "./modules/chatbox-media-info-module";
-import { ChatboxExpressionModule } from "./modules/chatbox-expr-module";
+import type { AppModule } from "$shared/chatbox/module-base";
+import { OSCDataModule } from "./modules/chatbox-osc-data-module";
+import { MediaInfoModule } from "./modules/chatbox-media-info-module";
+import { ExpressionModule } from "./modules/chatbox-expr-module";
 import { mirror, synced } from "../sync/hub";
 import { get, writable } from "$shared/store";
 import { chatboxOSC } from "../vrc-osc";
-import { ChatboxTextModule } from "./modules/chatbox-text-module";
-import { ChatboxTimeModule } from "./modules/chatbox-time-module";
-import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
-import { ChatboxHeartRateModule } from "./modules/chatbox-heart-rate-module";
+import { TextModule } from "./modules/chatbox-text-module";
+import { TimeModule } from "./modules/chatbox-time-module";
+import { ShortcutModule } from "./modules/chatbox-shortcut-module";
+import { HeartRateModule } from "./modules/chatbox-heart-rate-module";
 import { migratePulsoidTemplates } from "./modules/heart-rate/migrate-pulsoid";
-import { ChatboxNumberModule } from "./modules/chatbox-number-module";
-import { ChatboxProcessModule } from "./modules/chatbox-process-module";
-import { ChatboxOVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
-import { ChatboxHotkeyModule } from "./modules/chatbox-hotkey-module";
-import { ChatboxStopwatchModule } from "./modules/chatbox-stopwatch-module";
-import { ChatboxWeatherModule } from "./modules/chatbox-weather-module";
-import { ChatboxSystemModule } from "./modules/chatbox-system-module";
-import { ChatboxRequestModule } from "./modules/chatbox-request-module";
-import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
-import { ChatboxSoundModule } from "./modules/chatbox-sound-module";
-import { ChatboxLovenseModule } from "../toys/lovense-module";
+import { NumberModule } from "./modules/chatbox-number-module";
+import { ProcessModule } from "./modules/chatbox-process-module";
+import { OVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
+import { HotkeyModule } from "./modules/chatbox-hotkey-module";
+import { StopwatchModule } from "./modules/chatbox-stopwatch-module";
+import { WeatherModule } from "./modules/chatbox-weather-module";
+import { SystemModule } from "./modules/chatbox-system-module";
+import { RequestModule } from "./modules/chatbox-request-module";
+import { SpeechModule } from "./modules/chatbox-speech-module";
+import { SoundModule } from "./modules/chatbox-sound-module";
+import { LovenseModule } from "../toys/lovense-module";
 import { rulesStore } from "../automations/rules-store";
-import { ChatboxVarModule } from "./modules/chatbox-var-module";
+import { VarModule } from "./modules/chatbox-var-module";
 import {
   currentFrame,
   isReadOnly,
@@ -44,7 +44,7 @@ import {
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
 
-const chatboxList = new Map<string, ChatboxModule>();
+const moduleList = new Map<string, AppModule>();
 
 /**
  * Renamed modules keep answering to their old id so templates written before the rename
@@ -165,7 +165,7 @@ async function fillInFrame(frame: EvalFrame, text: string, type: "{{;}}" | "[[:]
       }
       root.calls++;
 
-      const m = chatboxList.get(moduleAliases[moduleId] ?? moduleId);
+      const m = moduleList.get(moduleAliases[moduleId] ?? moduleId);
       if (m) {
         activeInstanceKey = instanceKeys[i];
         const content = await m.getPlaceholderValue(...params);
@@ -239,7 +239,7 @@ async function evaluate(
 /** Runs a declared module input. A read-only evaluation can't reach one by any route. */
 async function runModuleInput(moduleId: string, inputId: string, args: Record<string, string> = {}): Promise<void> {
   if (isReadOnly()) return;
-  const module = chatboxList.get(moduleId);
+  const module = moduleList.get(moduleId);
   if (!module) throw new Error(`Unknown module: ${moduleId}`);
   if (!module.options.inputs?.some((input) => input.id === inputId)) {
     throw new Error(`Module ${moduleId} has no input ${inputId}`);
@@ -247,13 +247,13 @@ async function runModuleInput(moduleId: string, inputId: string, args: Record<st
   await module.runInput(inputId, args);
 }
 
-function registerChatboxModule(m: ChatboxModule) {
-  chatboxList.set(m.options.id, m);
+function registerModule(m: AppModule) {
+  moduleList.set(m.options.id, m);
   m.onValuesChange(() => updatePlaceholders());
 }
 
 function getPlaceholders() {
-  return [...chatboxList.values()].reduce((acc, m) => {
+  return [...moduleList.values()].reduce((acc, m) => {
     Object.entries({
       ...m.options.examplePlaceholders,
       ...m.getPreCalculatedPlaceholders()
@@ -276,12 +276,12 @@ function updatePlaceholders() {
   placeholders.set(getPlaceholders());
 }
 
-let heartRateModule: ChatboxHeartRateModule;
+let heartRateModule: HeartRateModule;
 
 function runPulsoidMigration() {
   migratePulsoidTemplates({
     heartRate: heartRateModule,
-    modules: chatboxList,
+    modules: moduleList,
     settings,
     advancedTemplate,
     simpleEditorBlocks,
@@ -295,7 +295,7 @@ function runPulsoidMigration() {
  * or not the simple editor is open.
  */
 function rebuildAutoShortcuts() {
-  const module = chatboxList.get("Shortcut");
+  const module = moduleList.get("Shortcut");
   if (!module) return;
 
   let autoShortcuts: Record<string, string>;
@@ -320,7 +320,7 @@ function rebuildAutoShortcuts() {
 
 function getAllValues(): AllValues {
   const moduleValues: Record<string, any> = {};
-  chatboxList.forEach((module, moduleId) => {
+  moduleList.forEach((module, moduleId) => {
     const values = module.getCleanValues();
     if (Object.keys(values).length > 0) {
       moduleValues[moduleId] = values;
@@ -364,7 +364,7 @@ function importAutomations(values: AllValues, mode: "merge" | "replace") {
 function setAllValues(values: AllValues, options: { automations?: "merge" | "replace" } = {}) {
   importAutomations(values, options.automations ?? "merge");
 
-  chatboxList.forEach((module, moduleId) => {
+  moduleList.forEach((module, moduleId) => {
     if (values.modules?.[moduleId]) {
       // Merge instead of replace: a bundle only carries the keys `getCleanValues()` exports,
       // so replacing would wipe bookkeeping the module keeps outside of it.
@@ -398,7 +398,7 @@ export const chatbox = {
   evaluate,
   runModuleInput,
   getInstanceKey,
-  modules: chatboxList,
+  modules: moduleList,
   settings,
   getPlaceholders,
   cleanTempalte: cleanTemplate,
@@ -457,32 +457,32 @@ export function startChatbox(options: { safeMode: boolean }) {
   mirror("Chatbox;RenderedTemplate", renderedTemplate, 50);
   mirror("Chatbox;Placeholders", placeholders);
 
-  registerChatboxModule(new ChatboxShortcutModule());
-  registerChatboxModule(new ChatboxOVRTrackersModule());
-  registerChatboxModule(new ChatboxHotkeyModule());
-  registerChatboxModule(new ChatboxStopwatchModule());
-  heartRateModule = new ChatboxHeartRateModule();
-  registerChatboxModule(heartRateModule);
-  registerChatboxModule(new ChatboxMediaInfoModule());
-  registerChatboxModule(new ChatboxTimeModule());
-  registerChatboxModule(new ChatboxTextModule());
-  registerChatboxModule(new ChatboxExpressionModule());
-  registerChatboxModule(new ChatboxOSCDataModule());
-  registerChatboxModule(new ChatboxNumberModule());
-  registerChatboxModule(new ChatboxProcessModule());
-  registerChatboxModule(new ChatboxWeatherModule());
-  registerChatboxModule(new ChatboxSystemModule());
-  registerChatboxModule(new ChatboxRequestModule());
-  registerChatboxModule(new ChatboxSpeechModule());
-  registerChatboxModule(new ChatboxSoundModule());
-  registerChatboxModule(new ChatboxLovenseModule());
-  registerChatboxModule(new ChatboxVarModule());
+  registerModule(new ShortcutModule());
+  registerModule(new OVRTrackersModule());
+  registerModule(new HotkeyModule());
+  registerModule(new StopwatchModule());
+  heartRateModule = new HeartRateModule();
+  registerModule(heartRateModule);
+  registerModule(new MediaInfoModule());
+  registerModule(new TimeModule());
+  registerModule(new TextModule());
+  registerModule(new ExpressionModule());
+  registerModule(new OSCDataModule());
+  registerModule(new NumberModule());
+  registerModule(new ProcessModule());
+  registerModule(new WeatherModule());
+  registerModule(new SystemModule());
+  registerModule(new RequestModule());
+  registerModule(new SpeechModule());
+  registerModule(new SoundModule());
+  registerModule(new LovenseModule());
+  registerModule(new VarModule());
 
   runPulsoidMigration();
   updatePlaceholders();
 
   simpleEditorBlocks.subscribe(() => rebuildAutoShortcuts());
-  chatboxList.get("Shortcut")!.onValuesChange(() => rebuildAutoShortcuts());
+  moduleList.get("Shortcut")!.onValuesChange(() => rebuildAutoShortcuts());
 
   if (options.safeMode) return;
 

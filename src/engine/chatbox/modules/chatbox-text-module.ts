@@ -1,11 +1,11 @@
 import { moduleValues } from "../module-values";
 import { textOptions } from "$shared/chatbox/modules/text";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import * as textFormats from "$shared/chatbox/text-formats.json";
 import mapReplace from "stuffs/lib/mapReplace";
 
-export class ChatboxTextModule extends ChatboxModule {
+export class TextModule extends AppModule {
   animationData: Map<string, { at: number, index: number, last: string, lastUsed: number }> = new Map();
 
   constructor() {

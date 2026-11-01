@@ -33,7 +33,7 @@ const TRANSLATION_WAIT_MS = 1500;
 const INTERIM_TRANSLATION_INTERVAL = 1200;
 const TRANSLATION_CACHE_LIMIT = 200;
 
-export class ChatboxSpeechModule extends SpeechConfig {
+export class SpeechModule extends SpeechConfig {
   /** Live recognition state. Not persisted: it is meaningless after a restart. */
   live = writable<SpeechLiveState>(emptyLiveState());
 

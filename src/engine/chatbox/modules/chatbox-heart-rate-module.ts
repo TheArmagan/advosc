@@ -37,7 +37,7 @@ interface FeedState {
   extras: HeartRateExtras;
 }
 
-export class ChatboxHeartRateModule extends HeartRateConfig {
+export class HeartRateModule extends HeartRateConfig {
   private feeds = new Map<string, FeedState>();
   private inactivityCheckInterval: ReturnType<typeof setInterval> | null = null;
 

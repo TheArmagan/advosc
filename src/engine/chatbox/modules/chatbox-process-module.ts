@@ -2,7 +2,7 @@ import { native } from "../../native";
 import { moduleValues } from "../module-values";
 import { processOptions } from "$shared/chatbox/modules/process";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 
 interface ProcessCache {
   startTime: number | null;
@@ -10,7 +10,7 @@ interface ProcessCache {
   error?: string;
 }
 
-export class ChatboxProcessModule extends ChatboxModule {
+export class ProcessModule extends AppModule {
   private processCache: Map<string, ProcessCache> = new Map();
   private readonly CHECK_INTERVAL = 5000; // 5 seconds
 

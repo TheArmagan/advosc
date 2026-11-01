@@ -1,9 +1,9 @@
 import { moduleValues } from "../module-values";
 import { ShortcutConfig } from "$shared/chatbox/modules/shortcut";
 import { chatbox } from "..";
-import { ChatboxModule, type PlaceholdersRecord } from "$shared/chatbox/module-base";
+import { AppModule, type PlaceholdersRecord } from "$shared/chatbox/module-base";
 
-export class ChatboxShortcutModule extends ShortcutConfig {
+export class ShortcutModule extends ShortcutConfig {
   constructor() {
     super(moduleValues("Shortcut"));
   }

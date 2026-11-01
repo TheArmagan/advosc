@@ -12,7 +12,7 @@ interface RequestStatus {
   preview?: string;
 }
 
-export class ChatboxRequestModule extends RequestConfig {
+export class RequestModule extends RequestConfig {
   private statuses = new Map<string, RequestStatus>();
 
   constructor() {

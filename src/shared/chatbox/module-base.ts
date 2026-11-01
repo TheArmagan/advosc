@@ -28,7 +28,7 @@ export interface ModuleInput {
   params: ModuleInputParam[];
 }
 
-export interface ChatboxModuleOptions {
+export interface ModuleOptions {
   id: string;
   name: string;
   description: string;
@@ -45,12 +45,12 @@ type ValuesListener = (values: Record<string, any>, previous: Record<string, any
  * Base for both sides of a module: the engine module that does the work, and the renderer
  * client that wraps the same settings over a synced store. Each side passes its own store.
  */
-export class ChatboxModule {
+export class AppModule {
   private valuesListeners = new Set<ValuesListener>();
   private lastValues: Record<string, any> = {};
 
   constructor(
-    public options: ChatboxModuleOptions,
+    public options: ModuleOptions,
     public values: Writable<Record<string, any>>,
   ) {
     this.values.subscribe((next) => {

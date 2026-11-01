@@ -12,7 +12,7 @@ interface StopwatchState {
 
 const states = mirrored<Record<string, StopwatchState>>("ChatboxModule;Stopwatch;States", {});
 
-export class ChatboxStopwatchModule extends StopwatchConfig {
+export class StopwatchModule extends StopwatchConfig {
   constructor() {
     super(moduleValues("Stopwatch"));
   }

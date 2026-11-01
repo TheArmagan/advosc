@@ -1,7 +1,7 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 
-export const shortcutOptions: ChatboxModuleOptions = {
+export const shortcutOptions: ModuleOptions = {
   id: "Shortcut",
   name: "Shortcut",
   description: "User-defined placeholder shortcuts.",
@@ -9,7 +9,7 @@ export const shortcutOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class ShortcutConfig extends ChatboxModule {
+export class ShortcutConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(shortcutOptions, values);
   }

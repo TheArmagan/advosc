@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const lovenseOptions: ChatboxModuleOptions = {
+export const lovenseOptions: ModuleOptions = {
   id: "Lovense",
   name: "Lovense",
   description: "Shows your connected toys and their battery, and lets rules hit panic from VR. Reading these never starts a toy.",

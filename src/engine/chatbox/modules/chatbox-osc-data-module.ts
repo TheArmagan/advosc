@@ -2,9 +2,9 @@ import { moduleValues } from "../module-values";
 import { oscDataOptions } from "$shared/chatbox/modules/osc-data";
 import { avatarOSC } from "../../vrc-osc";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 
-export class ChatboxOSCDataModule extends ChatboxModule {
+export class OSCDataModule extends AppModule {
   constructor() {
     super(oscDataOptions, moduleValues("OSCData"));
   }

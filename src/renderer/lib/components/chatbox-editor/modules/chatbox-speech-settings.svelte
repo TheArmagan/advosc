@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatboxSpeechModule } from "$lib/api/chatbox/modules/chatbox-speech-module";
+  import type { SpeechModule } from "$lib/api/chatbox/modules/chatbox-speech-module";
   import {
     recognitionLanguages,
     translationLanguages,
@@ -32,7 +32,7 @@
   const {
     module,
   }: {
-    module: ChatboxSpeechModule;
+    module: SpeechModule;
   } = $props();
 
   const values = module.values;

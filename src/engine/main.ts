@@ -10,7 +10,7 @@ import { startOSCPort } from "./native";
 import { shortcuts } from "./shortcuts";
 import { startAvatarOSC, startAvatarScale } from "./vrc-osc";
 import { chatbox, startChatbox } from "./chatbox";
-import type { ChatboxVarModule } from "./chatbox/modules/chatbox-var-module";
+import type { VarModule } from "./chatbox/modules/chatbox-var-module";
 import { startOscForwarder } from "./osc-forwarder";
 import { startSoundEffects } from "./sound-effects";
 import { startAutomations } from "./automations";
@@ -43,7 +43,7 @@ async function boot() {
   startToys({ safeMode });
 
   const flushData = () => {
-    (chatbox.modules.get("Var") as ChatboxVarModule).persist();
+    (chatbox.modules.get("Var") as VarModule).persist();
     localData.flush();
     cacheData.flush();
   };

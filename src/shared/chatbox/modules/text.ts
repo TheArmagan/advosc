@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const textOptions: ChatboxModuleOptions = {
+export const textOptions: ModuleOptions = {
   id: "Text",
   name: "Text",
   description: "Text manipulation utilities.",

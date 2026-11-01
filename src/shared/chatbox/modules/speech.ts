@@ -1,4 +1,4 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 import type { TranslationProviderId } from "../translate-providers";
 
@@ -74,7 +74,7 @@ const defaultTranslation: SpeechTranslationSettings = {
   instructions: "",
 };
 
-export const speechOptions: ChatboxModuleOptions = {
+export const speechOptions: ModuleOptions = {
   id: "Speech",
   name: "Speech",
   description: "Speech to text from your browser, with optional live translation.",
@@ -201,7 +201,7 @@ export const speechOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class SpeechConfig extends ChatboxModule {
+export class SpeechConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(speechOptions, values);
   }

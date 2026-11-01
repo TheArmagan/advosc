@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatboxWeatherModule } from "$lib/api/chatbox/modules/chatbox-weather-module";
+  import type { WeatherModule } from "$lib/api/chatbox/modules/chatbox-weather-module";
   import {
     precipitationUnitLabels,
     searchLocations,
@@ -34,7 +34,7 @@
   const {
     module,
   }: {
-    module: ChatboxWeatherModule;
+    module: WeatherModule;
   } = $props();
 
   const values = module.values;

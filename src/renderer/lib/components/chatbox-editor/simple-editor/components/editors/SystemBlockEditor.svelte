@@ -18,7 +18,7 @@
   import SourceInput from "../SourceInput.svelte";
   import { chatbox } from "$lib/api/chatbox";
   import { soundEngine } from "$lib/api/sound-effects/engine";
-  import type { ChatboxHeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
+  import type { HeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
   import type {
     Block,
     ConditionBlock,
@@ -50,7 +50,7 @@
 
   function getHeartRateSourceNames(): string[] {
     const module = chatbox.modules.get("HeartRate") as
-      | ChatboxHeartRateModule
+      | HeartRateModule
       | undefined;
     return Object.keys(module?.getSources() ?? {});
   }

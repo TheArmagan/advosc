@@ -2,7 +2,7 @@ import { moduleValues } from "../module-values";
 import { soundOptions } from "$shared/chatbox/modules/sound";
 import { get } from "$shared/store";
 import { chatbox } from "..";
-import { ChatboxModule, type PlaceholdersRecord } from "$shared/chatbox/module-base";
+import { AppModule, type PlaceholdersRecord } from "$shared/chatbox/module-base";
 import { isTruthy, soundEngine } from "../../sound-effects/engine";
 import { isReadOnly } from "../eval-context";
 
@@ -16,7 +16,7 @@ const ACTIONS = new Set(["Play", "Loop", "Stop", "StopAll", "Volume"]);
  */
 const ACTIVE_WINDOW_MS = 5000;
 
-export class ChatboxSoundModule extends ChatboxModule {
+export class SoundModule extends AppModule {
   private edges = new Map<string, { lastSeen: number; lastCond: boolean }>();
   /** Looping playbacks started by `Loop` placeholders, per occurrence. */
   private loops = new Map<string, { voice: number | null; lastSeen: number }>();

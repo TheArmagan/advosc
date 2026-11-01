@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const mediaInfoOptions: ChatboxModuleOptions = {
+export const mediaInfoOptions: ModuleOptions = {
   id: "MediaInfo",
   name: "Media Info",
   description: "Provides information about the currently playing media.",

@@ -1,4 +1,4 @@
-import type { ChatboxModule } from "$shared/chatbox/module-base";
+import type { AppModule } from "$shared/chatbox/module-base";
 import type { AllValues } from "$shared/chatbox/preset-share";
 import { exprOptions } from "$shared/chatbox/modules/expr";
 import { lovenseOptions } from "$shared/chatbox/modules/lovense";
@@ -18,16 +18,16 @@ import {
   type ChatboxSettings,
 } from "$shared/template-syntax";
 import { call, mirrored, synced } from "../engine";
-import { ChatboxModuleClient } from "./module-client";
-import { ChatboxHeartRateModule } from "./modules/chatbox-heart-rate-module";
-import { ChatboxHotkeyModule } from "./modules/chatbox-hotkey-module";
-import { ChatboxOVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
-import { ChatboxRequestModule } from "./modules/chatbox-request-module";
-import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
-import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
-import { ChatboxStopwatchModule } from "./modules/chatbox-stopwatch-module";
-import { ChatboxVarModule } from "./modules/chatbox-var-module";
-import { ChatboxWeatherModule } from "./modules/chatbox-weather-module";
+import { ModuleClient } from "./module-client";
+import { HeartRateModule } from "./modules/chatbox-heart-rate-module";
+import { HotkeyModule } from "./modules/chatbox-hotkey-module";
+import { OVRTrackersModule } from "./modules/chatbox-ovr-trackers-module";
+import { RequestModule } from "./modules/chatbox-request-module";
+import { ShortcutModule } from "./modules/chatbox-shortcut-module";
+import { SpeechModule } from "./modules/chatbox-speech-module";
+import { StopwatchModule } from "./modules/chatbox-stopwatch-module";
+import { VarModule } from "./modules/chatbox-var-module";
+import { WeatherModule } from "./modules/chatbox-weather-module";
 import ChatboxHeartRateSettings from "$lib/components/chatbox-editor/modules/chatbox-heart-rate-settings.svelte";
 import ChatboxHotkeySettings from "$lib/components/chatbox-editor/modules/chatbox-hotkey-settings.svelte";
 import ChatboxOVRTrackerSettings from "$lib/components/chatbox-editor/modules/chatbox-ovr-tracker-settings.svelte";
@@ -42,33 +42,33 @@ export type { AllValues };
 
 /** Thin client over the engine's chatbox. The store keys match the engine's exactly. */
 
-const chatboxList = new Map<string, ChatboxModule>();
+const moduleList = new Map<string, AppModule>();
 
-function registerChatboxModule(m: ChatboxModule, Component?: unknown) {
+function registerModule(m: AppModule, Component?: unknown) {
   if (Component) m.options = { ...m.options, Component };
-  chatboxList.set(m.options.id, m);
+  moduleList.set(m.options.id, m);
 }
 
 // Same order as the engine, since this is the order the Modules page lists them in.
-registerChatboxModule(new ChatboxShortcutModule(), ChatboxShortcutSettings);
-registerChatboxModule(new ChatboxOVRTrackersModule(), ChatboxOVRTrackerSettings);
-registerChatboxModule(new ChatboxHotkeyModule(), ChatboxHotkeySettings);
-registerChatboxModule(new ChatboxStopwatchModule(), ChatboxStopwatchSettings);
-registerChatboxModule(new ChatboxHeartRateModule(), ChatboxHeartRateSettings);
-registerChatboxModule(new ChatboxModuleClient(mediaInfoOptions));
-registerChatboxModule(new ChatboxModuleClient(timeOptions));
-registerChatboxModule(new ChatboxModuleClient(textOptions));
-registerChatboxModule(new ChatboxModuleClient(exprOptions));
-registerChatboxModule(new ChatboxModuleClient(oscDataOptions));
-registerChatboxModule(new ChatboxModuleClient(numberOptions));
-registerChatboxModule(new ChatboxModuleClient(processOptions));
-registerChatboxModule(new ChatboxWeatherModule(), ChatboxWeatherSettings);
-registerChatboxModule(new ChatboxModuleClient(systemOptions));
-registerChatboxModule(new ChatboxRequestModule(), ChatboxRequestSettings);
-registerChatboxModule(new ChatboxSpeechModule(), ChatboxSpeechSettings);
-registerChatboxModule(new ChatboxModuleClient(soundOptions));
-registerChatboxModule(new ChatboxVarModule(), ChatboxVarSettings);
-registerChatboxModule(new ChatboxModuleClient(lovenseOptions));
+registerModule(new ShortcutModule(), ChatboxShortcutSettings);
+registerModule(new OVRTrackersModule(), ChatboxOVRTrackerSettings);
+registerModule(new HotkeyModule(), ChatboxHotkeySettings);
+registerModule(new StopwatchModule(), ChatboxStopwatchSettings);
+registerModule(new HeartRateModule(), ChatboxHeartRateSettings);
+registerModule(new ModuleClient(mediaInfoOptions));
+registerModule(new ModuleClient(timeOptions));
+registerModule(new ModuleClient(textOptions));
+registerModule(new ModuleClient(exprOptions));
+registerModule(new ModuleClient(oscDataOptions));
+registerModule(new ModuleClient(numberOptions));
+registerModule(new ModuleClient(processOptions));
+registerModule(new WeatherModule(), ChatboxWeatherSettings);
+registerModule(new ModuleClient(systemOptions));
+registerModule(new RequestModule(), ChatboxRequestSettings);
+registerModule(new SpeechModule(), ChatboxSpeechSettings);
+registerModule(new ModuleClient(soundOptions));
+registerModule(new VarModule(), ChatboxVarSettings);
+registerModule(new ModuleClient(lovenseOptions));
 
 const settings = synced<ChatboxSettings>("Chatbox;Settings", {
   template: "",
@@ -91,9 +91,9 @@ export const chatbox = {
   ): Promise<string> {
     return call("chatbox.fillTemplate", text, type, stringify, scope);
   },
-  modules: chatboxList,
+  modules: moduleList,
   /** Every module with something to run. The list is in `options.inputs` on each module. */
-  getModulesWithInputs: () => [...chatboxList.values()].filter((m) => m.options.inputs?.length),
+  getModulesWithInputs: () => [...moduleList.values()].filter((m) => m.options.inputs?.length),
   /** Param values are strings. Placeholders in them need resolving before this. */
   runModuleInput(moduleId: string, inputId: string, args: Record<string, string> = {}): Promise<void> {
     return call("module.input", moduleId, inputId, args);

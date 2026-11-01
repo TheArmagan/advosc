@@ -13,7 +13,7 @@ interface HotkeyState {
 
 export { HOTKEY_PREFIX };
 
-export class ChatboxHotkeyModule extends HotkeyConfig {
+export class HotkeyModule extends HotkeyConfig {
   private hotkeyStates = new Map<string, HotkeyState>();
   /** What the settings tab reads. Only changes on a key press. */
   private statesStore = writable<Record<string, HotkeyState>>({});

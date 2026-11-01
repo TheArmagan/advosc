@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const soundOptions: ChatboxModuleOptions = {
+export const soundOptions: ModuleOptions = {
   id: "Sound",
   name: "Sound",
   description: "Plays sounds from your Sound Effects library. Actions fire once when the condition turns true (or once when the placeholder shows up if there's no condition) and render as nothing.",

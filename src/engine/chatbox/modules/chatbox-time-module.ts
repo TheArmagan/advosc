@@ -1,10 +1,10 @@
 import { moduleValues } from "../module-values";
 import { timeOptions } from "$shared/chatbox/modules/time";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import { format } from "date-fns-tz";
 
-export class ChatboxTimeModule extends ChatboxModule {
+export class TimeModule extends AppModule {
   constructor() {
     super(timeOptions, moduleValues("Time"));
   }

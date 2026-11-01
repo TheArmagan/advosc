@@ -1,7 +1,7 @@
 <script lang="ts">
   import { chatbox } from "$lib/api/chatbox";
-  import { ChatboxStopwatchModule } from "$lib/api/chatbox/modules/chatbox-stopwatch-module";
-  import { ChatboxHotkeyModule } from "$lib/api/chatbox/modules/chatbox-hotkey-module";
+  import { StopwatchModule } from "$lib/api/chatbox/modules/chatbox-stopwatch-module";
+  import { HotkeyModule } from "$lib/api/chatbox/modules/chatbox-hotkey-module";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
@@ -27,7 +27,7 @@
   const {
     module,
   }: {
-    module: ChatboxStopwatchModule;
+    module: StopwatchModule;
   } = $props();
 
   const values = module.values;
@@ -44,7 +44,7 @@
   // Get available hotkey names from the Hotkey module
   function getAvailableHotkeys(): string[] {
     const hotkeyModule = chatbox.modules.get("Hotkey") as
-      | ChatboxHotkeyModule
+      | HotkeyModule
       | undefined;
     if (!hotkeyModule) return [];
     return Object.keys(hotkeyModule.getHotkeys());
@@ -248,7 +248,7 @@
 
     // Also subscribe to hotkey module changes to refresh available hotkeys
     const hotkeyModule = chatbox.modules.get("Hotkey") as
-      | ChatboxHotkeyModule
+      | HotkeyModule
       | undefined;
     let hotkeyUnsubscribe: (() => void) | undefined;
     if (hotkeyModule) {

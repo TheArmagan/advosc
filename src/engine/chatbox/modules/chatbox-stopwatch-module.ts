@@ -15,7 +15,7 @@ interface StopwatchState {
   isRunning: boolean;     // Whether the stopwatch is active
 }
 
-export class ChatboxStopwatchModule extends StopwatchConfig {
+export class StopwatchModule extends StopwatchConfig {
   private stopwatches = new Map<string, StopwatchState>();
   /** What the settings tab reads. Holds start times, so it only changes on an action. */
   private statesStore = writable<Record<string, StopwatchState>>({});

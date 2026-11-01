@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatboxHeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
+  import type { HeartRateModule } from "$lib/api/chatbox/modules/chatbox-heart-rate-module";
   import {
     getPlatformMeta,
     heartRatePlatforms,
@@ -33,7 +33,7 @@
   const {
     module,
   }: {
-    module: ChatboxHeartRateModule;
+    module: HeartRateModule;
   } = $props();
 
   const values = module.values;

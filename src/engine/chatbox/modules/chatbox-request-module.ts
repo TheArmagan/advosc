@@ -71,7 +71,7 @@ interface SocketFeedState {
 
 type FeedState = HttpFeedState | SocketFeedState;
 
-export class ChatboxRequestModule extends RequestConfig {
+export class RequestModule extends RequestConfig {
   private feeds = new Map<string, FeedState>();
   private inactivityCheckInterval: ReturnType<typeof setInterval> | null = null;
 

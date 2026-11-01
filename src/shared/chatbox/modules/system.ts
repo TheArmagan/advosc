@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const systemOptions: ChatboxModuleOptions = {
+export const systemOptions: ModuleOptions = {
   id: "System",
   name: "System Resources",
   description:

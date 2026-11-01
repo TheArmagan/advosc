@@ -1,4 +1,4 @@
-import type { ChatboxModule } from "$shared/chatbox/module-base";
+import type { AppModule } from "$shared/chatbox/module-base";
 import { automations } from "./automations";
 import { chatbox } from "./chatbox";
 import { searchLocations } from "./chatbox/modules/weather/open-meteo";
@@ -29,7 +29,7 @@ const moduleMethods: Record<string, string[]> = {
 export function registerRpc() {
   handle("module.call", (id: string, method: string, args: unknown[] = []) => {
     if (!moduleMethods[id]?.includes(method)) throw new Error(`Not callable: ${id}.${method}`);
-    const module = chatbox.modules.get(id) as (ChatboxModule & Record<string, any>) | undefined;
+    const module = chatbox.modules.get(id) as (AppModule & Record<string, any>) | undefined;
     if (!module) throw new Error(`Unknown module: ${id}`);
     return module[method](...args);
   });

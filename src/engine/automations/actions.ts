@@ -1,7 +1,7 @@
 import type { Automation, AutomationAction } from "$shared/automation";
 import { isTruthy } from "$shared/sound-effects";
 import { chatbox } from "../chatbox";
-import type { ChatboxVarModule } from "../chatbox/modules/chatbox-var-module";
+import type { VarModule } from "../chatbox/modules/chatbox-var-module";
 import { native } from "../native";
 import { soundEngine } from "../sound-effects/engine";
 import { avatarOSC, avatarProfiles } from "../vrc-osc";
@@ -14,7 +14,7 @@ type OscAction = Extract<AutomationAction, { type: "osc" }>;
 type SoundAction = Extract<AutomationAction, { type: "sound" }>;
 
 function varModule() {
-  return chatbox.modules.get("Var") as ChatboxVarModule | undefined;
+  return chatbox.modules.get("Var") as VarModule | undefined;
 }
 
 /** Action values resolve read-only like sources do. Null means there's nothing safe to send. */

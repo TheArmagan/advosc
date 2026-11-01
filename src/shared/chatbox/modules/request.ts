@@ -1,8 +1,8 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 import { normalizeSource, type RequestSource } from "../request-types";
 
-export const requestOptions: ChatboxModuleOptions = {
+export const requestOptions: ModuleOptions = {
   id: "Request",
   name: "HTTP & WebSocket",
   description:
@@ -85,7 +85,7 @@ export const requestOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class RequestConfig extends ChatboxModule {
+export class RequestConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(requestOptions, values);
   }

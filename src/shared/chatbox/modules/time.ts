@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const timeOptions: ChatboxModuleOptions = {
+export const timeOptions: ModuleOptions = {
   id: "Time",
   name: "Time",
   description: "Time and date utilities. Also supports formatting.",

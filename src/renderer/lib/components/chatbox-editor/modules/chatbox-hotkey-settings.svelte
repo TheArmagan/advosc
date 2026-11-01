@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ChatboxHotkeyModule,
+    HotkeyModule,
     HOTKEY_PREFIX,
   } from "$lib/api/chatbox/modules/chatbox-hotkey-module";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -28,7 +28,7 @@
   const {
     module,
   }: {
-    module: ChatboxHotkeyModule;
+    module: HotkeyModule;
   } = $props();
 
   const values = module.values;

@@ -11,7 +11,7 @@ import { get, writable } from "$shared/store";
 import type { ToyRuleSink } from "$shared/toys";
 import { chatbox } from "../chatbox";
 import type { EvalFailure } from "../chatbox/eval-context";
-import type { ChatboxVarModule } from "../chatbox/modules/chatbox-var-module";
+import type { VarModule } from "../chatbox/modules/chatbox-var-module";
 import { native } from "../native";
 import { soundEngine } from "../sound-effects/engine";
 import { mirror } from "../sync/hub";
@@ -638,7 +638,7 @@ export function startAutomations(options: { safeMode: boolean }) {
 
   avatarOSC.onParameterChange(handleParameter);
   native.osc.onMessage(handleOsc);
-  (chatbox.modules.get("Var") as ChatboxVarModule).onChange(handleVariable);
+  (chatbox.modules.get("Var") as VarModule).onChange(handleVariable);
   attachSink(getToySink());
   onToySinkChange(attachSink);
 

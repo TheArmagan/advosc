@@ -12,7 +12,7 @@ interface HeartRateStatus {
   extras?: HeartRateExtras;
 }
 
-export class ChatboxHeartRateModule extends HeartRateConfig {
+export class HeartRateModule extends HeartRateConfig {
   private statuses = new Map<string, HeartRateStatus>();
 
   constructor() {

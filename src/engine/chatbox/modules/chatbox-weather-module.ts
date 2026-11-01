@@ -35,7 +35,7 @@ interface GeocodeCacheEntry {
   pending?: Promise<WeatherLocation | null>;
 }
 
-export class ChatboxWeatherModule extends WeatherConfig {
+export class WeatherModule extends WeatherConfig {
   private weatherCache = new Map<string, WeatherCacheEntry>();
   private geocodeCache = new Map<string, GeocodeCacheEntry>();
 

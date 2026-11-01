@@ -18,7 +18,7 @@ type ChangeListener = (name: string) => void;
  * They're state rather than settings, so `getCleanValues` stays empty and they stay out of
  * presets and share codes. A full backup still has them.
  */
-export class ChatboxVarModule extends VarConfig {
+export class VarModule extends VarConfig {
   private live: Map<string, string>;
   private listeners = new Set<ChangeListener>();
   private persistTimer: ReturnType<typeof setTimeout> | null = null;

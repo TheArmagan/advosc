@@ -12,7 +12,7 @@ interface HotkeyState {
 
 const states = mirrored<Record<string, HotkeyState>>("ChatboxModule;Hotkey;States", {});
 
-export class ChatboxHotkeyModule extends HotkeyConfig {
+export class HotkeyModule extends HotkeyConfig {
   constructor() {
     super(moduleValues("Hotkey"));
   }

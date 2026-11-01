@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const oscDataOptions: ChatboxModuleOptions = {
+export const oscDataOptions: ModuleOptions = {
   id: "OSCData",
   name: "OSC Data",
   description: "Provides raw OSC data received by the application.",

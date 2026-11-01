@@ -1,7 +1,7 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 
-export const varOptions: ChatboxModuleOptions = {
+export const varOptions: ModuleOptions = {
   id: "Var",
   name: "Variables",
   description: "Named values you can read anywhere and change from an automation. They're saved, so they're still there after a restart.",
@@ -37,7 +37,7 @@ export const varOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class VarConfig extends ChatboxModule {
+export class VarConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(varOptions, values);
   }

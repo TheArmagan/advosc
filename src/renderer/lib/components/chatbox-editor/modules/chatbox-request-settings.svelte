@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChatboxRequestModule } from "$lib/api/chatbox/modules/chatbox-request-module";
+  import type { RequestModule } from "$lib/api/chatbox/modules/chatbox-request-module";
   import {
     createDefaultSource,
     isSourceConfigured,
@@ -38,7 +38,7 @@
   const {
     module,
   }: {
-    module: ChatboxRequestModule;
+    module: RequestModule;
   } = $props();
 
   const values = module.values;

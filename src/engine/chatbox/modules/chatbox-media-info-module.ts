@@ -4,7 +4,7 @@ import { mediaInfoOptions } from "$shared/chatbox/modules/media-info";
 import { net } from "electron";
 import { cacheData } from "../../persistence/cache";
 import type { MediaCommand, MediaInfo } from "$shared/native-types";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 
 const MEDIA_COMMANDS: Record<string, MediaCommand> = {
   toggle: "toggle-play-pause",
@@ -48,7 +48,7 @@ const LYRIC_LAST_LINE_DURATION = 8;
 const LYRIC_SEARCH_DURATION_TOLERANCE = 5;
 const LYRIC_RETRY_DELAY = 1000 * 30;
 
-export class ChatboxMediaInfoModule extends ChatboxModule {
+export class MediaInfoModule extends AppModule {
   lastMediaInfo: MediaInfo | null = null;
   lastPositionUpdatedAt: number = 0;
   currentLyric: LyricData | null = null;

@@ -1,6 +1,6 @@
-import type { ChatboxModuleOptions } from "../module-base";
+import type { ModuleOptions } from "../module-base";
 
-export const processOptions: ChatboxModuleOptions = {
+export const processOptions: ModuleOptions = {
   id: "Process",
   name: "Process",
   description: "Process information utilities. Like start time and session duration.",

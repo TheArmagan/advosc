@@ -1,9 +1,9 @@
 import { moduleValues } from "../module-values";
 import { numberOptions } from "$shared/chatbox/modules/number";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 
-export class ChatboxNumberModule extends ChatboxModule {
+export class NumberModule extends AppModule {
   constructor() {
     super(numberOptions, moduleValues("Number"));
   }

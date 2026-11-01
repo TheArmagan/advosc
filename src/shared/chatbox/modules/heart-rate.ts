@@ -1,8 +1,8 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 import type { HeartRateSource } from "../heart-rate";
 
-export const heartRateOptions: ChatboxModuleOptions = {
+export const heartRateOptions: ModuleOptions = {
   id: "HeartRate",
   name: "Heart Rate",
   description:
@@ -60,7 +60,7 @@ export const heartRateOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class HeartRateConfig extends ChatboxModule {
+export class HeartRateConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(heartRateOptions, values);
   }

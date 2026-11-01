@@ -4,7 +4,7 @@ import { moduleValues } from "../module-client";
 
 export type { SpeechTranslationSettings } from "$shared/chatbox/modules/speech";
 
-export class ChatboxSpeechModule extends SpeechConfig {
+export class SpeechModule extends SpeechConfig {
   /** Live recognition state. Not persisted: it is meaningless after a restart. */
   live = mirrored<SpeechLiveState>("ChatboxModule;Speech;Live", emptyLiveState());
 

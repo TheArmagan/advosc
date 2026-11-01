@@ -1,4 +1,4 @@
-import { ChatboxModule, type ChatboxModuleOptions, type ModuleInputParam } from "../module-base";
+import { AppModule, type ModuleOptions, type ModuleInputParam } from "../module-base";
 import type { Writable } from "../../store";
 
 const stopwatchParam: ModuleInputParam = { id: "name", label: "Stopwatch", type: "text", placeholder: "stopwatchName" };
@@ -11,7 +11,7 @@ export interface StopwatchSettings {
   resetStartHotkey: string;  // Hotkey name to reset and immediately start
 }
 
-export const stopwatchOptions: ChatboxModuleOptions = {
+export const stopwatchOptions: ModuleOptions = {
   id: "Stopwatch",
   name: "Stopwatch",
   description: "Provides stopwatch/timer functionality controlled by hotkeys from the Hotkey module.",
@@ -73,7 +73,7 @@ export const stopwatchOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class StopwatchConfig extends ChatboxModule {
+export class StopwatchConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(stopwatchOptions, values);
   }

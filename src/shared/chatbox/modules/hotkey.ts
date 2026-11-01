@@ -1,9 +1,9 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { AppModule, type ModuleOptions } from "../module-base";
 import type { Writable } from "../../store";
 
 export const HOTKEY_PREFIX = "HotkeyModule;";
 
-export const hotkeyOptions: ChatboxModuleOptions = {
+export const hotkeyOptions: ModuleOptions = {
   id: "Hotkey",
   name: "Hotkey",
   description: "Provides hotkey/shortcut state information for chatbox placeholders.",
@@ -30,7 +30,7 @@ export const hotkeyOptions: ChatboxModuleOptions = {
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */
-export class HotkeyConfig extends ChatboxModule {
+export class HotkeyConfig extends AppModule {
   constructor(values: Writable<Record<string, any>>) {
     super(hotkeyOptions, values);
   }

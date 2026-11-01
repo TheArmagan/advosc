@@ -2,7 +2,7 @@ import { native } from "../../native";
 import { moduleValues } from "../module-values";
 import { ovrTrackersOptions } from "$shared/chatbox/modules/ovr-trackers";
 import { chatbox } from "..";
-import { ChatboxModule } from "$shared/chatbox/module-base";
+import { AppModule } from "$shared/chatbox/module-base";
 import type { TrackerBattery } from "$shared/native-types";
 
 export type { TrackerBattery };
@@ -13,7 +13,7 @@ interface TrackersCache {
   error?: string;
 }
 
-export class ChatboxOVRTrackersModule extends ChatboxModule {
+export class OVRTrackersModule extends AppModule {
   private trackersCache: TrackersCache | null = null;
   private readonly CHECK_INTERVAL = 5000; // 5 seconds
 

@@ -1,7 +1,7 @@
 import type { Writable } from "$shared/store";
 import { get } from "$shared/store";
-import type { ChatboxModule } from "$shared/chatbox/module-base";
-import type { ChatboxHeartRateModule } from "../chatbox-heart-rate-module";
+import type { AppModule } from "$shared/chatbox/module-base";
+import type { HeartRateModule } from "../chatbox-heart-rate-module";
 
 const UUIDRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,8 +28,8 @@ function rewrite(text: string, names: Map<string, string>): string {
 }
 
 export interface PulsoidMigrationContext {
-  heartRate: ChatboxHeartRateModule;
-  modules: Map<string, ChatboxModule>;
+  heartRate: HeartRateModule;
+  modules: Map<string, AppModule>;
   settings: Writable<{ template: string; [key: string]: any }>;
   advancedTemplate: Writable<string>;
   simpleEditorBlocks: Writable<any[]>;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {
-    ChatboxOVRTrackersModule,
+    OVRTrackersModule,
     TrackerBattery,
   } from "$lib/api/chatbox/modules/chatbox-ovr-trackers-module";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -21,7 +21,7 @@
   const {
     module,
   }: {
-    module: ChatboxOVRTrackersModule;
+    module: OVRTrackersModule;
   } = $props();
 
   let trackers = $state<TrackerBattery[]>([]);

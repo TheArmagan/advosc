@@ -2,7 +2,7 @@ import { VarConfig } from "$shared/chatbox/modules/var";
 import { call } from "../../engine";
 import { moduleValues } from "../module-client";
 
-export class ChatboxVarModule extends VarConfig {
+export class VarModule extends VarConfig {
   constructor() {
     super(moduleValues("Var"));
   }

@@ -22,12 +22,12 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import { automations } from "$lib/api/automations";
   import { onMount } from "svelte";
-  import { ChatboxShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
+  import { ShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
 
   const {
     module,
   }: {
-    module: ChatboxShortcutModule;
+    module: ShortcutModule;
   } = $props();
 
   const values = module.values;
