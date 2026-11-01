@@ -35,3 +35,8 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      # The build itself only transpiles. The engine has no DOM types, so this is what
+      # catches renderer-only code landing in it.
+      - name: Type check the engine
+        run: bun run check:engine

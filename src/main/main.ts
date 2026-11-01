@@ -9,6 +9,7 @@ import { stopSpeechServer } from './lib/speech-server';
 import { loadOSCSources, toActiveSources } from './lib/osc-config';
 import { handleSquirrelStartup } from './lib/squirrel-startup';
 import { startAutoUpdater } from './lib/auto-updater';
+import { startEngine } from './lib/engine-host';
 
 // Re-export types for external use
 export type { OSCMessage, MediaCommand, MediaInfo } from './lib/types';
@@ -38,6 +39,8 @@ app.whenReady().then(async () => {
 
   // Start media monitor
   startMediaMonitor();
+
+  startEngine();
 
   // Create main window
   createWindow();
