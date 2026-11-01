@@ -88,9 +88,17 @@ export function hasToyAction(rule: Automation): boolean {
   return Array.isArray(rule.actions) && rule.actions.some((action) => action.type === "toy");
 }
 
-/** Sitting at the low end of the input range, wherever that end is, counts as off. */
+/**
+ * How close to the end of the range counts as being on it. OSC floats are 32-bit, so a 0.1 from
+ * VRChat arrives as 0.100000001 and would never compare as reaching a range that starts at 0.1.
+ */
+const RANGE_EDGE = 1e-5;
+
+/** Sitting at `inMin` counts as off, whichever way round the range is. */
 export function isLiveInactive(value: number, range: AutomationRange): boolean {
-  return range.inMax >= range.inMin ? value <= range.inMin : value >= range.inMin;
+  const span = range.inMax - range.inMin;
+  if (span === 0) return true;
+  return (value - range.inMin) / span <= RANGE_EDGE;
 }
 
 export function toNumber(text: string): number | null {

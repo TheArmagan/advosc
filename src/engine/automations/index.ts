@@ -231,7 +231,7 @@ function applyLive(state: RuleState, value: number) {
   if (live.input === value) return;
 
   live.input = value;
-  live.level = mapRange(value, rule.range);
+  live.level = live.active ? mapRange(value, rule.range) : rule.range.outMin;
   if (!live.timer) flushLive(state);
 }
 
