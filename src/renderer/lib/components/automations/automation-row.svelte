@@ -24,15 +24,19 @@
     onDelete: () => void;
   } = $props();
 
-  const broken = $derived(status?.health === "tripped" || status?.health === "error");
+  const tripped = $derived(status?.health === "tripped");
+  const broken = $derived(tripped || status?.health === "error");
 
   const health = $derived.by((): { label: string; tone: PillTone; title?: string } => {
-    // Before `enabled`, because a tripped rule is also disabled and that's the part that matters.
     if (status?.health === "tripped") return { label: "Stopped itself", tone: "error" };
     if (status?.health === "error") return { label: "Error", tone: "error" };
     if (!rule.enabled) return { label: "Off", tone: "muted" };
     if (status?.health === "no-data") {
-      return { label: "No data", tone: "warn", title: "The source hasn't given a value yet." };
+      return {
+        label: "No data",
+        tone: "warn",
+        title: status.message ?? "The source hasn't given a value yet.",
+      };
     }
     if (status?.active) return { label: "Active", tone: "ok" };
     return { label: "Waiting", tone: "muted" };
@@ -105,14 +109,19 @@
       <TriangleAlertIcon class="size-3.5 shrink-0" />
       <span class="min-w-0 flex-1">
         {status?.message ??
-          (status?.health === "tripped"
+          (tripped
             ? "This rule fired too fast, so it was stopped."
             : "This rule hit a problem.")}
       </span>
-      <Button variant="outline" size="sm" class="h-7" onclick={reset}>
-        <RotateCcwIcon class="size-3.5" />
-        Reset
-      </Button>
+      <!-- The engine only resets a tripped rule. An error clears once its cause is fixed. -->
+      {#if tripped}
+        <Button variant="outline" size="sm" class="h-7" onclick={reset}>
+          <RotateCcwIcon class="size-3.5" />
+          Reset
+        </Button>
+      {:else if !expanded}
+        <Button variant="outline" size="sm" class="h-7" onclick={onToggle}>Edit rule</Button>
+      {/if}
     </div>
   {/if}
 
