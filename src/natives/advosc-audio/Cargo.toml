@@ -1,0 +1,29 @@
+[package]
+name = "advosc-audio"
+version = "0.1.0"
+edition = "2021"
+description = "Sound effect playback sidecar for ADVOSC"
+
+[features]
+# Adds a stdin command that fakes a dead audio stream. Used by the test harness only,
+# because losing a real device can't be scripted. Never enabled for the shipped exe.
+test-hooks = []
+
+# Every version is exact because Cargo.lock is gitignored. cpal and opusic-sys come in
+# through rodio and the Opus adapter anyway: they are listed so they can't float, since the
+# device code uses cpal directly and opusic-sys decides which libopus gets compiled.
+# cpal's realtime feature asks Windows for MMCSS scheduling on the audio thread. Without it the
+# thread runs at normal priority, right next to VRChat at full load.
+[dependencies]
+cpal = { version = "=0.18.2", features = ["realtime"] }
+opusic-sys = "=0.7.6"
+rodio = { version = "=0.23.0", default-features = false, features = ["playback"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+symphonia = { version = "=0.6.1", features = ["aac", "alac", "isomp4", "mp3"] }
+symphonia-adapter-libopus = "=0.3.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
