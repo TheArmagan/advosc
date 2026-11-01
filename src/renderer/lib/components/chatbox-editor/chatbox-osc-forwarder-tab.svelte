@@ -1,6 +1,7 @@
 <script lang="ts">
   import { avatarOSC } from "$lib/api/vrc-osc";
   import { oscForwarder, type ForwardType } from "$lib/api/osc-forwarder";
+  import ValuePicker from "$lib/components/value-picker/value-picker.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
@@ -73,8 +74,8 @@
     <div class="flex items-center gap-2">
       <RadioIcon class="size-4 shrink-0 text-muted-foreground" />
       <span class="text-sm text-muted-foreground">
-        Evaluate chatbox template values and forward them to OSC addresses at a
-        set interval.
+        Evaluate template values and forward them to OSC addresses at a set
+        interval.
       </span>
     </div>
     <Button variant="outline" size="sm" onclick={oscForwarder.addEntry}>
@@ -161,7 +162,7 @@
                 </Tooltip.Trigger>
                 <Tooltip.Content>
                   <p class="text-xs max-w-60">
-                    Supports chatbox placeholders like <span class="font-mono"
+                    Supports module placeholders like <span class="font-mono"
                       >{"{{Time;Now;HH:mm}}"}</span
                     >
                     or
@@ -173,14 +174,13 @@
               </Tooltip.Root>
             </Tooltip.Provider>
           </div>
-          <Input
-            class="font-mono text-xs h-8"
+          <ValuePicker
+            ariaLabel="Value Template"
+            inputClass="font-mono text-xs h-8"
             placeholder={"e.g. {{OSCData;/avatar/parameters/MyParam}} or 42"}
             value={entry.valueTemplate}
-            oninput={(e) =>
-              oscForwarder.updateEntry(entry.id, {
-                valueTemplate: (e.target as HTMLInputElement).value,
-              })}
+            onChange={(valueTemplate) =>
+              oscForwarder.updateEntry(entry.id, { valueTemplate })}
           />
         </div>
 
