@@ -1,12 +1,5 @@
 // @ts-nocheck
-import HomePage from './pages/home-page.svelte';
-import ChatboxEditorPage from './pages/chatbox-editor-page.svelte';
-import AvatarOSCPage from './pages/avatar-osc-page.svelte';
-import AvatarProfilesPage from './pages/avatar-profiles-page.svelte';
-import AvatarScalePage from './pages/avatar-scale-page.svelte';
-import AboutPage from './pages/about-page.svelte';
-import SettingsPage from './pages/settings-page.svelte';
-import TranslatorPage from './pages/translator-page.svelte';
+import { DEFAULT_PATH, PATH_ALIASES, isNavItemVisible, navItems } from './nav';
 
 import type { Component } from 'svelte';
 import { get, writable } from 'svelte/store';
@@ -20,30 +13,38 @@ export type RouterState = {
   };
 };
 
+const routes: Record<string, Component> = Object.fromEntries(
+  navItems.map((item) => [item.path, item.page]),
+);
+
 const initial: RouterState = {
-  routes: {
-    '/': HomePage,
-    '/tools/chatbox-editor': ChatboxEditorPage,
-    '/tools/avatar-osc': AvatarOSCPage,
-    '/tools/avatar-profiles': AvatarProfilesPage,
-    '/tools/avatar-scale': AvatarScalePage,
-    '/tools/translator': TranslatorPage,
-    '/about': AboutPage,
-    '/settings': SettingsPage,
-  },
+  routes,
   currentPage: {
-    path: '/tools/chatbox-editor',
-    component: HomePage,
+    path: DEFAULT_PATH,
+    component: routes[DEFAULT_PATH],
     query: {},
   },
 };
 
 export const router = writable<RouterState>(initial);
 
+// Follows aliases, and sends unknown or hidden paths to the default page.
+function resolvePath(path: string): string {
+  const target = PATH_ALIASES[path] ?? path;
+  const item = navItems.find((entry) => entry.path === target);
+  return item && isNavItemVisible(item) ? target : DEFAULT_PATH;
+}
+
 let lastPath = '';
 function onHashChange() {
   const hash = window.location.hash.slice(1);
   const [pathPart, queryString = ''] = hash.split('?');
+  const path = resolvePath(pathPart);
+
+  if (path !== pathPart) {
+    // Rewrites the URL without adding a history entry or firing hashchange again.
+    window.history.replaceState(null, '', `#${queryString ? `${path}?${queryString}` : path}`);
+  }
 
   router.update((state) => {
     const next: RouterState = {
@@ -51,13 +52,10 @@ function onHashChange() {
       currentPage: { ...state.currentPage },
     };
 
-    if (pathPart && pathPart !== lastPath) {
-      const component = state.routes[pathPart];
-      if (component) {
-        next.currentPage.path = pathPart;
-        next.currentPage.component = component;
-        lastPath = pathPart;
-      }
+    if (path !== lastPath) {
+      next.currentPage.path = path;
+      next.currentPage.component = state.routes[path];
+      lastPath = path;
     }
 
     const query: Record<string, string> = {};

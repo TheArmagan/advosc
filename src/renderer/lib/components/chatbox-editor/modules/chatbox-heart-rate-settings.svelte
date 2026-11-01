@@ -227,7 +227,6 @@
         <Label class="text-lg">Bulk Import Heart Rate Sources (JSON)</Label>
         <div class="flex w-full items-center justify-center">
           <ChatboxMonacoEditor
-            width={Math.floor(window.innerWidth * 0.98)}
             height={250}
             language="json"
             onLoad={(editor) => {

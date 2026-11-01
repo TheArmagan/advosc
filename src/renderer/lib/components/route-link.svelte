@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cn } from "$lib/utils";
   import { type Snippet } from "svelte";
+  import type { HTMLAnchorAttributes } from "svelte/elements";
   import { router } from "$lib/router";
 
   const {
@@ -8,7 +9,8 @@
     activeClass = "",
     to,
     children,
-  }: {
+    ...restProps
+  }: Omit<HTMLAnchorAttributes, "class" | "href"> & {
     to: string;
     class?: string;
     activeClass?: string;
@@ -19,8 +21,10 @@
 </script>
 
 <a
+  {...restProps}
   href="#{to}"
   data-active={isActive}
+  aria-current={isActive ? "page" : undefined}
   class={cn(className, isActive ? activeClass : undefined)}
   style="-webkit-app-region: no-drag;"
 >

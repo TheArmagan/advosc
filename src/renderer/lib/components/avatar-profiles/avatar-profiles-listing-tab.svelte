@@ -145,7 +145,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <div class="flex items-center justify-between gap-2">
+  <div class="flex flex-wrap items-center justify-between gap-2">
     <div class="flex items-center gap-2">
       <InputGroup.Root class="w-64">
         <InputGroup.Input
@@ -176,7 +176,6 @@
           <Label class="text-lg">Import Profile (JSON)</Label>
           <div class="flex w-full items-center justify-center">
             <ChatboxMonacoEditor
-              width={Math.floor(window.innerWidth * 0.98)}
               height={250}
               language="json"
               onLoad={(editor) => {

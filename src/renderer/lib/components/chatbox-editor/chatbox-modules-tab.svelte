@@ -4,14 +4,14 @@
   import * as Card from "$lib/components/ui/card/index.js";
 </script>
 
-<div class="flex flex-col gap-2 h-[calc(100vh-8rem)] overflow-auto">
+<div class="flex flex-col gap-2">
   <Card.Root class="px-4 py-2">
     <Accordion.Root type="single">
       {#each chatbox.modules as [moduleId, m]}
         <Accordion.Item value={moduleId}>
           <Accordion.Trigger>
             <div class="flex items-center gap-2">
-              <h1 class="text-lg">{m.options.name}</h1>
+              <h1 class="text-lg shrink-0">{m.options.name}</h1>
               <p class="text-start font-normal opacity-90">
                 - {m.options.description}
               </p>

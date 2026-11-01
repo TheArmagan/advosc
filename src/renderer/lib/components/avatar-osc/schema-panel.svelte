@@ -69,7 +69,7 @@
   {#if $schema}
     <Card.Content class="px-4">
       {#if raw}
-        <pre class="max-h-[70vh] overflow-auto rounded-md bg-muted/40 p-3 text-xs">{JSON.stringify($schema, null, 2)}</pre>
+        <pre class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-md bg-muted/40 p-3 text-xs">{JSON.stringify($schema, null, 2)}</pre>
       {:else}
         <div class="overflow-hidden rounded-md border">
           <table class="w-full text-sm">
@@ -85,12 +85,12 @@
               {#each rows as row (row.address)}
                 {@const entry = $schemaIndex[row.address]}
                 <tr class="border-t">
-                  <td class="px-3 py-1.5">{row.name}</td>
+                  <td class="px-3 py-1.5 [overflow-wrap:anywhere]">{row.name}</td>
                   <td class="px-3 py-1.5"><TypeBadge type={row.type} /></td>
-                  <td class="px-3 py-1.5 text-xs text-muted-foreground">
+                  <td class="px-3 py-1.5 text-xs text-muted-foreground whitespace-nowrap">
                     {entry.writable && entry.readable ? "In and out" : entry.writable ? "In only" : "Out only"}
                   </td>
-                  <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground">{row.address}</td>
+                  <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">{row.address}</td>
                 </tr>
               {:else}
                 <tr><td colspan="4" class="px-3 py-6 text-center text-muted-foreground">Nothing matches "{query}".</td></tr>
