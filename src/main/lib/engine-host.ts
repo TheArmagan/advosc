@@ -15,7 +15,8 @@ import {
 } from '../../shared/engine-protocol';
 import { isDev, nativesDir, resolveDataDir } from './paths';
 import { handleHostCall, resetHostState } from './host-api';
-import { directStop, isPanicLatched } from './panic';
+import { getBootstrap } from './bootstrap';
+import { directStop, isPanicLatched, markToyOutputStopped } from './panic';
 
 const HEARTBEAT_MS = 500;
 /** How long a hung engine gets. Short while it's driving something, so toys can't run away. */
@@ -55,7 +56,8 @@ let lastBeat = 0;
 let heartbeat: NodeJS.Timeout | null = null;
 let nextClientId = 1;
 let exitTimes: number[] = [];
-let shutdownDone: (() => void) | null = null;
+/** `clean` is true only when the engine itself said it finished. */
+let shutdownDone: ((clean: boolean) => void) | null = null;
 
 const windows = new Set<WebContents>();
 const safeModeListeners = new Set<(active: boolean) => void>();
@@ -74,7 +76,9 @@ function buildConfig(): EngineConfig {
     safeMode,
     version: app.getVersion(),
     panicLatched: isPanicLatched(),
-    toysMuted: spawnCount > 0,
+    // After the first spawn, this engine is replacing one that died. On the first spawn, the
+    // saved flag says main itself went down with output running.
+    toysMuted: spawnCount > 0 || getBootstrap().toyFailsafe.outputActive === true,
   };
 }
 
@@ -135,7 +139,7 @@ function handleMessage(message: EngineToMain) {
       );
       break;
     case 'shutdown-done':
-      shutdownDone?.();
+      shutdownDone?.(true);
       break;
     case 'panic-ack':
       pendingPanics.get(message.id)?.();
@@ -167,7 +171,7 @@ function handleExit(code: number) {
   // `stopping` can. The shortcuts registered for this engine died with its callbacks.
   resetHostState();
   for (const settle of [...pendingPanics.values()]) settle();
-  shutdownDone?.();
+  shutdownDone?.(false);
   if (stopping) return;
 
   // Whatever the engine was running is now nobody's. This is what ends it short of `timeSec`.
@@ -231,7 +235,8 @@ export function sendShortcutTriggered(id: string) {
 /**
  * Tells the engine to latch and stop, and settles once it has answered or been killed for not
  * answering. A kill goes through `handleExit`, which sends the direct Stop and respawns with the
- * latch set. Nothing to do when there's no engine: the next one starts latched anyway.
+ * latch set, and that engine's one-shot is what reaches Intiface. Nothing to do when there's no
+ * engine: the next one starts latched anyway.
  */
 export function panicEngine(): Promise<void> {
   const engine = child;
@@ -271,13 +276,15 @@ export function stopEngine(): Promise<void> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       console.error('Engine did not finish shutting down in time, killing it.');
-      finish();
+      finish(false);
     }, SHUTDOWN_TIMEOUT_MS);
 
-    const finish = () => {
+    const finish = (clean: boolean) => {
       clearTimeout(timer);
       shutdownDone = null;
       engine.kill();
+      // An engine that didn't finish may not have stopped Intiface, so the next start still has to.
+      if (clean) markToyOutputStopped();
       void directStop().finally(resolve);
     };
 

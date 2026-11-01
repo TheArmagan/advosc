@@ -48,9 +48,17 @@ export const toySettings = synced<ToySettings>(TOY_SETTINGS_KEY, defaultToySetti
 
 const toysState = writable<ToysState>({ transports: [], toys: [], paused: null });
 
+/** Main saves `outputActive` to disk, so a signal flickering on and off only writes the first time. */
+const OUTPUT_QUIET_MS = 2000;
+
+let routes: Omit<ToyFailsafe, "outputActive"> | null = null;
+let outputActive = false;
+let quietTimer: ReturnType<typeof setTimeout> | null = null;
 let lastFailsafe = "";
 
-function publishFailsafe(failsafe: ToyFailsafe) {
+function publishFailsafe() {
+  if (!routes) return;
+  const failsafe: ToyFailsafe = { ...routes, outputActive };
   const text = JSON.stringify(failsafe);
   if (text === lastFailsafe) return;
   lastFailsafe = text;
@@ -60,13 +68,35 @@ function publishFailsafe(failsafe: ToyFailsafe) {
   });
 }
 
+/** Up at once, so a main that dies next leaves the record behind. Down only once it's stayed quiet. */
+function noteOutputActive(active: boolean) {
+  setOutputsActive(active);
+  if (quietTimer) clearTimeout(quietTimer);
+  quietTimer = null;
+
+  if (active) {
+    if (outputActive) return;
+    outputActive = true;
+    publishFailsafe();
+    return;
+  }
+
+  quietTimer = setTimeout(() => {
+    outputActive = false;
+    publishFailsafe();
+  }, OUTPUT_QUIET_MS);
+}
+
 export const toyService = new ToyService(
   normalizeSettings(get(toySettings)),
   { latched: engineConfig.panicLatched, muted: engineConfig.toysMuted },
   {
     onState: (state) => toysState.set(state),
-    onActive: setOutputsActive,
-    onRoutes: publishFailsafe,
+    onActive: noteOutputActive,
+    onRoutes: (next) => {
+      routes = next;
+      publishFailsafe();
+    },
   },
 );
 

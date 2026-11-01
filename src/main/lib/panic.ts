@@ -9,9 +9,9 @@ import { isEngineShortcut } from './host-api';
 /**
  * Panic lives in main because it has to work with the engine hung or dead. The latch and the
  * hotkey are in `bootstrap.json`, the hotkey is registered here before any engine exists, and
- * main reaches Lovense itself. Intiface's socket lives in the engine, so with a hung engine the
- * only way to end that session is the kill in `panicEngine`, and whether that stops the toy is
- * up to the server.
+ * main reaches Lovense itself. Intiface's socket lives in the engine, so a hung engine gets
+ * killed by `panicEngine`, and the latched engine that replaces it sends one `StopAllDevices`.
+ * A latched engine never sends anything except a stop.
  */
 
 const ATTEMPT_TIMEOUT_MS = 600;
@@ -113,6 +113,12 @@ export function setToyFailsafe(failsafe: ToyFailsafe) {
   updateBootstrap({ toyFailsafe: failsafe });
   // The tray only shows panic once toys are on, so it has to hear about this.
   if (enabledChanged) notifyChanged();
+}
+
+/** A clean shutdown stopped everything, so the next start has nothing to clean up. */
+export function markToyOutputStopped() {
+  const { toyFailsafe } = getBootstrap();
+  if (toyFailsafe.outputActive) updateBootstrap({ toyFailsafe: { ...toyFailsafe, outputActive: false } });
 }
 
 // ------------------------------------------------------------------- hotkey

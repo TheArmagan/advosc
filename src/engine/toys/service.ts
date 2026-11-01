@@ -11,6 +11,7 @@ import type {
   ToyTransportId,
   ToyTransportStatus,
 } from "$shared/toys";
+import { stopIntifaceOnce } from "./intiface-stop";
 import { IntifaceTransport } from "./intiface-transport";
 import { LOVENSE_PC_ATTEMPTS, LOVENSE_PC_IP, parseLovenseIp } from "./lovense-http";
 import { LovenseTransport, type LovenseRoute } from "./lovense-transport";
@@ -144,8 +145,13 @@ export class ToyService {
   private silencePaused = false;
   private vrchatPaused = false;
   private shuttingDown = false;
-  /** A new engine after a crash. Listeners that register get the rearm signal straight away. */
+  /**
+   * The last engine may not have stopped what it was running: it crashed, or main died under it.
+   * Listeners that register get the rearm signal straight away.
+   */
   private muteOnRegister: boolean;
+  /** The Intiface one-shot, if this start needed one. A normal connection waits for it. */
+  private leftoverStop: Promise<unknown> = Promise.resolve();
   private active = false;
 
   /** What Automations hold. The method names are the contract, so this is a plain object. */
@@ -209,8 +215,22 @@ export class ToyService {
   start(options: { safeMode: boolean }) {
     this.safeMode = options.safeMode;
     this.started = true;
+    this.leftoverStop = this.stopLeftovers();
     this.syncTransports();
     this.publish();
+  }
+
+  /**
+   * Lovense stops itself when `timeSec` runs out, and main can POST to it. Intiface has neither,
+   * so whatever an earlier engine left running gets one stop here. This runs while latched and
+   * in safe mode too, because a latched engine never sends anything except a stop. It isn't
+   * awaited, so a dead Intiface can't hold up startup.
+   */
+  private stopLeftovers() {
+    const { enabled, intiface } = this.settings;
+    const suspect = this.latched || this.muteOnRegister;
+    if (!enabled || !intiface.enabled || !intiface.url || !suspect) return Promise.resolve();
+    return stopIntifaceOnce(intiface.url);
   }
 
   private routes(): { id: ToyTransportId; key: string; route: unknown }[] {
@@ -246,8 +266,7 @@ export class ToyService {
   }
 
   private createTransport(id: ToyTransportId, route: unknown): EngineToyTransport {
-    if (id === "intiface") return new IntifaceTransport(route as string, this.muteOnRegister);
-    return new LovenseTransport(id, route as LovenseRoute);
+    return id === "intiface" ? new IntifaceTransport(route as string) : new LovenseTransport(id, route as LovenseRoute);
   }
 
   /** Serialized, because a slow retire must finish before its replacement connects. */
@@ -287,7 +306,12 @@ export class ToyService {
         transport.on("status", (status) => this.handleStatus(slot, status)),
       );
       this.slots.set(id, slot);
-      void transport.connect().catch((error) => console.warn(`Toy transport ${id} failed to connect:`, error));
+
+      // Intiface takes one client at a time, so the one-shot has to finish before this connects.
+      const ready = id === "intiface" ? this.leftoverStop : Promise.resolve();
+      void ready
+        .then(() => (this.slots.get(id) === slot ? transport.connect() : undefined))
+        .catch((error) => console.warn(`Toy transport ${id} failed to connect:`, error));
     }
 
     this.publish();
@@ -816,7 +840,7 @@ export class ToyService {
 
     const results = await Promise.all(unbounded.map((slot) => stops.get(slot)!));
 
-    // Only let go of connections once the stops are done. A latched service holds none.
+    // Only let go of connections once the stops are done. A latched service holds none open.
     void Promise.all(stops.values()).then(() => this.syncTransports());
     return results.every(Boolean);
   }

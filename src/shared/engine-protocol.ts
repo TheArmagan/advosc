@@ -42,11 +42,16 @@ export interface LovenseStopTarget {
 
 /**
  * What main needs to stop toys on its own, kept current by the engine. Intiface isn't in here:
- * its socket lives in the engine, and killing the engine is what closes it.
+ * its socket lives in the engine, so the next engine is what stops it. See `stopIntifaceOnce`.
  */
 export interface ToyFailsafe {
   enabled: boolean;
   lovense: LovenseStopTarget[];
+  /**
+   * Something may be running. Saved to disk and only cleared by a clean shutdown, so finding it
+   * set at startup means the last session ended with output nobody stopped.
+   */
+  outputActive?: boolean;
 }
 
 export interface HostShortcutResult {
@@ -102,9 +107,12 @@ export interface EngineConfig {
   isDev: boolean;
   safeMode: boolean;
   version: string;
-  /** Start with the latch set: connect nothing, send nothing. */
+  /** Start with the latch set. A latched engine never sends anything except a stop. */
   panicLatched: boolean;
-  /** This engine replaced one that died, so `while` and `live` rules wait for their source to go inactive once. */
+  /**
+   * The last engine may have left output running: it died, or the app ended uncleanly while toys
+   * were active. Rules wait for their source to go inactive once, and Intiface gets one stop.
+   */
   toysMuted: boolean;
 }
 
