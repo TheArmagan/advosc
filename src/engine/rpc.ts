@@ -46,7 +46,7 @@ export function registerRpc() {
     fillTemplate: chatbox.fillTemplate,
     getAllValues: chatbox.getAllValues,
     setAllValues: (values) => {
-      chatbox.setAllValues(values);
+      chatbox.setAllValues(values, { automations: "replace" });
       chatbox.updatePlaceholders();
     },
   });

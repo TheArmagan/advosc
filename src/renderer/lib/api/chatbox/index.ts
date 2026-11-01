@@ -1,6 +1,7 @@
 import type { ChatboxModule } from "$shared/chatbox/module-base";
 import type { AllValues } from "$shared/chatbox/preset-share";
 import { exprOptions } from "$shared/chatbox/modules/expr";
+import { lovenseOptions } from "$shared/chatbox/modules/lovense";
 import { mediaInfoOptions } from "$shared/chatbox/modules/media-info";
 import { numberOptions } from "$shared/chatbox/modules/number";
 import { oscDataOptions } from "$shared/chatbox/modules/osc-data";
@@ -67,6 +68,7 @@ registerChatboxModule(new ChatboxRequestModule(), ChatboxRequestSettings);
 registerChatboxModule(new ChatboxSpeechModule(), ChatboxSpeechSettings);
 registerChatboxModule(new ChatboxModuleClient(soundOptions));
 registerChatboxModule(new ChatboxVarModule(), ChatboxVarSettings);
+registerChatboxModule(new ChatboxModuleClient(lovenseOptions));
 
 const settings = synced<ChatboxSettings>("Chatbox;Settings", {
   template: "",

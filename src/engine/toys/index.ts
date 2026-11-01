@@ -5,11 +5,11 @@ import {
   MIRROR_TOYS,
   TOY_SETTINGS_KEY,
   type ToyFeature,
-  type ToyRuleSink,
   type ToySettings,
   type ToysApi,
   type ToysState,
 } from "$shared/toys";
+import { setToySink } from "../automations/toy-sink";
 import { engineConfig } from "../runtime/config";
 import { ackPanic, hostCall, setOutputsActive, setToyHostHandler } from "../runtime/host";
 import { handleAll, mirror, synced } from "../sync/hub";
@@ -19,12 +19,6 @@ import { ToyService } from "./service";
 import { clampLevel } from "./transport";
 
 const TEST_TIMEOUT_MS = 2000;
-
-/**
- * Stand-in until Automations merges. Replace it with
- * `import { setToySink } from "../automations/toy-sink";`, and the call in `startToys` stays.
- */
-function setToySink(_sink: ToyRuleSink) {}
 
 /** A window can write this store directly, so every value is checked on the way in. */
 function normalizeSettings(stored: unknown): ToySettings {

@@ -3,9 +3,8 @@ import {
   MIRROR_TOYS,
   TOY_SETTINGS_KEY,
   defaultToySettings,
-  type PanicApi,
   type PanicHotkeyResult,
-  type PanicState as SharedPanicState,
+  type PanicState,
   type ToyFeature,
   type ToyInfo,
   type ToyPattern,
@@ -19,14 +18,12 @@ import { call, fire, mirrored, synced } from "../engine";
 
 export { defaultToySettings };
 
-/** `hotkeyError` lands in `$shared/toys` with the Toys branch, and this intersection then does nothing. */
-export type PanicState = SharedPanicState & { hotkeyError?: string };
-
 /** Hidden from the Modules page, the picker and input lists while toys are off. */
 export const LOVENSE_MODULE_ID = "Lovense";
 
 export type {
   PanicHotkeyResult,
+  PanicState,
   ToyFeature,
   ToyInfo,
   ToyPattern,
@@ -88,8 +85,8 @@ export const toys = {
  * Panic goes straight to main over IPC, never through the engine, so the stop button and the
  * latch state keep working when the engine is hung.
  */
-function panicApi(): PanicApi {
-  return (window.ADVOSCNative as unknown as { panic: PanicApi }).panic;
+function panicApi() {
+  return window.ADVOSCNative.panic;
 }
 
 const panicState = writable<PanicState>({ latched: false, hotkey: "" });

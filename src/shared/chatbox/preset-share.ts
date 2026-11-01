@@ -1,4 +1,5 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from "fflate";
+import type { Automation, AutomationActionType } from "../automation";
 import { heartRatePlatforms } from "./heart-rate";
 
 export type AllValues = {
@@ -8,6 +9,8 @@ export type AllValues = {
     advancedTemplate?: string;
     simpleBlocks?: any[];
   };
+  /** Missing from bundles older than Automations. */
+  automations?: Automation[];
 };
 
 /**
@@ -177,6 +180,110 @@ export function redactSecrets(input: AllValues): RedactionReport {
   return { data, removed };
 }
 
+// ------------------------------------------------------------------ toy content
+
+const TOY_MODULE_ID = "lovense";
+
+const TOY_PLACEHOLDER = /\{\{\s*Lovense\b[^}]*\}\}|\[\[\s*Lovense\b[^\]]*\]\]/gi;
+
+/**
+ * What a shared rule may do. It's a list of what's allowed, not of what isn't, so an action
+ * type nobody has thought about here stays out of shares until someone has.
+ */
+const SHAREABLE_ACTIONS = new Set<AutomationActionType>([
+  "sound",
+  "osc",
+  "setParameter",
+  "loadProfile",
+  "moduleInput",
+  "setVariable",
+]);
+
+function isShareableAction(action: any): boolean {
+  if (!SHAREABLE_ACTIONS.has(action?.type)) return false;
+  if (action.type !== "moduleInput") return true;
+  return String(action.moduleId ?? "").trim().toLowerCase() !== TOY_MODULE_ID;
+}
+
+/** Whether running this rule could touch a toy. */
+export function ruleUsesToys(rule: Automation): boolean {
+  return Array.isArray(rule?.actions) && rule.actions.some((action) => !isShareableAction(action));
+}
+
+function hasToyPlaceholder(value: unknown): boolean {
+  return typeof value === "string" && value.search(TOY_PLACEHOLDER) >= 0;
+}
+
+/** Removes toy placeholders from every string under `value`, wherever it's nested. */
+function stripPlaceholders<T>(value: T, onRemoved: () => void): T {
+  if (typeof value === "string") {
+    const next = value.replace(TOY_PLACEHOLDER, "");
+    if (next !== value) onRemoved();
+    return next as T;
+  }
+  if (Array.isArray(value)) return value.map((item) => stripPlaceholders(item, onRemoved)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, stripPlaceholders(item, onRemoved)]),
+    ) as T;
+  }
+  return value;
+}
+
+/**
+ * Takes out anything that can reach a toy, so a preset can never drive someone else's device.
+ * This runs when sharing and again when importing, because a share code can be written by hand,
+ * and it isn't affected by "include secrets".
+ */
+export function stripToyContent(input: AllValues): RedactionReport {
+  const data = clonePresetData(input);
+  const removed: string[] = [];
+
+  if (data.modules) {
+    for (const id of Object.keys(data.modules)) {
+      if (id.trim().toLowerCase() === TOY_MODULE_ID) delete data.modules[id];
+    }
+  }
+
+  if (Array.isArray(data.automations)) {
+    data.automations = data.automations.flatMap((rule) => {
+      if (!rule || typeof rule !== "object") return [];
+      const name = rule.name || "Unnamed";
+      const source = rule.source as { template?: unknown; address?: unknown } | undefined;
+
+      // Taking the placeholder out of a source would quietly change what the rule reacts to.
+      if (hasToyPlaceholder(source?.template)) {
+        removed.push(`Automation "${name}": reads toy values`);
+        return [];
+      }
+
+      if (!Array.isArray(rule.actions)) {
+        removed.push(`Automation "${name}": not a valid rule`);
+        return [];
+      }
+
+      const actions = rule.actions;
+      const shareable = actions.filter(isShareableAction);
+      if (shareable.length === actions.length) return [rule];
+
+      if (!shareable.length) {
+        removed.push(`Automation "${name}": only controlled toys`);
+        return [];
+      }
+      removed.push(`Automation "${name}": toy actions`);
+      return [{ ...rule, actions: shareable }];
+    });
+  } else {
+    delete data.automations;
+  }
+
+  let placeholders = 0;
+  const cleaned = stripPlaceholders(data, () => placeholders++);
+  if (placeholders) removed.push(`Toy placeholders in ${placeholders} place${placeholders === 1 ? "" : "s"}`);
+
+  return { data: cleaned, removed };
+}
+
 // ------------------------------------------------------------------ encoding
 
 export function buildShareEnvelope(
@@ -184,9 +291,12 @@ export function buildShareEnvelope(
   includeSecrets: boolean,
   now: number,
 ): { envelope: PresetShareEnvelope; removed: string[] } {
-  const { data, removed } = includeSecrets
-    ? { data: clonePresetData(preset.data), removed: [] as string[] }
-    : redactSecrets(preset.data);
+  const toyFree = stripToyContent(preset.data);
+  const redacted = includeSecrets
+    ? { data: toyFree.data, removed: [] as string[] }
+    : redactSecrets(toyFree.data);
+  const data = redacted.data;
+  const removed = [...toyFree.removed, ...redacted.removed];
   return {
     envelope: {
       kind: SHARE_KIND,
@@ -239,6 +349,18 @@ function isEnvelope(value: any): value is PresetShareEnvelope {
 }
 
 /**
+ * What a preset from outside may bring in. Toy content goes, and the rules that remain are off
+ * until the user has looked at them, since they can play sounds and send OSC.
+ */
+function sanitizeImportedData(input: AllValues): AllValues {
+  const { data } = stripToyContent(input);
+  if (data.automations) {
+    data.automations = data.automations.map((rule) => ({ ...rule, enabled: false }));
+  }
+  return data;
+}
+
+/**
  * Accepts anything a user might paste: a share code, a share envelope, or a bare
  * `getAllValues()` bundle from the older "Export All Settings" button.
  */
@@ -275,7 +397,7 @@ export function parseShareInput(input: string, now: number): SharedPreset {
       description: typeof preset.description === "string" ? preset.description : "",
       createdAt: typeof preset.createdAt === "number" ? preset.createdAt : now,
       updatedAt: now,
-      data: preset.data,
+      data: sanitizeImportedData(preset.data),
     };
   }
 
@@ -286,7 +408,7 @@ export function parseShareInput(input: string, now: number): SharedPreset {
       description: "",
       createdAt: now,
       updatedAt: now,
-      data: parsed as AllValues,
+      data: sanitizeImportedData(parsed as AllValues),
     };
   }
 

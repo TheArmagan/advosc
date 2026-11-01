@@ -1,5 +1,4 @@
 import {
-  AUTOMATIONS_KEY,
   MIRROR_AUTOMATIONS,
   mapRange,
   type Automation,
@@ -15,12 +14,13 @@ import type { EvalFailure } from "../chatbox/eval-context";
 import type { ChatboxVarModule } from "../chatbox/modules/chatbox-var-module";
 import { native } from "../native";
 import { soundEngine } from "../sound-effects/engine";
-import { mirror, synced } from "../sync/hub";
+import { mirror } from "../sync/hub";
 import { avatarOSC } from "../vrc-osc";
 import { renewToyLink, runActions, sendLiveLevel, stopRuleVoices } from "./actions";
 import { scanTemplate } from "./dependencies";
 import { takeSoundRuleMigration } from "./migrate";
 import { hasToyAction, isLiveInactive, newLiveState, newRuleState, toNumber, type RuleState } from "./rule-state";
+import { rulesStore } from "./rules-store";
 import { getToySink, onToySinkChange } from "./toy-sink";
 
 export { setToySink } from "./toy-sink";
@@ -52,7 +52,6 @@ const AVATAR_SETTLE_MS = 1100;
 const TRIPPED_MESSAGE = `Turned off because it fired ${BREAKER_FIRES} times in ${BREAKER_WINDOW_MS / 1000} seconds. Check for rules setting each other off, then reset it.`;
 const SAFE_MODE_MESSAGE = "Automations are off in safe mode.";
 
-const rulesStore = synced<Automation[]>(AUTOMATIONS_KEY, [], (stored) => (Array.isArray(stored) ? stored : []));
 const statusStore = writable<Record<string, AutomationStatus>>({});
 
 const states = new Map<string, RuleState>();

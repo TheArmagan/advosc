@@ -1,5 +1,5 @@
 import { buildTemplateState } from "$shared/simple-editor/template";
-import type { AllValues } from "$shared/chatbox/preset-share";
+import { ruleUsesToys, type AllValues } from "$shared/chatbox/preset-share";
 import { cleanTemplate, splitParams, type ChatboxPlaceholder, type ChatboxSettings } from "$shared/template-syntax";
 import { notify } from "../runtime/notify";
 import mapReplace from "stuffs/lib/mapReplace";
@@ -26,6 +26,7 @@ import { ChatboxRequestModule } from "./modules/chatbox-request-module";
 import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
 import { ChatboxSoundModule } from "./modules/chatbox-sound-module";
 import { ChatboxLovenseModule } from "../toys/lovense-module";
+import { rulesStore } from "../automations/rules-store";
 import { ChatboxVarModule } from "./modules/chatbox-var-module";
 import {
   currentFrame,
@@ -317,7 +318,7 @@ function rebuildAutoShortcuts() {
   module.values.set({ ...values, shortcuts: next });
 }
 
-function getAllValues() {
+function getAllValues(): AllValues {
   const moduleValues: Record<string, any> = {};
   chatboxList.forEach((module, moduleId) => {
     const values = module.getCleanValues();
@@ -332,10 +333,37 @@ function getAllValues() {
       advancedTemplate: get(advancedTemplate),
       simpleBlocks: get(simpleEditorBlocks),
     },
+    automations: get(rulesStore),
   };
 }
 
-function setAllValues(values: AllValues) {
+/**
+ * `merge` is for presets: rules in the preset win by id, and the user's other rules stay.
+ * `replace` is for a settings import. That file can come from anyone, so rules that use toys
+ * arrive off, which costs one click on your own backup and keeps a stranger's file harmless.
+ */
+function importAutomations(values: AllValues, mode: "merge" | "replace") {
+  if (!Array.isArray(values.automations)) return;
+  const incoming = values.automations.filter((rule) => typeof rule?.id === "string" && rule.id);
+
+  if (mode === "replace") {
+    rulesStore.set(incoming.map((rule) => (ruleUsesToys(rule) ? { ...rule, enabled: false } : rule)));
+    return;
+  }
+
+  rulesStore.update((current) => {
+    const byId = new Map(incoming.map((rule) => [rule.id, rule]));
+    const known = new Set(current.map((rule) => rule.id));
+    return [
+      ...current.map((rule) => byId.get(rule.id) ?? rule),
+      ...incoming.filter((rule) => !known.has(rule.id)),
+    ];
+  });
+}
+
+function setAllValues(values: AllValues, options: { automations?: "merge" | "replace" } = {}) {
+  importAutomations(values, options.automations ?? "merge");
+
   chatboxList.forEach((module, moduleId) => {
     if (values.modules?.[moduleId]) {
       // Merge instead of replace: a bundle only carries the keys `getCleanValues()` exports,
