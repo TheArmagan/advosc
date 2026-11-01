@@ -65,6 +65,11 @@ interface Claim {
   body: ClaimBody;
   /** `live` and `while` output, which OSC silence pauses. */
   pausable: boolean;
+  /**
+   * A `live` rule letting go when its level hits 0 is ordinary output, and it can happen on
+   * every other sample of a 30 Hz signal. That stop stays paced, or it would break the floor.
+   */
+  pacedRelease: boolean;
   expiresAt: number;
   /** Toys, or `toy|feature` pairs, that a `stop` action took out of this claim. */
   excluded: Set<string>;
@@ -352,6 +357,7 @@ export class ToyService {
         target,
         body: { kind: "levels", level: clampLevel(level) },
         pausable: true,
+        pacedRelease: true,
         expiresAt: now + LEASE_MS,
         excluded: new Set(),
       });
@@ -394,6 +400,7 @@ export class ToyService {
       target: action.target,
       body,
       pausable: mode === "while",
+      pacedRelease: false,
       expiresAt,
       excluded: new Set(),
     });
@@ -401,13 +408,16 @@ export class ToyService {
   }
 
   private release(ruleId: string) {
-    let changed = false;
+    let immediate = false;
+    let paced = false;
     for (const [id, claim] of this.claims) {
       if (claim.owner !== ruleId) continue;
       this.claims.delete(id);
-      changed = true;
+      if (claim.pacedRelease) paced = true;
+      else immediate = true;
     }
-    if (changed) this.afterClaimsDropped();
+    if (immediate) this.afterClaimsDropped();
+    else if (paced) this.wake();
   }
 
   /** Rules wait out a closed VRChat. Manual tests don't: that's when you'd run one. */
@@ -545,10 +555,17 @@ export class ToyService {
       this.claims.delete(id);
       dropped = true;
     }
-    const orphaned = this.claims.size === 0 && [...this.slots.values()].some((slot) => slot.sent.size > 0);
-    if (dropped || orphaned) this.afterClaimsDropped();
+    if (dropped) this.afterClaimsDropped();
 
-    for (const slot of this.slots.values()) this.pump(slot);
+    for (const slot of this.slots.values()) {
+      // A toy that dropped off the list with nothing left claiming it never reaches the sender.
+      if (this.claims.size === 0) {
+        for (const toyId of [...slot.sent.keys()]) {
+          if (!slot.toys.some((toy) => toy.id === toyId && toy.connected)) void this.hardStop(slot, toyId);
+        }
+      }
+      this.pump(slot);
+    }
 
     const busy = this.claims.size > 0 || [...this.slots.values()].some((slot) => slot.sent.size > 0 || slot.inFlight);
     if (!busy && this.ticker) {
@@ -830,6 +847,7 @@ export class ToyService {
       target: { toyIds: [toyId], features: [feature] },
       body: { kind: "levels", level: clampLevel(level) },
       pausable: false,
+      pacedRelease: false,
       expiresAt: Date.now() + TEST_LEASE_MS,
       excluded: new Set(),
     });
