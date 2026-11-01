@@ -20,7 +20,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import ChatboxMonacoEditor from "../chatbox-monaco-editor.svelte";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { chatbox } from "$lib/api/chatbox";
+  import { automations } from "$lib/api/automations";
   import { onMount } from "svelte";
   import { ChatboxShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
 
@@ -44,7 +44,8 @@
   let placeholderParams = $state<string[]>([]);
 
   async function updateShortcutRender(key: string) {
-    shortcutRender = await chatbox.fillTemplate(
+    // Read-only, so a shortcut holding {{Sound;Play;x}} doesn't play on each keystroke here.
+    shortcutRender = await automations.preview(
       `{{Shortcut;${key}${
         shortcutParamsCount > 0
           ? `;${placeholderParams
@@ -53,9 +54,6 @@
               .join(";")}`
           : ""
       }}}`,
-      "{{;}}",
-      false,
-      "ShortcutPreview",
     );
   }
 

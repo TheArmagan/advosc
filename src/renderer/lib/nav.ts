@@ -12,6 +12,7 @@ import {
 } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
+import { toyStatus } from './api/toys/status.svelte';
 import AutomationsPage from './pages/automations-page.svelte';
 import AvatarOSCPage from './pages/avatar-osc-page.svelte';
 import AvatarProfilesPage from './pages/avatar-profiles-page.svelte';
@@ -31,7 +32,10 @@ export type NavItem = {
   path: string;
   page: Component;
   group: NavGroup;
-  /** Hides the entry from the sidebar. Its route redirects to the default page. */
+  /**
+   * Hides the entry from the sidebar. Its route redirects to the default page. Read runes state
+   * here, because the sidebar won't update from a plain `get(store)`.
+   */
   visible?: () => boolean;
 };
 
@@ -46,7 +50,7 @@ export const navItems: NavItem[] = [
   { label: 'Automations', icon: ZapIcon, path: '/automations', page: AutomationsPage, group: 'main' },
   { label: 'OSC Forwarder', icon: RadioIcon, path: '/osc-forwarder', page: OscForwarderPage, group: 'main' },
   { label: 'Sound Effects', icon: Volume2Icon, path: '/sound-effects', page: SoundEffectsPage, group: 'main' },
-  { label: 'Lovense', icon: VibrateIcon, path: '/lovense', page: LovensePage, group: 'main', visible: () => false },
+  { label: 'Lovense', icon: VibrateIcon, path: '/lovense', page: LovensePage, group: 'main', visible: () => toyStatus.enabled },
   { label: 'OSC', icon: SlidersHorizontalIcon, path: '/tools/avatar-osc', page: AvatarOSCPage, group: 'avatar' },
   { label: 'Profiles', icon: BookUserIcon, path: '/tools/avatar-profiles', page: AvatarProfilesPage, group: 'avatar' },
   { label: 'Scale', icon: RulerIcon, path: '/tools/avatar-scale', page: AvatarScalePage, group: 'avatar' },
