@@ -163,7 +163,6 @@
         <Label class="text-lg">Bulk Import Shortcuts (JSON)</Label>
         <div class="flex w-full items-center justify-center">
           <ChatboxMonacoEditor
-            width={Math.floor(window.innerWidth * 0.98)}
             height={250}
             language="json"
             onLoad={(editor) => {
@@ -230,7 +229,6 @@
               <Label class="text-lg">Editing Shortcut: {key}</Label>
               <div class="flex w-full items-center justify-center">
                 <ChatboxMonacoEditor
-                  width={Math.floor(window.innerWidth * 0.98)}
                   height={250}
                   onLoad={(editor) => {
                     editor.setValue(value as string);

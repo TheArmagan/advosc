@@ -68,10 +68,10 @@
   ];
 </script>
 
-<div class="flex flex-col gap-3 p-2 h-[calc(100vh-8rem)] overflow-auto">
-  <div class="flex items-center justify-between">
+<div class="flex flex-col gap-3 p-2">
+  <div class="flex items-center justify-between gap-2">
     <div class="flex items-center gap-2">
-      <RadioIcon class="size-4 text-muted-foreground" />
+      <RadioIcon class="size-4 shrink-0 text-muted-foreground" />
       <span class="text-sm text-muted-foreground">
         Evaluate chatbox template values and forward them to OSC addresses at a
         set interval.

@@ -23,7 +23,7 @@
   let {
     onLoad,
     onChange,
-    width = 900,
+    width = "100%",
     height = 400,
     value = $bindable(
       `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n`,
@@ -32,11 +32,14 @@
   }: {
     onLoad?: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
     onChange?: (value: string) => void;
-    width?: number;
-    height?: number;
+    width?: number | string;
+    height?: number | string;
     value?: string;
     language?: string;
   } = $props();
+
+  const toCssSize = (size: number | string) =>
+    typeof size === "number" ? `${size}px` : size;
 
   // Dynamic/live autocomplete function
   const getCompletions: GetCompletionsFunction = async (
@@ -351,6 +354,7 @@
       suggestOnTriggerCharacters: true,
       theme: "advosc-theme",
       minimap: { enabled: false },
+      automaticLayout: true,
     });
 
     const model = monaco.editor.createModel(
@@ -388,11 +392,8 @@
 </script>
 
 <div
-  class="flex flex-col relative"
-  style="width: {width}px; height: {height}px;"
+  class="flex flex-col relative min-w-0"
+  style="width: {toCssSize(width)}; height: {toCssSize(height)};"
 >
-  <div
-    style="width: {width}px; height: {height}px; flex: 1;"
-    bind:this={editorContainer}
-  ></div>
+  <div class="w-full min-h-0 flex-1" bind:this={editorContainer}></div>
 </div>

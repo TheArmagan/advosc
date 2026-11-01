@@ -124,7 +124,7 @@
   });
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-1 flex-col gap-2">
   <div class="flex w-full gap-2 items-center">
     <Input
       type="text"
@@ -163,12 +163,14 @@
       }}>Reset</Button
     >
   </div>
-  <div class="flex gap-2">
+  <!-- The list is taller than the window, so the row is absolutely sized to keep it from setting the page height. -->
+  <div class="relative flex-1 min-h-64">
+    <div class="absolute inset-0 flex gap-2">
     <Card.Root
-      class="p-2 flex flex-col gap-2 shrink-0 max-w-[250px] max-h-[400px]"
+      class="p-2 flex flex-col gap-2 shrink-0 max-w-[250px]"
     >
       <Card.Title>Insert Placeholders</Card.Title>
-      <div class="flex flex-col gap-1 overflow-auto">
+      <div class="flex flex-col gap-1 overflow-auto min-h-0">
         {#each $placeholders as ph}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger class="w-full">
@@ -233,8 +235,9 @@
         {/each}
       </div>
     </Card.Root>
-    <div class="flex">
+    <div class="flex flex-1 min-w-0">
       <ChatboxMonacoEditor
+        height="100%"
         onLoad={(editor) => {
           insertText = (text: string) => {
             const position = editor.getPosition();
@@ -270,14 +273,15 @@
         }}
       />
     </div>
+    </div>
   </div>
   <div class="flex w-full">
-    <Card.Root class="p-2 flex w-full">
+    <Card.Root class="p-2 gap-2 flex w-full">
       <Card.Title>Template Preview</Card.Title>
       <Textarea
         id="template-preview"
         value={$renderedTemplate}
-        class="w-full h-38 font-mono bg-secondary text-foreground text-center"
+        class="w-full h-24 [@media(min-height:720px)]:h-38 font-mono bg-secondary text-foreground text-center"
         placeholder="Template preview will appear here..."
         readonly
       />
