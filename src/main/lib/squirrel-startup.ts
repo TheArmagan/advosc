@@ -19,6 +19,23 @@ function runUpdater(args: string[], done: () => void): void {
 }
 
 /**
+ * The launch right after an install finishes. It always shows the window, whatever start
+ * hidden says, or it would look like the installer did nothing.
+ */
+export function isFirstRun(): boolean {
+  return process.argv.includes('--squirrel-firstrun');
+}
+
+/**
+ * An uninstall can't remove files a running tray instance holds. The instance lock is the one
+ * channel that reaches it, so this asks it to quit. Only an uninstall does: a background
+ * update runs the new exe while the old one is meant to keep working.
+ */
+export function requestRunningInstanceQuit() {
+  if (process.argv[1] === '--squirrel-uninstall') app.requestSingleInstanceLock({ quit: true });
+}
+
+/**
  * Returns true when the app was started by Squirrel for a lifecycle step rather
  * than by the user. The caller should quit when it does.
  */

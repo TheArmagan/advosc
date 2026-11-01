@@ -1,5 +1,9 @@
+import { rawStore } from "../engine";
+
+/** Same API as ever. The data lives in the engine, hydrated into this window before mount. */
+
 function getLocalData(key: string, defaultValue: any = null): any {
-  const data = localStorage.getItem(`ADCOSC;${key}`);
+  const data = rawStore.get(key);
   if (data === null) return defaultValue;
   try {
     return JSON.parse(data);
@@ -9,11 +13,11 @@ function getLocalData(key: string, defaultValue: any = null): any {
 }
 
 function setLocalData(key: string, value: any): void {
-  localStorage.setItem(`ADCOSC;${key}`, JSON.stringify(value));
+  rawStore.set(key, JSON.stringify(value));
 }
 
 function removeLocalData(key: string): void {
-  localStorage.removeItem(`ADCOSC;${key}`);
+  rawStore.remove(key);
 }
 
 function updateLocalData(key: string, updater: (currentValue: any) => void): void {
@@ -24,7 +28,7 @@ function updateLocalData(key: string, updater: (currentValue: any) => void): voi
 }
 
 async function hasLocalData(key: string): Promise<boolean> {
-  return localStorage.getItem(`ADCOSC;${key}`) !== null;
+  return rawStore.get(key) !== null;
 }
 
 export const localData = {

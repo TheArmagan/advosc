@@ -81,7 +81,7 @@ function ensureSidecar(): void {
   }
 
   stopped = false;
-  sidecar = spawn(exePath, ['ble-hr']);
+  sidecar = spawn(exePath, ['ble-hr'], { windowsHide: true });
   let buffer = '';
 
   sidecar.stdout?.on('data', (data: Buffer) => {

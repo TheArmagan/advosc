@@ -15,7 +15,7 @@ function executeCommand(args: string[]): Promise<string> {
   }
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(exePath, args);
+    const proc = spawn(exePath, args, { windowsHide: true });
     let stdout = '';
     let stderr = '';
 

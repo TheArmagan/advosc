@@ -128,7 +128,7 @@ export class ChatboxHeartRateModule extends HeartRateConfig {
         state.extras = { ...state.extras, ...extras };
       },
       onError: (error) => {
-        console.error("HeartRate socket error:", error);
+        console.error("HeartRate socket error:", (error as Error)?.message ?? "connection error");
         state.isOnline = false;
         state.lastError = error instanceof Error ? error.message : "Connection error";
       },

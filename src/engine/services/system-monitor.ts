@@ -26,7 +26,7 @@ function startMonitor(): void {
     return;
   }
 
-  monitorProcess = spawn(exePath, ['system-monitor', '--interval', String(SAMPLE_INTERVAL)]);
+  monitorProcess = spawn(exePath, ['system-monitor', '--interval', String(SAMPLE_INTERVAL)], { windowsHide: true });
   let buffer = '';
 
   monitorProcess.stdout?.on('data', (data: Buffer) => {

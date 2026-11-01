@@ -16,6 +16,7 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: path.resolve(__dirname, 'src/renderer/lib'),
+      $shared: path.resolve(__dirname, 'src/shared'),
     },
   },
   server: {

@@ -1,307 +1,37 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type {
+  BleEvent,
+  BleState,
+  OSCSourceConfig,
+  OSCSourcesResult,
+  OSCSourceStatus,
+} from '../shared/native-types';
 
-// Local watcher event names we propagate from main
-type WatchEventName = 'add' | 'change' | 'unlink';
+export type * from '../shared/native-types';
 
-export interface OSCIncomingMessage {
-  address: string;
-  args: (number | string | boolean | null | undefined)[];
-  /** OSC type tag per arg ('i', 'f', 's', 'T', 'F', 'N'), parallel to `args`. */
-  types?: string[];
-}
-
-export type MediaCommand ='skip-track' | 'previous-track' | 'toggle-play-pause' | 'pause' | 'resume';
-
-export interface MediaInfo {
-  title?: string;
-  artist?: string;
-  album?: string;
-  playbackStatus: 'Playing' | 'Paused' | 'Stopped' | 'Unknown';
-  position?: number;
-  duration?: number;
-  appName?: string;
-  hasArtwork: boolean;
-}
-
-export interface TrackerBattery {
-  deviceIndex: number;
-  serialNumber: string | null;
-  modelNumber: string | null;
-  batteryLevel: number;
-  isCharging: boolean;
-  deviceClass: string;
-}
-
-export interface StartTimeResponse {
-  startTime: number | null;
-  error?: string;
-}
-
-export interface TrackerBatteryResponse {
-  trackers: TrackerBattery[] | null;
-  error?: string;
-}
-
-export interface SystemCpuInfo {
-  name: string;
-  vendor: string;
-  /** Overall usage percentage (0-100). */
-  usage: number;
-  physicalCores: number | null;
-  logicalCores: number;
-  /** Current frequency in MHz. */
-  frequency: number;
-  perCoreUsage: number[];
-  /** Celsius, when a readable sensor exists (rarely available on Windows). */
-  temperature: number | null;
-}
-
-export interface SystemMemoryInfo {
-  used: number;
-  total: number;
-  available: number;
-  /** Used percentage (0-100). */
-  usage: number;
-  swapUsed: number;
-  swapTotal: number;
-  swapUsage: number;
-}
-
-export interface SystemGpuInfo {
-  name: string;
-  vendor: string;
-  /** Utilization percentage (0-100), when it can be determined. */
-  usage: number | null;
-  vramUsed: number | null;
-  vramTotal: number | null;
-  vramUsage: number | null;
-  /** Celsius. NVIDIA only. */
-  temperature: number | null;
-  /** Percentage. NVIDIA only. */
-  fanSpeed: number | null;
-  /** Watts. NVIDIA only. */
-  power: number | null;
-  /** MHz. NVIDIA only. */
-  coreClock: number | null;
-}
-
-export interface SystemNetworkInterfaceInfo {
-  name: string;
-  /** Bytes per second. */
-  upload: number;
-  download: number;
-  totalUploaded: number;
-  totalDownloaded: number;
-}
-
-export interface SystemNetworkInfo {
-  /** Bytes per second, summed over every interface. */
-  upload: number;
-  download: number;
-  totalUploaded: number;
-  totalDownloaded: number;
-  interfaces: SystemNetworkInterfaceInfo[];
-}
-
-export interface SystemInfo {
-  cpu: SystemCpuInfo;
-  memory: SystemMemoryInfo;
-  gpus: SystemGpuInfo[];
-  network: SystemNetworkInfo;
-  /** Seconds since boot. */
-  uptime: number;
-}
-
-export interface SystemInfoResponse {
-  info: SystemInfo | null;
-  error?: string;
-}
-
-export interface BleScanResult {
-  /** `AA:BB:CC:DD:EE:FF`. Stable per device, and what you connect with. */
-  address: string;
-  name: string | null;
-  rssi: number | null;
-  /** Whether the advertisement listed the 0x180D heart rate service. */
-  hrService: boolean;
-}
-
-export interface BleDeviceState {
-  address: string;
-  connected: boolean;
-  connecting: boolean;
-  /** True while packets are still arriving. False means connected but silent. */
-  active?: boolean;
-  name?: string;
-  /** Chest, Wrist, Finger and so on. Cosmetic, and often missing. */
-  sensorLocation?: string;
-  bpm?: number;
-  /** Null when the device does not report skin contact at all. */
-  contact?: boolean | null;
-  rrIntervalsMs?: number[];
-  battery?: number;
-  lastPacketAt?: number;
-  error?: string;
-}
-
-export interface BleState {
-  /** Whether the sidecar process is alive. */
-  running: boolean;
-  adapter: string | null;
-  scanning: boolean;
-  error?: string;
-  devices: BleDeviceState[];
-  scanResults: BleScanResult[];
-}
-
-/** Raw sidecar events, plus a `state` snapshot emitted after each one. */
-export type BleEvent =
-  | { type: 'state'; state: BleState }
-  | { type: 'ready'; adapter: string }
-  | { type: 'scan_started' }
-  | { type: 'scan_stopped' }
-  | { type: 'scan_result'; address: string; name: string | null; rssi: number | null; hr_service: boolean }
-  | { type: 'connecting'; address: string }
-  | { type: 'connected'; address: string; name: string | null; sensor_location: string | null }
-  | { type: 'hr'; address: string; bpm: number; contact: boolean | null; energy_kj?: number; rr_ms: number[]; ts: number }
-  | { type: 'battery'; address: string; percent: number }
-  | { type: 'disconnected'; address: string; reason: string }
-  | { type: 'error'; address?: string; message: string };
-
-export interface HttpRequestOptions {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-  /** Milliseconds before the request is aborted. */
-  timeoutMs?: number;
-}
-
-export interface HttpRequestResult {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: string;
-  /** Set when the request never produced a response (DNS, timeout, bad URL). */
-  error?: string;
-  durationMs: number;
-  /** True when the body hit the size cap and was cut short. */
-  truncated?: boolean;
-}
-
-export interface SpeechServerConfig {
-  /** BCP-47 tag handed to the recognizer, e.g. "en-US". */
-  language: string;
-  interimResults: boolean;
-  continuous: boolean;
-  /** Whether the page should currently have the mic open. */
-  listening: boolean;
-  maxAlternatives: number;
-}
-
-export interface SpeechTranscript {
-  sessionId: string;
-  text: string;
-  isFinal: boolean;
-  confidence: number | null;
-  language: string;
-  at: number;
-  /** Set when the page's Clear button wiped the transcript. */
-  cleared?: boolean;
-}
-
-export interface SpeechPageStatus {
-  sessionId?: string;
-  listening: boolean;
-  wantListening?: boolean;
-  language?: string;
-  /** False when the browser has no Web Speech API. */
-  supported?: boolean;
-  error?: string;
-  closing?: boolean;
-}
-
-export interface SpeechServerState {
-  running: boolean;
-  port: number | null;
-  url: string | null;
-  /** Number of pages holding the event stream open. */
-  clients: number;
-  pageListening: boolean;
-  lastError?: string;
-  config: SpeechServerConfig;
-}
-
-export interface OSCEndpoint {
-  address: string;
-  port: number;
-}
-
-export interface OSCSourceConfig {
-  id: string;
-  name: string;
-  enabled: boolean;
-  local?: OSCEndpoint;
-  remote?: OSCEndpoint;
-}
-
-export interface OSCSourceStatus {
-  local?: OSCEndpoint;
-  remote?: OSCEndpoint;
-  isOpen: boolean;
-}
-
-export type OSCSourcesResult =
-  | { success: true; sources: OSCSourceConfig[]; status: OSCSourceStatus[] }
-  | { success: false; error: string };
+type EngineEventListener = (name: string, payload: unknown) => void;
 
 export interface PreloadElectronAPI {
-  env: { get(key: string): string | undefined };
   theme: {
     current: () => 'light' | 'dark';
     onChange: (callback: (theme: 'light' | 'dark') => void) => () => void;
   };
   frame: { minimize: () => void; maximize: () => void; close: () => void };
-  media: {
-    execute: (command: MediaCommand) => Promise<{ success: boolean; command: string; error?: string }>;
-    onMediaInfo: (callback: (info: MediaInfo) => void) => () => void;
+  /** Each frame is a JSON string, because the renderer's objects can be runes proxies. */
+  engine: {
+    connect: () => void;
+    onConnected: (callback: () => void) => () => void;
+    send: (frame: string) => void;
+    onMessage: (callback: (frame: string) => void) => () => void;
+    onEvent: (callback: EngineEventListener) => () => void;
+    call: (method: string, argsJson: string) => Promise<unknown>;
   };
   osc: {
-    send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => void;
-    sendCustom: (address: string, args: { value: (number | string | boolean | null | undefined), type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => void;
-    onMessage: (callback: (message: OSCIncomingMessage) => void) => () => void;
     getSources: () => Promise<OSCSourceConfig[]>;
     getDefaultSources: () => Promise<OSCSourceConfig[]>;
     getStatus: () => Promise<OSCSourceStatus[]>;
     setSources: (sources: OSCSourceConfig[]) => Promise<OSCSourcesResult>;
     resetSources: () => Promise<OSCSourcesResult>;
-  };
-  path: {
-    join: (...paths: string[]) => string;
-    sep: string;
-  };
-  files: {
-    readText: (filePath: string, enc?: BufferEncoding) => Promise<string>;
-    readJSON: (filePath: string, enc?: BufferEncoding) => Promise<any>;
-    watch: (
-      filePaths: string[],
-      callback: (eventName: WatchEventName, path: string) => void,
-      options?: { ignoreInitial?: boolean }
-    ) => () => void;
-    findFiles: (dirPath: string) => Promise<string[]>;
-    readBinary: (filePath: string) => Promise<ArrayBuffer | null>;
-  };
-  dialog: {
-    openAudioFiles: () => Promise<string[]>;
-  };
-  utils: {
-    getStartTime: (processName: string) => Promise<StartTimeResponse>;
-    getOpenVRTrackers: () => Promise<TrackerBatteryResponse>;
-    getSystemInfo: () => Promise<SystemInfoResponse>;
-  };
-  http: {
-    request: (options: HttpRequestOptions) => Promise<HttpRequestResult>;
   };
   ble: {
     scan: (options?: { seconds?: number; all?: boolean }) => Promise<BleState>;
@@ -311,34 +41,83 @@ export interface PreloadElectronAPI {
     getState: () => Promise<BleState>;
     onEvent: (callback: (event: BleEvent) => void) => () => void;
   };
-  speech: {
-    start: (options?: { port?: number; config?: Partial<SpeechServerConfig> }) => Promise<{ success: boolean; url?: string; port?: number; error?: string }>;
-    stop: () => Promise<{ success: boolean }>;
-    getState: () => Promise<SpeechServerState>;
-    setConfig: (config: Partial<SpeechServerConfig>) => Promise<SpeechServerState>;
-    command: (action: 'start' | 'stop' | 'clear') => Promise<SpeechServerState>;
-    openPage: () => Promise<{ success: boolean; error?: string }>;
-    onTranscript: (callback: (transcript: SpeechTranscript) => void) => () => void;
-    onStatus: (callback: (status: SpeechPageStatus) => void) => () => void;
-    onState: (callback: (state: SpeechServerState) => void) => () => void;
-  };
   shell: {
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
-  };
-  globalShortcut: {
-    register: (accelerator: string, callback: () => void) => Promise<{ success: boolean; accelerator: string; error?: string }>;
-    unregister: (accelerator: string) => Promise<{ success: boolean; accelerator: string; error?: string }>;
-    unregisterAll: () => Promise<{ success: boolean; error?: string }>;
-    isRegistered: (accelerator: string) => Promise<boolean>;
   };
   version: string;
 }
 
-let pathSep: string | null = null;
 let version: string | null = null;
 
+// ------------------------------------------------------------- engine channel
+
+/** The channel main brokers for this window. A new one arrives if the engine restarts. */
+let port: MessagePort | null = null;
+let nextCallId = 1;
+
+const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
+const connectedListeners = new Set<() => void>();
+const frameListeners = new Set<(frame: string) => void>();
+const eventListeners = new Set<EngineEventListener>();
+
+function send(frame: string) {
+  port?.postMessage(frame);
+}
+
+function call(method: string, argsJson: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    if (!port) {
+      reject(new Error('Not connected to the engine.'));
+      return;
+    }
+    const id = nextCallId++;
+    pending.set(id, { resolve, reject });
+    send(`{"t":"call","id":${id},"m":${JSON.stringify(method)},"a":${argsJson}}`);
+  });
+}
+
+function callEngine<T>(method: string, ...args: unknown[]): Promise<T> {
+  return call(method, JSON.stringify(args)) as Promise<T>;
+}
+
+function handleFrame(frame: string) {
+  // Frames are compared by prefix so a 30 Hz stream isn't parsed here and again in the page.
+  if (frame.startsWith('{"t":"res"')) {
+    const message = JSON.parse(frame) as { id: number; ok: boolean; v?: unknown; e?: string };
+    const entry = pending.get(message.id);
+    if (!entry) return;
+    pending.delete(message.id);
+    if (message.ok) entry.resolve(message.v);
+    else entry.reject(new Error(message.e || 'Engine call failed'));
+    return;
+  }
+
+  if (frame.startsWith('{"t":"evt"')) {
+    const message = JSON.parse(frame) as { n: string; p?: unknown };
+    for (const listener of eventListeners) listener(message.n, message.p);
+    return;
+  }
+
+  for (const listener of frameListeners) listener(frame);
+}
+
+ipcRenderer.on('engine:port', (event) => {
+  port?.close();
+
+  // Anything still in flight went to an engine that no longer exists.
+  for (const entry of pending.values()) entry.reject(new Error('The engine restarted.'));
+  pending.clear();
+
+  port = event.ports[0];
+  port.onmessage = (message) => handleFrame(message.data as string);
+  port.start();
+
+  for (const listener of connectedListeners) listener();
+});
+
+// ------------------------------------------------------------------------ api
+
 const api: PreloadElectronAPI = {
-  env: { get: (key) => ipcRenderer.sendSync('env:get', key) },
   theme: {
     current: () => ipcRenderer.sendSync('theme:get') as 'light' | 'dark',
     onChange: (callback) => {
@@ -352,144 +131,47 @@ const api: PreloadElectronAPI = {
     maximize: () => ipcRenderer.send('frame:maximize'),
     close: () => ipcRenderer.send('frame:close'),
   },
-  media: {
-    execute: (command: MediaCommand) => ipcRenderer.invoke('media:execute', command) as Promise<{ success: boolean; command: string; error?: string }>,
-    onMediaInfo: (callback) => {
-      const listener = (_e: unknown, info: MediaInfo) => callback(info);
-      ipcRenderer.on('media:info', listener as any);
-      return () => ipcRenderer.removeListener('media:info', listener as any);
+  engine: {
+    connect: () => ipcRenderer.send('engine:connect'),
+    onConnected: (callback) => {
+      connectedListeners.add(callback);
+      return () => connectedListeners.delete(callback);
     },
+    send,
+    onMessage: (callback) => {
+      frameListeners.add(callback);
+      return () => frameListeners.delete(callback);
+    },
+    onEvent: (callback) => {
+      eventListeners.add(callback);
+      return () => eventListeners.delete(callback);
+    },
+    call,
   },
   osc: {
-    send: (address: string, ...args: (number | string | boolean | null | undefined)[]) => {
-      ipcRenderer.invoke('osc:send', address, args);
-    },
-    sendCustom: (address: string, args: { value: number | string | boolean | null | undefined, type: "Float" | "Int" | "Bool" | "String" | "Null" | "Undefined" }[]) => {
-      ipcRenderer.invoke('osc:sendCustom', address, args);
-    },
-    onMessage: (callback: (message: OSCIncomingMessage) => void) => {
-      const listener = (_e: unknown, message: OSCIncomingMessage) => callback(message);
-      ipcRenderer.on('osc:message', listener as any);
-      return () => ipcRenderer.removeListener('osc:message', listener as any);
-    },
-    getSources: () => ipcRenderer.invoke('osc:getSources') as Promise<OSCSourceConfig[]>,
-    getDefaultSources: () => ipcRenderer.invoke('osc:getDefaultSources') as Promise<OSCSourceConfig[]>,
-    getStatus: () => ipcRenderer.invoke('osc:getStatus') as Promise<OSCSourceStatus[]>,
-    setSources: (sources: OSCSourceConfig[]) =>
-      ipcRenderer.invoke('osc:setSources', sources) as Promise<OSCSourcesResult>,
-    resetSources: () => ipcRenderer.invoke('osc:resetSources') as Promise<OSCSourcesResult>,
-  },
-  path: {
-    join: (...paths: string[]) => ipcRenderer.sendSync('path:join', ...paths),
-    get sep() {
-      if (pathSep === null) {
-        pathSep = ipcRenderer.sendSync('path:sep');
-      }
-      return pathSep!;
-    },
-  },
-  files: {
-    readText: (filePath: string, enc?: BufferEncoding) => ipcRenderer.invoke('files:readText', filePath, enc) as Promise<string>,
-    readJSON: (filePath: string, enc?: BufferEncoding) => ipcRenderer.invoke('files:readJSON', filePath, enc) as Promise<any>,
-    watch: (filePaths, callback, options = {}) => {
-      const id = crypto.randomUUID();
-      const listener = (_e: unknown, payload: { id: string; eventName: WatchEventName; path: string }) => {
-        if (payload.id === id) callback(payload.eventName, payload.path);
-      };
-      ipcRenderer.on('files:watch:event', listener as any);
-      ipcRenderer.send('files:watch:start', { id, filePaths, options });
-      return () => {
-        ipcRenderer.send('files:watch:stop', id);
-        ipcRenderer.removeListener('files:watch:event', listener as any);
-      };
-    },
-    findFiles: (dirPath: string) => ipcRenderer.invoke('files:findFiles', dirPath) as Promise<string[]>,
-    readBinary: (filePath: string) => ipcRenderer.invoke('files:readBinary', filePath) as Promise<ArrayBuffer | null>,
-  },
-  dialog: {
-    openAudioFiles: () => ipcRenderer.invoke('dialog:openAudioFiles') as Promise<string[]>,
-  },
-  utils: {
-    getStartTime: (processName: string) => ipcRenderer.invoke('utils:startTime', processName) as Promise<StartTimeResponse>,
-    getOpenVRTrackers: () => ipcRenderer.invoke('utils:openvrTrackers') as Promise<TrackerBatteryResponse>,
-    getSystemInfo: () => ipcRenderer.invoke('utils:systemInfo') as Promise<SystemInfoResponse>,
-  },
-  http: {
-    request: (options: HttpRequestOptions) => ipcRenderer.invoke('http:request', options) as Promise<HttpRequestResult>,
+    getSources: () => callEngine('osc.getSources'),
+    getDefaultSources: () => callEngine('osc.getDefaultSources'),
+    getStatus: () => callEngine('osc.getStatus'),
+    setSources: (sources) => callEngine('osc.setSources', sources),
+    resetSources: () => callEngine('osc.resetSources'),
   },
   ble: {
-    scan: (options = {}) => ipcRenderer.invoke('ble:scan', options) as Promise<BleState>,
-    stopScan: () => ipcRenderer.invoke('ble:stopScan') as Promise<BleState>,
-    connect: (address: string) => ipcRenderer.invoke('ble:connect', address) as Promise<BleState>,
-    disconnect: (address: string) => ipcRenderer.invoke('ble:disconnect', address) as Promise<BleState>,
-    getState: () => ipcRenderer.invoke('ble:getState') as Promise<BleState>,
+    scan: (options = {}) => callEngine('ble.scan', options),
+    stopScan: () => callEngine('ble.stopScan'),
+    connect: (address) => callEngine('ble.connect', address),
+    disconnect: (address) => callEngine('ble.disconnect', address),
+    getState: () => callEngine('ble.getState'),
     onEvent: (callback) => {
-      const listener = (_e: unknown, event: BleEvent) => callback(event);
-      ipcRenderer.on('ble:event', listener as any);
-      return () => ipcRenderer.removeListener('ble:event', listener as any);
-    },
-  },
-  speech: {
-    start: (options = {}) => ipcRenderer.invoke('speech:start', options) as Promise<{ success: boolean; url?: string; port?: number; error?: string }>,
-    stop: () => ipcRenderer.invoke('speech:stop') as Promise<{ success: boolean }>,
-    getState: () => ipcRenderer.invoke('speech:getState') as Promise<SpeechServerState>,
-    setConfig: (config: Partial<SpeechServerConfig>) => ipcRenderer.invoke('speech:setConfig', config) as Promise<SpeechServerState>,
-    command: (action: 'start' | 'stop' | 'clear') => ipcRenderer.invoke('speech:command', action) as Promise<SpeechServerState>,
-    openPage: () => ipcRenderer.invoke('speech:openPage') as Promise<{ success: boolean; error?: string }>,
-    onTranscript: (callback) => {
-      const listener = (_e: unknown, transcript: SpeechTranscript) => callback(transcript);
-      ipcRenderer.on('speech:transcript', listener as any);
-      return () => ipcRenderer.removeListener('speech:transcript', listener as any);
-    },
-    onStatus: (callback) => {
-      const listener = (_e: unknown, status: SpeechPageStatus) => callback(status);
-      ipcRenderer.on('speech:status', listener as any);
-      return () => ipcRenderer.removeListener('speech:status', listener as any);
-    },
-    onState: (callback) => {
-      const listener = (_e: unknown, state: SpeechServerState) => callback(state);
-      ipcRenderer.on('speech:state', listener as any);
-      return () => ipcRenderer.removeListener('speech:state', listener as any);
+      const listener: EngineEventListener = (name, payload) => {
+        if (name === 'ble:event') callback(payload as BleEvent);
+      };
+      eventListeners.add(listener);
+      return () => eventListeners.delete(listener);
     },
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url) as Promise<{ success: boolean; error?: string }>,
   },
-  globalShortcut: (() => {
-    const callbacks = new Map<string, () => void>();
-
-    // Listen for shortcut triggers from main process
-    ipcRenderer.on('globalShortcut:triggered', (_e: unknown, callbackId: string) => {
-      const callback = callbacks.get(callbackId);
-      if (callback) callback();
-    });
-
-    return {
-      register: async (accelerator: string, callback: () => void) => {
-        const callbackId = `${accelerator}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        callbacks.set(callbackId, callback);
-        const result = await ipcRenderer.invoke('globalShortcut:register', accelerator, callbackId) as { success: boolean; accelerator: string; error?: string };
-        if (!result.success) {
-          callbacks.delete(callbackId);
-        }
-        return result;
-      },
-      unregister: async (accelerator: string) => {
-        // Remove callbacks that match this accelerator
-        for (const [id] of callbacks) {
-          if (id.startsWith(`${accelerator}-`)) {
-            callbacks.delete(id);
-          }
-        }
-        return await ipcRenderer.invoke('globalShortcut:unregister', accelerator) as { success: boolean; accelerator: string; error?: string };
-      },
-      unregisterAll: async () => {
-        callbacks.clear();
-        return await ipcRenderer.invoke('globalShortcut:unregisterAll') as { success: boolean; error?: string };
-      },
-      isRegistered: (accelerator: string) => ipcRenderer.invoke('globalShortcut:isRegistered', accelerator) as Promise<boolean>,
-    };
-  })(),
   get version() {
     if (version === null) {
       version = ipcRenderer.sendSync('app:version');

@@ -40,13 +40,13 @@
   let editingProfile = $state<AvatarProfile | null>(null);
   let editProfileName = $state("");
 
-  function handleSaveProfile() {
+  async function handleSaveProfile() {
     if (!newProfileName.trim()) {
       toast.error("Please enter a profile name");
       return;
     }
 
-    const profile = avatarProfiles.saveCurrentProfile(newProfileName.trim());
+    const profile = await avatarProfiles.saveCurrentProfile(newProfileName.trim());
     if (profile) {
       toast.success(`Profile "${profile.name}" saved!`);
       saveDrawerOpen = false;

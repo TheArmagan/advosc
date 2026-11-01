@@ -31,7 +31,7 @@ export function startMediaMonitor(): void {
   }
 
   // Don't pass any command to use default monitor behavior
-  mediaProcess = spawn(exePath, []);
+  mediaProcess = spawn(exePath, [], { windowsHide: true });
   let buffer = '';
 
   mediaProcess.stdout?.on('data', (data: Buffer) => {
@@ -91,7 +91,7 @@ export async function executeMediaCommand(command: MediaCommand): Promise<{ succ
   }
 
   return new Promise((resolve) => {
-    const proc = spawn(exePath, [command]);
+    const proc = spawn(exePath, [command], { windowsHide: true });
     let output = '';
 
     proc.stdout?.on('data', (data: Buffer) => {
