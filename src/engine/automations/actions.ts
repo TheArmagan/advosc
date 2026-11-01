@@ -130,7 +130,7 @@ async function runAction(state: RuleState, action: AutomationAction, runId: numb
     case "toy": {
       const sink = getToySink();
       if (!sink || !sink.armed || state.toyMuted) return;
-      if (action.action.kind !== "link") sink.run(rule.id, action.action);
+      if (action.action.kind !== "link") sink.run(rule.id, action.action, rule.mode === "edge" ? "edge" : "while");
       else if (level !== undefined) sink.link(rule.id, action.action.target, Math.max(0, Math.min(1, level)));
       return;
     }

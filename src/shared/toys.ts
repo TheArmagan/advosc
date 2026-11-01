@@ -145,7 +145,7 @@ export interface ToyRuleSink {
   readonly armed: boolean;
   /** A `live` rule's mapped level, 0 to 1. Holds a lease, so a rule that goes quiet stops by itself. */
   link(ruleId: string, target: ToyTarget, level: number): void;
-  run(ruleId: string, action: Exclude<ToyAction, { kind: "link" }>): void;
+  run(ruleId: string, action: Exclude<ToyAction, { kind: "link" }>, mode?: "edge" | "while"): void;
   /** The rule ended, was disabled, or was edited. Drops everything it holds. */
   release(ruleId: string): void;
   /**

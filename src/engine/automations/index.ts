@@ -630,7 +630,11 @@ export function startAutomations(options: { safeMode: boolean }) {
   rulesStore.subscribe(syncRules);
   chatbox.modules.get("Shortcut")?.onValuesChange(() => {
     rebuildIndexes();
-    for (const state of states.values()) markDirty(state);
+    for (const state of states.values()) {
+      // This may well be the fix for a recursive shortcut, so it doesn't wait out the backoff.
+      state.backoffUntil = 0;
+      markDirty(state);
+    }
   });
 
   avatarOSC.onParameterChange(handleParameter);
