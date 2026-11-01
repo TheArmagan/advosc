@@ -25,6 +25,19 @@ import { ChatboxSystemModule } from "./modules/chatbox-system-module";
 import { ChatboxRequestModule } from "./modules/chatbox-request-module";
 import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
 import { ChatboxSoundModule } from "./modules/chatbox-sound-module";
+import { ChatboxVarModule } from "./modules/chatbox-var-module";
+import {
+  currentFrame,
+  isReadOnly,
+  newRootFrame,
+  reportError,
+  reportNoData,
+  runInFrame,
+  type EvalFailure,
+  type EvalFrame,
+  type EvalPurpose,
+  type EvalRoot,
+} from "./eval-context";
 
 const PlaceholderRegex1 = /{{([^}]+)}}/g;
 const PlaceholderRegex2 = /\[\[([^\]]+)\]\]/g;
@@ -39,8 +52,19 @@ const moduleAliases: Record<string, string> = {
   Pulsoid: "HeartRate",
 };
 
-let callsMadeMap: Map<string, number> = new Map();
-let ignoreSet: Set<string> = new Set();
+/**
+ * What one evaluation may spend. A recursive shortcut has no way to end, since branches aren't
+ * lazy, so these are what ends it. They count per evaluation rather than per second, so any
+ * number of rules can read the same placeholder as often as they like.
+ *
+ * Each user-visible level of nesting costs about two levels of depth (the shortcut's own
+ * template, then the `[[ ]]` pass of whatever it calls), so 64 is far past any real template.
+ * The budget is for fan-out: `{{Shortcut;a}}{{Shortcut;a}}` inside `a` doubles per level and
+ * would otherwise run for the age of the universe before reaching the depth limit.
+ */
+const MAX_DEPTH = 64;
+const ROOT_BUDGET = 5000;
+const RUNAWAY_NOTICE_FLOOR_MS = 5000;
 
 const defaultSettings: ChatboxSettings = {
   template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Now;HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
@@ -58,24 +82,25 @@ const advancedTemplate = synced<string>("Chatbox;AdvancedTemplate", get(settings
 
 const simpleEditorBlocks = synced<any[]>("SimpleEditor;Blocks", []);
 
-async function incrementCallCount(moduleId: string, ...params: string[]) {
-  const fullKey = `${moduleId};${params.join(";")}`;
-  const currentCount = callsMadeMap.get(fullKey) || 0;
-  callsMadeMap.set(fullKey, currentCount + 1);
-  if (currentCount >= 500) {
-    if (!ignoreSet.has(fullKey)) {
-      console.warn("Chatbox", `Preventing recursive calls for module ${moduleId} due to excessive calls (${currentCount + 1})`);
-      notify.warning("Chatbox", {
-        description: `Prevented recursive calls for module ${moduleId}, ${params.join(", ")} due to excessive calls (${currentCount + 1}). This may indicate a user-made bug in the module.`,
-        duration: 1000,
-      });
-      setTimeout(() => {
-        ignoreSet.delete(fullKey);
-      }, 1000);
-    }
-    ignoreSet.add(fullKey);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Prevent further calls for 1 second
-  }
+const runawayNotices = new Map<string, number>();
+
+/** Only a render tells the user directly. Rules report it as their status instead. */
+function reportRunaway(root: EvalRoot, moduleId: string, params: string[]) {
+  root.runaway = true;
+  root.failure = { kind: "error", message: "This template calls itself, or it's too large to evaluate." };
+  if (root.purpose !== "render") return;
+
+  const key = `${moduleId};${params.join(";")}`;
+  const now = Date.now();
+  if (now - (runawayNotices.get(key) ?? 0) < RUNAWAY_NOTICE_FLOOR_MS) return;
+  if (runawayNotices.size > 100) runawayNotices.clear();
+  runawayNotices.set(key, now);
+
+  console.warn("Chatbox", `Stopped runaway calls for module ${moduleId} after ${root.calls} placeholders.`);
+  notify.warning("Chatbox", {
+    description: `Prevented recursive calls for module ${moduleId}, ${params.join(", ")}. This may indicate a user-made bug in the module.`,
+    duration: 1000,
+  });
 }
 
 /**
@@ -90,7 +115,15 @@ function getInstanceKey() {
   return activeInstanceKey;
 }
 
-async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false, scope = ""): Promise<string> {
+/** Starts a new root unless it's already running inside one. */
+function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false, scope = ""): Promise<string> {
+  const parent = currentFrame() ?? newRootFrame("render", false);
+  const frame: EvalFrame = { root: parent.root, depth: parent.depth + 1 };
+  return runInFrame(frame, () => fillInFrame(frame, text, type, stringify, scope));
+}
+
+async function fillInFrame(frame: EvalFrame, text: string, type: "{{;}}" | "[[:]]", stringify: boolean, scope: string): Promise<string> {
+  const { root, depth } = frame;
   const matches = [...text.matchAll(type === "{{;}}" ? PlaceholderRegex1 : PlaceholderRegex2)];
   const results: (string | null)[] = new Array(matches.length).fill(null);
   const occurrences: Map<string, number> = new Map();
@@ -122,17 +155,13 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
     try {
       const params = splitParams(match[1], type === "{{;}}" ? ";" : ":");
       const moduleId = params.shift()!;
-      const callKey = `${moduleId};${params.join(";")}`;
 
-      if (ignoreSet.has(callKey)) {
+      if (depth > MAX_DEPTH || root.calls >= ROOT_BUDGET) {
+        reportRunaway(root, moduleId, params);
         results[i] = processValue(`(Ignored: ${match[0]})`);
         return;
       }
-      await incrementCallCount(moduleId, ...params);
-      if (ignoreSet.has(callKey)) {
-        results[i] = processValue(`(Ignored: ${match[0]})`);
-        return;
-      }
+      root.calls++;
 
       const m = chatboxList.get(moduleAliases[moduleId] ?? moduleId);
       if (m) {
@@ -141,10 +170,18 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
         if (content !== null) {
           results[i] = processValue(content);
         } else {
+          reportNoData("A placeholder had no value.");
           results[i] = processValue(`(No value for ${match[0]})`);
         }
+      } else {
+        reportError(`There's no module called ${moduleId}.`);
       }
     } catch (e) {
+      // Rules re-evaluate many times a second, so a broken one goes to its status instead.
+      if (root.purpose !== "render") {
+        reportError("A placeholder in this template failed.");
+        return;
+      }
       // Not the placeholder itself: a template can hold a URL with a token in it, and this
       // goes to a log file.
       console.error("Chatbox", "Failed to replace a placeholder", e);
@@ -171,6 +208,41 @@ async function fillTemplate(text: string, type: "{{;}}" | "[[:]]" = "{{;}}", str
 
 async function fillTemplates(texts: string[], type: "{{;}}" | "[[:]]" = "{{;}}", stringify = false, scope = ""): Promise<string[]> {
   return (await fillTemplate(texts.join("䡁"), type, stringify, scope)).split("䡁");
+}
+
+export interface EvaluationResult {
+  value: string;
+  /** Set when `value` can't be trusted. That's "no data", which isn't the same as "false". */
+  failure: EvalFailure | null;
+  /** The budget or depth limit stopped it, so running it again right away won't help. */
+  runaway: boolean;
+}
+
+/**
+ * Evaluates the way rules always have: `[[ ]]` first so its results can feed `{{ }}`. Both
+ * passes share one root, so a read-only evaluation stays read-only all the way down.
+ */
+async function evaluate(
+  template: string,
+  options: { purpose: Exclude<EvalPurpose, "render">; readOnly: boolean; scope: string },
+): Promise<EvaluationResult> {
+  const frame = newRootFrame(options.purpose, options.readOnly);
+  const value = await runInFrame(frame, async () => {
+    const inner = await fillTemplate(template, "[[:]]", false, options.scope);
+    return await fillTemplate(inner, "{{;}}", false, options.scope);
+  });
+  return { value, failure: frame.root.failure, runaway: frame.root.runaway };
+}
+
+/** Runs a declared module input. A read-only evaluation can't reach one by any route. */
+async function runModuleInput(moduleId: string, inputId: string, args: Record<string, string> = {}): Promise<void> {
+  if (isReadOnly()) return;
+  const module = chatboxList.get(moduleId);
+  if (!module) throw new Error(`Unknown module: ${moduleId}`);
+  if (!module.options.inputs?.some((input) => input.id === inputId)) {
+    throw new Error(`Module ${moduleId} has no input ${inputId}`);
+  }
+  await module.runInput(inputId, args);
 }
 
 function registerChatboxModule(m: ChatboxModule) {
@@ -294,6 +366,8 @@ function getSettings() {
 export const chatbox = {
   fillTemplate,
   fillTemplates,
+  evaluate,
+  runModuleInput,
   getInstanceKey,
   modules: chatboxList,
   settings,
@@ -354,10 +428,6 @@ export function startChatbox(options: { safeMode: boolean }) {
   mirror("Chatbox;RenderedTemplate", renderedTemplate, 50);
   mirror("Chatbox;Placeholders", placeholders);
 
-  setInterval(() => {
-    callsMadeMap.clear();
-  }, 1000);
-
   registerChatboxModule(new ChatboxShortcutModule());
   registerChatboxModule(new ChatboxOVRTrackersModule());
   registerChatboxModule(new ChatboxHotkeyModule());
@@ -376,6 +446,7 @@ export function startChatbox(options: { safeMode: boolean }) {
   registerChatboxModule(new ChatboxRequestModule());
   registerChatboxModule(new ChatboxSpeechModule());
   registerChatboxModule(new ChatboxSoundModule());
+  registerChatboxModule(new ChatboxVarModule());
 
   runPulsoidMigration();
   updatePlaceholders();

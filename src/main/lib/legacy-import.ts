@@ -6,6 +6,7 @@ import {
   saveStore,
   writeFileAtomicSync,
   type AudioOutputRecord,
+  type LoadedStore,
   type MigrationMeta,
   type StoreEntries,
   type StoreMeta,
@@ -105,11 +106,24 @@ function verify(dataDir: string, entries: StoreEntries) {
   }
 }
 
-async function importOnce(dataDir: string) {
+/** Ends a re-import without replacing anything. The engine kept a backup when it was asked. */
+function keepCurrentStore(dataDir: string, current: LoadedStore) {
+  const migration = current.meta!.migration;
+  saveStore(dataDir, makeMeta({ ...migration, done: true, reimport: false }), current.entries);
+}
+
+async function importOnce(dataDir: string, current: LoadedStore) {
   const dump = await dumpLocalStorage();
   const { entries, quarantined } = splitDump(dump);
   const keys = Object.keys(entries).length;
   const quarantinedCount = Object.keys(quarantined).length;
+
+  // Nothing to bring in. A first run has nothing to lose here, but a re-import does.
+  if (keys === 0 && current.meta?.migration?.reimport) {
+    console.warn('Re-import found nothing in localStorage, so the current settings stay.');
+    keepCurrentStore(dataDir, current);
+    return;
+  }
 
   if (quarantinedCount > 0) {
     writeFileAtomicSync(path.join(dataDir, 'import-quarantine.json'), JSON.stringify(quarantined, null, 2));
@@ -150,11 +164,13 @@ function continueWithDefaults(dataDir: string) {
  */
 export async function runLegacyImport(): Promise<void> {
   const dataDir = resolveDataDir();
-  if (loadStore(dataDir).meta?.migration?.done) return;
+  const current = loadStore(dataDir);
+  if (current.meta?.migration?.done) return;
+  const reimport = !!current.meta?.migration?.reimport;
 
   for (;;) {
     try {
-      await importOnce(dataDir);
+      await importOnce(dataDir, current);
       return;
     } catch (error) {
       console.error('Legacy import failed:', error);
@@ -164,7 +180,7 @@ export async function runLegacyImport(): Promise<void> {
         title: 'ADVOSC',
         message: "ADVOSC couldn't read your settings from the previous version.",
         detail: `${(error as Error).message}\n\nYour old settings are still there. Nothing has been changed.`,
-        buttons: ['Retry', 'Continue with defaults', 'Quit'],
+        buttons: ['Retry', reimport ? 'Keep current settings' : 'Continue with defaults', 'Quit'],
         defaultId: 0,
         cancelId: 2,
         noLink: true,
@@ -172,7 +188,8 @@ export async function runLegacyImport(): Promise<void> {
 
       if (response === 0) continue;
       if (response === 1) {
-        continueWithDefaults(dataDir);
+        if (reimport) keepCurrentStore(dataDir, current);
+        else continueWithDefaults(dataDir);
         return;
       }
       app.exit(0);

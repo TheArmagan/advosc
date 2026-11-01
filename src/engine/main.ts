@@ -9,9 +9,11 @@ import { addClient, markReady } from "./sync/hub";
 import { startOSCPort } from "./native";
 import { shortcuts } from "./shortcuts";
 import { startAvatarOSC, startAvatarScale } from "./vrc-osc";
-import { startChatbox } from "./chatbox";
+import { chatbox, startChatbox } from "./chatbox";
+import type { ChatboxVarModule } from "./chatbox/modules/chatbox-var-module";
 import { startOscForwarder } from "./osc-forwarder";
 import { startSoundEffects } from "./sound-effects";
+import { startAutomations } from "./automations";
 import { registerRpc } from "./rpc";
 import { startMediaMonitor, stopMediaMonitor } from "./services/media";
 import { stopSystemMonitor } from "./services/system-monitor";
@@ -34,10 +36,12 @@ async function boot() {
   startMediaMonitor();
   startChatbox({ safeMode });
   startOscForwarder({ safeMode });
-  startSoundEffects({ safeMode });
+  startSoundEffects();
+  startAutomations({ safeMode });
   registerRpc();
 
   const flushData = () => {
+    (chatbox.modules.get("Var") as ChatboxVarModule).persist();
     localData.flush();
     cacheData.flush();
   };

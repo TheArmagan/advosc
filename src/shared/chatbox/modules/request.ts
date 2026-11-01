@@ -74,6 +74,14 @@ export const requestOptions: ChatboxModuleOptions = {
       fillText: "Request;Header;${1:sourceName};${2:content-type}",
     },
   },
+  inputs: [
+    {
+      id: "refresh",
+      label: "Refresh",
+      description: "Fetches a source again on its next read, or reconnects its WebSocket.",
+      params: [{ id: "source", label: "Source", type: "text", placeholder: "sourceName" }],
+    },
+  ],
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */

@@ -1,8 +1,10 @@
 import type { ChatboxModule } from "$shared/chatbox/module-base";
+import { automations } from "./automations";
 import { chatbox } from "./chatbox";
 import { searchLocations } from "./chatbox/modules/weather/open-meteo";
 import { chatboxPresets } from "./chatbox/presets";
 import { native } from "./native";
+import { backupApi } from "./persistence/backup-api";
 import { soundEffects } from "./sound-effects/rpc";
 import { handle, handleAll } from "./sync/hub";
 import { avatarOSC, avatarProfiles, avatarScale } from "./vrc-osc";
@@ -31,6 +33,14 @@ export function registerRpc() {
     if (!module) throw new Error(`Unknown module: ${id}`);
     return module[method](...args);
   });
+
+  // Runs anything a module declares in `options.inputs`, so a new input needs no change here.
+  handle("module.input", (id: string, inputId: string, args?: Record<string, string>) =>
+    chatbox.runModuleInput(id, inputId, args),
+  );
+
+  handleAll("automations", automations);
+  handleAll("backup", backupApi);
 
   handleAll("chatbox", {
     fillTemplate: chatbox.fillTemplate,

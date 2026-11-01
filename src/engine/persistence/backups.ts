@@ -6,8 +6,12 @@ import { DATA_FILE_NAME } from "./file-store";
 const KEEP_BACKUPS = 7;
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-const backupDir = path.join(engineConfig.dataDir, "backups");
+export const backupDir = path.join(engineConfig.dataDir, "backups");
 const backupPattern = /^advosc-data-\d{4}-\d{2}-\d{2}\.json$/;
+
+export function isBackupName(name: string) {
+  return backupPattern.test(name);
+}
 
 function localDate(now: Date) {
   const month = String(now.getMonth() + 1).padStart(2, "0");

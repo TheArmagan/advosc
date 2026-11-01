@@ -34,10 +34,6 @@ const soundsStore = synced<SoundEntry[]>("SoundEffects;Sounds", [], (stored: Sou
   stored.map((s) => ({ ...defaultSoundFields(), ...s })),
 );
 
-const rulesStore = synced<SoundTriggerRule[]>("SoundEffects;Rules", [], (stored: SoundTriggerRule[]) =>
-  stored.map((r) => ({ ...defaultRule(), ...r })),
-);
-
 const settingsStore = synced<SoundSettings>("SoundEffects;Settings", defaultSoundSettings, (stored) => ({
   ...defaultSoundSettings,
   ...stored,
@@ -369,15 +365,21 @@ async function pickFiles() {
   if (paths.length) addFiles(paths);
 }
 
+const removalListeners = new Set<(id: string) => void>();
+
 function removeSound(id: string) {
   stopVoices((soundId) => soundId === id);
   loaded.delete(id);
   audio.unload(id);
   setError(id, null);
   soundsStore.update((prev) => prev.filter((s) => s.id !== id));
-  rulesStore.update((prev) =>
-    prev.map((r) => (r.soundIds.includes(id) ? { ...r, soundIds: r.soundIds.filter((s) => s !== id) } : r)),
-  );
+  for (const listener of removalListeners) listener(id);
+}
+
+/** Automations hold sound ids, and this keeps them from having to import each other's stores. */
+function onSoundRemoved(listener: (id: string) => void): () => void {
+  removalListeners.add(listener);
+  return () => removalListeners.delete(listener);
 }
 
 function reload(id: string) {
@@ -431,7 +433,6 @@ function syncShortcuts() {
 
 export const soundEngine = {
   sounds: soundsStore,
-  rules: rulesStore,
   settings: settingsStore,
   errors: errorsStore,
   playing: playingStore,
@@ -439,6 +440,8 @@ export const soundEngine = {
   pickFiles,
   addFiles,
   removeSound,
+  onSoundRemoved,
+  hasSound: (ref: string) => !!findSound(ref),
   reload,
   setMasterVolume,
   listAudioOutputs,
