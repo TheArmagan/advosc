@@ -280,6 +280,15 @@ export class ChatboxSpeechModule extends SpeechConfig {
     await native.speech.command(listening ? "start" : "stop");
   }
 
+  async runInput(inputId: string, args: Record<string, string>) {
+    switch (inputId) {
+      case "clear": return this.clearTranscript();
+      case "listen": return await this.setListening(true);
+      case "stopListening": return await this.setListening(false);
+      default: return await super.runInput(inputId, args);
+    }
+  }
+
   // ------------------------------------------------------------- translation
 
   private resolveSourceLanguage(): string {

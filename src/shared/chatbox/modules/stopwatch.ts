@@ -1,5 +1,7 @@
-import { ChatboxModule, type ChatboxModuleOptions } from "../module-base";
+import { ChatboxModule, type ChatboxModuleOptions, type ModuleInputParam } from "../module-base";
 import type { Writable } from "../../store";
+
+const stopwatchParam: ModuleInputParam = { id: "name", label: "Stopwatch", type: "text", placeholder: "stopwatchName" };
 
 export interface StopwatchSettings {
   startHotkey: string;       // Hotkey name to start/resume
@@ -29,7 +31,45 @@ export const stopwatchOptions: ChatboxModuleOptions = {
       description: "Returns 'true' if the stopwatch is paused, 'false' otherwise.",
       fillText: "Stopwatch;IsPaused;${1:stopwatchName}"
     }
-  }
+  },
+  inputs: [
+    {
+      id: "start",
+      label: "Start",
+      description: "Starts the stopwatch, or resumes it if it's paused.",
+      params: [stopwatchParam],
+    },
+    {
+      id: "pause",
+      label: "Pause",
+      description: "Pauses the stopwatch and keeps its time.",
+      params: [stopwatchParam],
+    },
+    {
+      id: "toggle",
+      label: "Start or pause",
+      description: "Pauses the stopwatch if it's running, otherwise starts it.",
+      params: [stopwatchParam],
+    },
+    {
+      id: "reset",
+      label: "Reset",
+      description: "Sets the time back to zero. A running stopwatch keeps running.",
+      params: [stopwatchParam],
+    },
+    {
+      id: "stop",
+      label: "Stop",
+      description: "Stops the stopwatch and sets the time back to zero.",
+      params: [stopwatchParam],
+    },
+    {
+      id: "resetStart",
+      label: "Reset and start",
+      description: "Sets the time back to zero and starts straight away.",
+      params: [stopwatchParam],
+    },
+  ],
 };
 
 /** Metadata and pure settings access, shared by the engine module and its renderer client. */

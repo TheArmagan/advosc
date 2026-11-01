@@ -3,8 +3,16 @@ import { moduleValues } from "../module-values";
 import { mediaInfoOptions } from "$shared/chatbox/modules/media-info";
 import { net } from "electron";
 import { cacheData } from "../../persistence/cache";
-import type { MediaInfo } from "$shared/native-types";
+import type { MediaCommand, MediaInfo } from "$shared/native-types";
 import { ChatboxModule } from "$shared/chatbox/module-base";
+
+const MEDIA_COMMANDS: Record<string, MediaCommand> = {
+  toggle: "toggle-play-pause",
+  resume: "resume",
+  pause: "pause",
+  next: "skip-track",
+  previous: "previous-track",
+};
 
 interface LyricData {
   lyrics: {
@@ -284,6 +292,13 @@ export class ChatboxMediaInfoModule extends ChatboxModule {
     cache[cacheKey] = { at: Date.now(), data };
     this.writeLyricsCache(cache);
     return data;
+  }
+
+  async runInput(inputId: string, args: Record<string, string>) {
+    const command = MEDIA_COMMANDS[inputId];
+    if (!command) return super.runInput(inputId, args);
+    const result = await native.media.execute(command);
+    if (!result.success) console.warn(`Media command ${command} failed: ${result.error}`);
   }
 
   async getPlaceholderValue(placeholder: string): Promise<string> {

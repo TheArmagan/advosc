@@ -25,6 +25,7 @@ import { ChatboxRequestModule } from "./modules/chatbox-request-module";
 import { ChatboxShortcutModule } from "./modules/chatbox-shortcut-module";
 import { ChatboxSpeechModule } from "./modules/chatbox-speech-module";
 import { ChatboxStopwatchModule } from "./modules/chatbox-stopwatch-module";
+import { ChatboxVarModule } from "./modules/chatbox-var-module";
 import { ChatboxWeatherModule } from "./modules/chatbox-weather-module";
 import ChatboxHeartRateSettings from "$lib/components/chatbox-editor/modules/chatbox-heart-rate-settings.svelte";
 import ChatboxHotkeySettings from "$lib/components/chatbox-editor/modules/chatbox-hotkey-settings.svelte";
@@ -33,6 +34,7 @@ import ChatboxRequestSettings from "$lib/components/chatbox-editor/modules/chatb
 import ChatboxShortcutSettings from "$lib/components/chatbox-editor/modules/chatbox-shortcut-settings.svelte";
 import ChatboxSpeechSettings from "$lib/components/chatbox-editor/modules/chatbox-speech-settings.svelte";
 import ChatboxStopwatchSettings from "$lib/components/chatbox-editor/modules/chatbox-stopwatch-settings.svelte";
+import ChatboxVarSettings from "$lib/components/chatbox-editor/modules/chatbox-var-settings.svelte";
 import ChatboxWeatherSettings from "$lib/components/chatbox-editor/modules/chatbox-weather-settings.svelte";
 
 export type { AllValues };
@@ -64,6 +66,7 @@ registerChatboxModule(new ChatboxModuleClient(systemOptions));
 registerChatboxModule(new ChatboxRequestModule(), ChatboxRequestSettings);
 registerChatboxModule(new ChatboxSpeechModule(), ChatboxSpeechSettings);
 registerChatboxModule(new ChatboxModuleClient(soundOptions));
+registerChatboxModule(new ChatboxVarModule(), ChatboxVarSettings);
 
 const settings = synced<ChatboxSettings>("Chatbox;Settings", {
   template: "",
@@ -87,6 +90,12 @@ export const chatbox = {
     return call("chatbox.fillTemplate", text, type, stringify, scope);
   },
   modules: chatboxList,
+  /** Every module with something to run. The list is in `options.inputs` on each module. */
+  getModulesWithInputs: () => [...chatboxList.values()].filter((m) => m.options.inputs?.length),
+  /** Param values are strings. Placeholders in them need resolving before this. */
+  runModuleInput(moduleId: string, inputId: string, args: Record<string, string> = {}): Promise<void> {
+    return call("module.input", moduleId, inputId, args);
+  },
   settings,
   getPlaceholders: () => get(placeholders),
   cleanTempalte: cleanTemplate,

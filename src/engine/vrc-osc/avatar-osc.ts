@@ -208,6 +208,7 @@ export const avatarOSC = {
   lockParameter,
   unlockParameter,
   unlockAll,
+  isLocked: (address: string) => address in lockedParameters,
   /**
    * Send anything to any address with the exact OSC type you pick. Used by the
    * Send tab, so it also records the send in history.

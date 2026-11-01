@@ -4,6 +4,10 @@ import { get } from "$shared/store";
 import { chatbox } from "..";
 import { ChatboxModule, type PlaceholdersRecord } from "$shared/chatbox/module-base";
 import { isTruthy, soundEngine } from "../../sound-effects/engine";
+import { isReadOnly } from "../eval-context";
+
+/** Placeholders that act. The rest only read, so they work the same in a read-only evaluation. */
+const ACTIONS = new Set(["Play", "Loop", "Stop", "StopAll", "Volume"]);
 
 /**
  * An occurrence counts as still "on" if it was rendered with a true condition this recently.
@@ -70,6 +74,9 @@ export class ChatboxSoundModule extends ChatboxModule {
     const key = chatbox.getInstanceKey();
     [action, ...params] = await chatbox.fillTemplates([action ?? "", ...params], "[[:]]", false, key);
 
+    // Returns before `shouldFire` too: a preview mustn't use up the edge the real render needs.
+    if (isReadOnly() && ACTIONS.has(action)) return "";
+
     const condAt = (i: number) => (params.length > i ? isTruthy(params[i]) : true);
 
     switch (action) {
@@ -103,6 +110,25 @@ export class ChatboxSoundModule extends ChatboxModule {
         return soundEngine.playingNames().join(", ");
       default:
         return "";
+    }
+  }
+
+  runInput(inputId: string, args: Record<string, string>) {
+    switch (inputId) {
+      case "play":
+        void soundEngine.play(args.sound ?? "");
+        return;
+      case "stop":
+        soundEngine.stop(args.sound ?? "");
+        return;
+      case "stopAll":
+        soundEngine.stopAll();
+        return;
+      case "volume":
+        soundEngine.setMasterVolume(parseFloat(args.volume ?? ""));
+        return;
+      default:
+        return super.runInput(inputId, args);
     }
   }
 

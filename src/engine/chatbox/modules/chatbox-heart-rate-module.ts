@@ -2,6 +2,7 @@ import { moduleValues } from "../module-values";
 import { HeartRateConfig } from "$shared/chatbox/modules/heart-rate";
 import { chatbox } from "..";
 import type { PlaceholdersRecord } from "$shared/chatbox/module-base";
+import { canReachNetwork, reportNoData } from "../eval-context";
 import {
   createConnection,
   isSourceConfigured,
@@ -220,7 +221,12 @@ export class ChatboxHeartRateModule extends HeartRateConfig {
     if (!resolved) return "(Unknown heart rate source)";
     if (!isSourceConfigured(resolved.source)) return "(Heart rate source is not configured)";
 
-    const state = this.getOrCreateFeed(resolved.key, resolved.source);
+    // A preview runs on every keystroke, and a half-typed token shouldn't open a connection.
+    const state = canReachNetwork() ? this.getOrCreateFeed(resolved.key, resolved.source) : this.feeds.get(resolved.key);
+    if (!state) {
+      reportNoData("This heart rate source isn't connected yet.");
+      return "";
+    }
     state.lastAccess = Date.now();
 
     switch (key) {

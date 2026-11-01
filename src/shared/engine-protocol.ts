@@ -62,6 +62,9 @@ export interface HostMethods {
   "shortcut.unregisterAll": () => { success: boolean; error?: string };
   "shortcut.isRegistered": (accelerator: string) => boolean;
   "dialog.openAudioFiles": () => string[];
+  /** Returns the chosen path, or null if the user cancelled. */
+  "dialog.saveBackup": (defaultName: string) => string | null;
+  "dialog.openBackup": () => string | null;
   "shell.openExternal": (url: string) => { success: boolean; error?: string };
   /** The Lovense module's Panic input. Main owns the latch, so this only asks. */
   "panic.trigger": () => { latched: boolean };

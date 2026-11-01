@@ -130,6 +130,14 @@ async function removeTrigger(name: string): Promise<void> {
 }
 
 /**
+ * Acts as if a trigger's key was pressed, so everything listening reacts the same way
+ * @param name Name of the trigger
+ */
+function trigger(name: string): void {
+  notifyListeners({ name, accelerator: triggers[name] ?? '' });
+}
+
+/**
  * Get all registered triggers
  * @returns Record of trigger names to accelerators
  */
@@ -180,6 +188,7 @@ export const shortcuts = {
   onTriggered,
   setTrigger,
   removeTrigger,
+  trigger,
   getAllTriggers,
   getTrigger,
   hasTrigger,

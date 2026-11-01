@@ -26,6 +26,8 @@ export interface MigrationMeta {
   quarantined: number;
   /** Browser device ids are origin-salted, so these are what maps an old output to a real device. */
   audioOutputs?: AudioOutputRecord[];
+  /** Set by "Re-import from old version". The store has real data that the import mustn't lose. */
+  reimport?: boolean;
 }
 
 export interface StoreMeta {

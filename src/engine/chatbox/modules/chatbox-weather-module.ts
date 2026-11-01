@@ -2,6 +2,7 @@ import { moduleValues } from "../module-values";
 import { WeatherConfig } from "$shared/chatbox/modules/weather";
 import { chatbox } from "..";
 import type { PlaceholdersRecord } from "$shared/chatbox/module-base";
+import { canReachNetwork } from "../eval-context";
 import {
   degreesToCompass,
   describeWeatherCode,
@@ -71,6 +72,9 @@ export class ChatboxWeatherModule extends WeatherConfig {
     const cached = this.geocodeCache.get(key);
     const now = Date.now();
 
+    // A preview runs on every keystroke, so a half-typed place name stays off the network.
+    if (!canReachNetwork()) return cached?.location ?? null;
+
     if (cached) {
       if (cached.pending) return await cached.pending;
       if (now - cached.resolvedAt < GEOCODE_TTL) return cached.location;
@@ -118,6 +122,9 @@ export class ChatboxWeatherModule extends WeatherConfig {
   async getSnapshot(location: WeatherLocation): Promise<WeatherCacheEntry> {
     const units = this.getUnits();
     const key = this.cacheKey(location, units);
+
+    if (!canReachNetwork()) return this.weatherCache.get(key) ?? { lastAttempt: 0 };
+
     const entry: WeatherCacheEntry = this.weatherCache.get(key) ?? { lastAttempt: 0 };
     this.weatherCache.set(key, entry);
 
@@ -152,6 +159,11 @@ export class ChatboxWeatherModule extends WeatherConfig {
   /** Forces the next read to hit the network again. Used by the settings tab. */
   invalidateCache() {
     this.weatherCache.clear();
+  }
+
+  runInput(inputId: string, args: Record<string, string>) {
+    if (inputId !== "refresh") return super.runInput(inputId, args);
+    this.invalidateCache();
   }
 
   async getStatus(location: WeatherLocation) {
