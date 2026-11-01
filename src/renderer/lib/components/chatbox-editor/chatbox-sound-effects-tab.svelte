@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { avatarOSC } from "$lib/api/vrc-osc";
   import { soundEffects, type SoundOscType } from "$lib/api/sound-effects";
+  import { navigateTo } from "$lib/router";
   import ShortcutRecorder from "$lib/components/shortcut-recorder.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -28,11 +29,9 @@
   } from "@lucide/svelte";
 
   const sounds = soundEffects.sounds;
-  const rules = soundEffects.rules;
   const settings = soundEffects.settings;
   const errors = soundEffects.errors;
   const playing = soundEffects.playing;
-  const lastResults = soundEffects.lastResults;
   const vrcMuted = soundEffects.vrcMuted;
 
   let outputs = $state<{ deviceId: string; label: string }[]>([]);
@@ -41,14 +40,12 @@
     outputs = await soundEffects.listAudioOutputs();
   }
 
+  // The engine's list, read when the page opens or you come back to the window. A
+  // `navigator.mediaDevices` listener would start a Chromium audio helper nothing else needs.
   onMount(() => {
     refreshOutputs();
-    navigator.mediaDevices?.addEventListener("devicechange", refreshOutputs);
-    return () =>
-      navigator.mediaDevices?.removeEventListener(
-        "devicechange",
-        refreshOutputs,
-      );
+    window.addEventListener("focus", refreshOutputs);
+    return () => window.removeEventListener("focus", refreshOutputs);
   });
 
   const outputDeviceId = $derived($settings.outputDevice?.id ?? "");
@@ -63,13 +60,6 @@
   function togglePreview(id: string) {
     if ($playing[id]) soundEffects.stop(id);
     else soundEffects.play(id);
-  }
-
-  function soundNames(ids: string[]) {
-    const names = ids
-      .map((id) => $sounds.find((s) => s.id === id)?.name)
-      .filter(Boolean);
-    return names.length ? names.join(", ") : "Pick sounds";
   }
 
   const oscTypeOptions: SoundOscType[] = ["Bool", "Int", "Float"];
@@ -119,8 +109,8 @@
     <div class="flex items-center gap-2">
       <Volume2Icon class="size-4 shrink-0 text-muted-foreground" />
       <span class="text-sm text-muted-foreground flex-1">
-        Play sounds from your library with the soundboard, hotkeys, trigger
-        rules or the Sound placeholder.
+        Play sounds from your library with the soundboard, hotkeys, Automations
+        or the Sound placeholder.
       </span>
       <Button
         variant="destructive"
@@ -466,182 +456,16 @@
     {/each}
   </section>
 
-  <!-- Triggers -->
-  <section class="flex flex-col gap-2">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium">Triggers</span>
-        <span class="text-xs text-muted-foreground">
-          Plays a random pick from the chosen sounds when the template result
-          starts matching. By default the sound plays to the end.
-        </span>
-      </div>
-      <Button variant="outline" size="sm" onclick={soundEffects.addRule}>
-        <PlusIcon class="size-4" />
-        Add trigger
-      </Button>
-    </div>
-
-    {#if $rules.length === 0}
-      <div
-        class="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground"
-      >
-        <ZapIcon class="size-10 opacity-30" />
-        <p class="text-sm">
-          No triggers yet. Add one to play a sound when an avatar parameter
-          changes.
-        </p>
-      </div>
-    {/if}
-
-    {#each $rules as rule (rule.id)}
-      <Card.Root class="p-3">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <Checkbox
-              checked={rule.enabled}
-              onCheckedChange={(v) =>
-                soundEffects.updateRule(rule.id, { enabled: !!v })}
-            />
-            <span
-              class="text-xs text-muted-foreground font-mono flex-1 truncate"
-            >
-              {rule.template || "(no template)"}
-            </span>
-            {#if $lastResults[rule.id] !== undefined}
-              <span
-                class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded shrink-0 max-w-32 truncate"
-                title={$lastResults[rule.id]}
-              >
-                {$lastResults[rule.id] || '""'}
-              </span>
-            {/if}
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7 text-destructive hover:text-destructive"
-              onclick={() => soundEffects.removeRule(rule.id)}
-            >
-              <Trash2Icon class="size-4" />
-            </Button>
-          </div>
-
-          <div class="flex gap-2 flex-wrap items-end">
-            <div class="flex flex-col gap-1 flex-1 min-w-64">
-              <div class="flex items-center gap-1">
-                <Label class="text-xs">Template</Label>
-                <Tooltip.Provider>
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      <InfoIcon
-                        class="size-3 text-muted-foreground cursor-help"
-                      />
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <p class="text-xs max-w-64">
-                        Any placeholders, like <span class="font-mono"
-                          >{"[[OSCData:/avatar/parameters/Booped]]"}</span
-                        >. It's checked every time OSC comes in and a few
-                        times a second otherwise.
-                      </p>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                </Tooltip.Provider>
-              </div>
-              <Input
-                class="font-mono text-xs h-8"
-                placeholder={"[[OSCData:/avatar/parameters/Booped]]"}
-                value={rule.template}
-                oninput={(e) =>
-                  soundEffects.updateRule(rule.id, {
-                    template: (e.target as HTMLInputElement).value,
-                  })}
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-1">
-                <Label class="text-xs">Match</Label>
-                <Tooltip.Provider>
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      <InfoIcon
-                        class="size-3 text-muted-foreground cursor-help"
-                      />
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <p class="text-xs max-w-64">
-                        A value like <span class="font-mono">1</span> or
-                        <span class="font-mono">true</span>, or an operator
-                        first: <span class="font-mono">&gt; 0.5</span>,
-                        <span class="font-mono">!= idle</span>,
-                        <span class="font-mono">&lt;= 3</span>. true and false
-                        count as 1 and 0, text ignores case.
-                      </p>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                </Tooltip.Provider>
-              </div>
-              <Input
-                class="font-mono text-xs h-8 w-32"
-                placeholder="1, > 0.5, != idle"
-                value={rule.match}
-                oninput={(e) =>
-                  soundEffects.updateRule(rule.id, {
-                    match: (e.target as HTMLInputElement).value,
-                  })}
-              />
-            </div>
-            <div class="flex flex-col gap-1 min-w-48 max-w-72">
-              <Label class="text-xs">Sounds</Label>
-              <Select.Root
-                type="multiple"
-                value={rule.soundIds}
-                onValueChange={(v) =>
-                  soundEffects.updateRule(rule.id, { soundIds: v ?? [] })}
-              >
-                <Select.Trigger class="h-8 text-xs">
-                  <span class="truncate">{soundNames(rule.soundIds)}</span>
-                </Select.Trigger>
-                <Select.Content>
-                  {#each $sounds as sound (sound.id)}
-                    <Select.Item value={sound.id}>{sound.name}</Select.Item>
-                  {/each}
-                  {#if $sounds.length === 0}
-                    <p class="text-xs text-muted-foreground p-2">
-                      Add sounds to the library first.
-                    </p>
-                  {/if}
-                </Select.Content>
-              </Select.Root>
-            </div>
-          </div>
-
-          <div class="flex gap-4 flex-wrap">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <Checkbox
-                checked={rule.loop}
-                onCheckedChange={(v) =>
-                  soundEffects.updateRule(rule.id, { loop: !!v })}
-              />
-              <span class="text-xs">Loop while it matches</span>
-            </label>
-            <label
-              class="flex items-center gap-2 select-none"
-              class:cursor-pointer={!rule.loop}
-              class:opacity-50={rule.loop}
-            >
-              <Checkbox
-                checked={rule.loop || rule.stopOnUnmatch}
-                disabled={rule.loop}
-                onCheckedChange={(v) =>
-                  soundEffects.updateRule(rule.id, { stopOnUnmatch: !!v })}
-              />
-              <span class="text-xs">Stop right away when it stops matching</span>
-            </label>
-          </div>
-        </div>
-      </Card.Root>
-    {/each}
+  <!-- Rules moved to Automations -->
+  <section class="flex items-center gap-2 rounded-md border p-3">
+    <ZapIcon class="size-4 shrink-0 text-muted-foreground" />
+    <span class="flex-1 text-xs text-muted-foreground">
+      To play a sound when something happens, like an avatar parameter changing,
+      add a rule in Automations. Your old triggers are there too.
+    </span>
+    <Button variant="outline" size="sm" onclick={() => navigateTo("/automations")}>
+      Open Automations
+    </Button>
   </section>
 </div>
 
