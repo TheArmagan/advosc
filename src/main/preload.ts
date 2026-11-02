@@ -53,6 +53,11 @@ export interface PreloadElectronAPI {
   };
   /** Plain IPC to main, never through the engine, so it works with the engine hung or dead. */
   panic: PanicApi;
+  /** `advosc://` links from main, one at a time. `ready` asks for the next one. */
+  deeplink: {
+    ready: () => void;
+    onLink: (callback: (link: string) => void) => () => void;
+  };
   version: string;
 }
 
@@ -195,6 +200,14 @@ const api: PreloadElectronAPI = {
       const listener = (_e: unknown, state: PanicState) => callback(state);
       ipcRenderer.on('panic:changed', listener as any);
       return () => ipcRenderer.removeListener('panic:changed', listener as any);
+    },
+  },
+  deeplink: {
+    ready: () => ipcRenderer.send('deeplink:ready'),
+    onLink: (callback) => {
+      const listener = (_e: unknown, link: string) => callback(link);
+      ipcRenderer.on('deeplink:open', listener as any);
+      return () => ipcRenderer.removeListener('deeplink:open', listener as any);
     },
   },
   get version() {

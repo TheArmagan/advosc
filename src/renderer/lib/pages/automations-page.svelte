@@ -1,8 +1,9 @@
 <script lang="ts">
   import { automations, type Automation } from "$lib/api/automations";
+  import { bundleReview } from "$lib/api/automations/bundle-review.svelte";
   import AutomationRow from "$lib/components/automations/automation-row.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
-  import { PlusIcon, ZapIcon } from "@lucide/svelte";
+  import { PlusIcon, UploadIcon, ZapIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   const rules = automations.rules;
@@ -32,10 +33,16 @@
         When a value does something, do something else.
       </span>
     </div>
-    <Button variant="outline" size="sm" onclick={addRule}>
-      <PlusIcon class="size-4" />
-      Add rule
-    </Button>
+    <div class="flex shrink-0 items-center gap-2">
+      <Button variant="outline" size="sm" onclick={() => bundleReview.startImport()}>
+        <UploadIcon class="size-4" />
+        Import rules
+      </Button>
+      <Button variant="outline" size="sm" onclick={addRule}>
+        <PlusIcon class="size-4" />
+        Add rule
+      </Button>
+    </div>
   </div>
 
   {#if $rules.length === 0}

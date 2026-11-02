@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { OSCSourceConfig, OSCSourceStatus } from "../../../../main/preload";
+  import { synced } from "$lib/api/engine";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
@@ -23,6 +24,9 @@
   let saving = $state(false);
 
   const version = window.ADVOSCNative.version;
+
+  /** The engine's SPS service reads this same key. */
+  const keepHapticsOn = synced<boolean>("Sps;KeepHapticsOn", false);
 
   const links = [
     { label: "GitHub Repository", url: "https://github.com/TheArmagan/advosc" },
@@ -433,6 +437,29 @@
         rebound without restarting ADVOSC.
       </p>
     {/if}
+  </section>
+
+  <!-- SPS -->
+  <section class="flex flex-col gap-3">
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-medium">SPS</span>
+      <div class="flex-1 border-t"></div>
+    </div>
+
+    <label class="flex cursor-pointer items-start gap-2 select-none">
+      <Checkbox
+        class="mt-0.5"
+        checked={$keepHapticsOn}
+        onCheckedChange={(v) => keepHapticsOn.set(!!v)}
+      />
+      <span class="flex flex-col">
+        <span class="text-sm">Keep SPS haptics on</span>
+        <span class="text-xs text-muted-foreground">
+          ADVOSC normally turns on your avatar's SPS haptics only while an enabled rule reads SPS
+          data. With this on, they stay on all the time.
+        </span>
+      </span>
+    </label>
   </section>
 
   <!-- About -->

@@ -1,12 +1,18 @@
 import { app, Notification } from 'electron';
 import { createWindow, showMainWindow } from './lib/window';
 import { setupIpcHandlers } from './lib/ipc-handlers';
-import { handleSquirrelStartup, isFirstRun, requestRunningInstanceQuit } from './lib/squirrel-startup';
+import {
+  handleSquirrelStartup,
+  isFirstRun,
+  registerLinkProtocol,
+  requestRunningInstanceQuit,
+} from './lib/squirrel-startup';
 import { startAutoUpdater } from './lib/auto-updater';
 import { onSafeModeChanged, startEngine, stopEngine } from './lib/engine-host';
 import { runLegacyImport } from './lib/legacy-import';
 import { getBootstrap } from './lib/bootstrap';
 import { isDev } from './lib/paths';
+import { hasPendingLinks, queueLinks, setupDeepLinks } from './lib/deeplink';
 import { setupPanic } from './lib/panic';
 import { destroyTray, setupTray } from './lib/tray';
 
@@ -29,6 +35,8 @@ function start() {
   // Has to happen before 'ready'. See `gpuAcceleration` in bootstrap.ts.
   if (!getBootstrap().gpuAcceleration) app.disableHardwareAcceleration();
 
+  registerLinkProtocol();
+
   // With no listener, Electron quits when the last window closes. The app lives in the tray,
   // and the engine keeps working with no window at all.
   app.on('window-all-closed', () => {});
@@ -44,9 +52,19 @@ function start() {
     void stopEngine().finally(() => app.quit());
   });
 
-  app.on('second-instance', (_event, _argv, _cwd, data) => {
-    if ((data as SecondInstanceData | undefined)?.quit) app.quit();
-    else showMainWindow();
+  // 'second-instance' can land during the legacy import. A window built then would come up with
+  // no IPC handlers, and startup would build a second one over it.
+  let started = false;
+  let showWhenStarted = false;
+
+  app.on('second-instance', (_event, argv, _cwd, data) => {
+    if ((data as SecondInstanceData | undefined)?.quit) {
+      app.quit();
+      return;
+    }
+    queueLinks(argv);
+    if (started) showMainWindow();
+    else showWhenStarted = true;
   });
 
   app.whenReady().then(async () => {
@@ -57,6 +75,8 @@ function start() {
     await runLegacyImport();
 
     setupIpcHandlers();
+    setupDeepLinks();
+    queueLinks(process.argv);
     startEngine();
     setupTray();
 
@@ -69,8 +89,9 @@ function start() {
     });
 
     // The first launch after an install always shows the window, or it would look like the
-    // installer did nothing.
-    if (!getBootstrap().startHidden || isFirstRun()) createWindow();
+    // installer did nothing. A link needs a window too, even when starting to the tray.
+    if (!getBootstrap().startHidden || isFirstRun() || showWhenStarted || hasPendingLinks()) createWindow();
+    started = true;
 
     // After the window, so a slow or failing update check never delays startup.
     startAutoUpdater();
