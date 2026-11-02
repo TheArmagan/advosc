@@ -33,8 +33,8 @@ function clamp01(value: number) {
  * Raw OGB contact values to how far the plug is in, 0 to 1 of its length. `plugLength` is the
  * length in meters as known so far. Pass the returned one back in on the next call.
  *
- * This formula comes from the receiver geometry in VRCFury's source and hasn't been measured
- * against a real plug in VRChat. Check it against real values before trusting it.
+ * This formula comes from the receiver geometry in VRCFury's source. It's been tried in VRChat
+ * with a small test plug and ring, not across plug sizes.
  *
  * Socket (`BakeHapticSocketsService`): `PenSelfNewTip`, `PenOthersNewTip` and the matching
  * `NewRoot` receivers are Proximity, radius 1 m, at the socket origin. Plugs carry a sphere
