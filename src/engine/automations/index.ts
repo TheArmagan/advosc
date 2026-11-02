@@ -110,8 +110,9 @@ function findProblem(rule: Automation): EvalFailure | null {
   }
   if (rule.mode === "live" && !rule.range) return { kind: "error", message: "A live rule needs a range." };
   if (!Array.isArray(rule.actions)) return { kind: "error", message: "This rule's actions aren't valid." };
-  // Sound ids don't travel, so a bundle can only bring a placeholder.
-  if (rule.actions.some((action) => action?.type === "sound" && !action.soundIds?.length && !action.soundNames?.length)) {
+  // Sound ids don't travel, so a bundle can only bring a placeholder. Only imported rules wait for
+  // one: a rule of the user's own keeps running its other actions if its last sound goes away.
+  if (rule.importKey && rule.actions.some((action) => action?.type === "sound" && !action.soundIds?.length && !action.soundNames?.length)) {
     return { kind: "no-data", message: "Pick a sound." };
   }
   return null;

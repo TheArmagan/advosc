@@ -212,6 +212,9 @@ function ruleUsesSpsData(rule: Automation) {
 
 function avatarHasOgbEnabled() {
   if (reportedThisAvatar) return true;
+  // A Build and Test avatar may have no schema to read, and it can't report the parameter until
+  // haptics are on. Sending to one that doesn't have it does nothing.
+  if (avatarOSC.lastAvatarId?.startsWith("local:")) return true;
   // After a switch the store still holds the old avatar until the new file has been read.
   if (!schemaIsCurrent) return false;
   return get(avatarOSC.schema)?.parameters.some((parameter) => parameter.name === OGB_ENABLED_NAME) ?? false;
