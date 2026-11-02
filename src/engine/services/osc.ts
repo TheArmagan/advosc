@@ -30,6 +30,11 @@ interface OSCSocketEntry extends OSCSource {
   isOpen: boolean;
 }
 
+const BUNDLE_HEADER = Buffer.from('#bundle\0', 'latin1');
+/** `#bundle\0` plus the 8-byte timetag. Elements start after this. */
+const BUNDLE_ELEMENTS_OFFSET = 16;
+const BUNDLE_MAX_DEPTH = 8;
+
 export class OSC extends EventEmitter {
   private entries: OSCSocketEntry[];
   private readyCount: number = 0;
@@ -95,8 +100,9 @@ export class OSC extends EventEmitter {
 
     entry.socket.on('message', (buffer: Buffer) => {
       try {
-        const message = this.parseOSCMessage(buffer);
-        if (message) {
+        const messages: OSCMessage[] = [];
+        this.collectOSCMessages(buffer, 0, messages);
+        for (const message of messages) {
           this.emit('message', message);
         }
       } catch (error) {
@@ -204,6 +210,33 @@ export class OSC extends EventEmitter {
     }
 
     return Buffer.concat(parts);
+  }
+
+  /**
+   * Appends every message in a packet, in order. Anyone on the LAN can reach these ports, so
+   * the sizes aren't trusted: a bad one stops that bundle, keeping what was read before it.
+   * Each step moves forward through a finite buffer, and the depth limit bounds the recursion.
+   */
+  private collectOSCMessages(packet: Buffer, depth: number, out: OSCMessage[]): void {
+    const isBundle = packet.length >= BUNDLE_HEADER.length
+      && packet.compare(BUNDLE_HEADER, 0, BUNDLE_HEADER.length, 0, BUNDLE_HEADER.length) === 0;
+
+    if (!isBundle) {
+      const message = this.parseOSCMessage(packet);
+      if (message) out.push(message);
+      return;
+    }
+
+    if (depth >= BUNDLE_MAX_DEPTH) return;
+
+    let offset = BUNDLE_ELEMENTS_OFFSET;
+    while (offset + 4 <= packet.length) {
+      const size = packet.readInt32BE(offset);
+      offset += 4;
+      if (size < 0 || size > packet.length - offset) return;
+      this.collectOSCMessages(packet.subarray(offset, offset + size), depth + 1, out);
+      offset += size;
+    }
   }
 
   private parseOSCMessage(buffer: Buffer): OSCMessage | null {

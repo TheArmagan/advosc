@@ -8,7 +8,7 @@ import { localData } from "./persistence/local-data";
 import { addClient, markReady } from "./sync/hub";
 import { startOSCPort } from "./native";
 import { shortcuts } from "./shortcuts";
-import { startAvatarOSC, startAvatarScale } from "./vrc-osc";
+import { startAvatarOSC, startAvatarScale, startSps, stopSps } from "./vrc-osc";
 import { chatbox, startChatbox } from "./chatbox";
 import type { VarModule } from "./chatbox/modules/chatbox-var-module";
 import { startOscForwarder } from "./osc-forwarder";
@@ -39,6 +39,7 @@ async function boot() {
   startOscForwarder({ safeMode });
   startSoundEffects();
   startAutomations({ safeMode });
+  startSps({ safeMode });
   registerRpc();
   startToys({ safeMode });
 
@@ -55,6 +56,7 @@ async function boot() {
     stopMediaMonitor();
     stopSystemMonitor();
     stopBleHeartRate();
+    stopSps();
   });
   onShutdown(async () => {
     await stopSpeechServer();

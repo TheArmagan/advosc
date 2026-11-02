@@ -32,7 +32,13 @@ const avatarIdStore = writable<string | null>(null);
  * Plain maps, not stores. VRChat can send these at 30 Hz, and with no window open that has to
  * cost nothing beyond this assignment.
  */
-let parameters: Record<string, number> = {};
+let derivedParameters: Record<string, number> = {};
+/**
+ * Derived values sit on the prototype, so `getParameters()[address]` finds them while spreads,
+ * JSON and `Object.keys` don't. They aren't avatar state: they must stay out of saved profiles
+ * and the parameter stream, and a profile load must never send them to VRChat.
+ */
+let parameters: Record<string, number> = Object.create(derivedParameters);
 let changedAt: Record<string, number> = {};
 let parameterStream: Stream;
 let changedAtStream: Stream;
@@ -226,8 +232,28 @@ export const avatarOSC = {
       onParameterChangeCallbacks = onParameterChangeCallbacks.filter(cb => cb !== callback);
     };
   },
+  /**
+   * Hand a value computed inside the engine to the same callbacks as a real parameter, so
+   * rules can use it as a source. Internal only: nothing from the network reaches this, and
+   * `handleMessage` drops `/advosc/` packets.
+   */
+  publishDerived(address: string, value: number) {
+    if (!Number.isFinite(value)) return;
+    derivedParameters[address] = value;
+    notifyParameterChange(address, value);
+  },
   updateOSCSchema,
 };
+
+function notifyParameterChange(address: string, value: number) {
+  for (const cb of onParameterChangeCallbacks) {
+    try {
+      cb(address, value);
+    } catch (error) {
+      console.error("Parameter change callback failed:", error);
+    }
+  }
+}
 
 function flushUpdates() {
   const incoming = incomingUpdates;
@@ -243,13 +269,7 @@ function flushUpdates() {
     const links = get(linksStore);
     for (const address in incoming) {
       const value = incoming[address];
-      for (const cb of onParameterChangeCallbacks) {
-        try {
-          cb(address, value);
-        } catch (error) {
-          console.error("Parameter change callback failed:", error);
-        }
-      }
+      notifyParameterChange(address, value);
       for (const target of links[address] ?? []) {
         if (!(target in lockedParameters)) sendParameter(target, value);
       }
@@ -278,7 +298,8 @@ function handleAvatarChange(message: { address: string; args: any[] }) {
   lastAvatarId = avatarId as string;
   avatarIdStore.set(lastAvatarId);
   stopAllAnimations();
-  parameters = {};
+  derivedParameters = {};
+  parameters = Object.create(derivedParameters);
   changedAt = {};
   parameterStream.reset({});
   changedAtStream.reset({});
@@ -295,6 +316,9 @@ function handleAvatarChange(message: { address: string; args: any[] }) {
 }
 
 function handleMessage(message: { address: string; args: any[]; types?: string[] }) {
+  // Automations fall back to allLastParameters, so a packet stored here could fake a derived value.
+  if (message.address.startsWith("/advosc/")) return;
+
   allLastParameters[message.address] = message.args;
 
   if (message.address === "/avatar/change") {
@@ -323,7 +347,17 @@ function handleMessage(message: { address: string; args: any[]; types?: string[]
     value = lock.value;
   }
 
-  incomingUpdates[message.address] = coerceParameterValue(value, getParameterType(message.address));
+  const type = getParameterType(message.address);
+  const next = coerceParameterValue(value, type);
+
+  // Batching keeps only the last value, which would swallow a 0-1-0 flip inside one window.
+  // The address stays pending, so the flush still does its changedAt, stream and link work.
+  const pending = incomingUpdates[message.address];
+  if (type === "Bool" && pending !== undefined && pending !== next) {
+    notifyParameterChange(message.address, pending);
+  }
+
+  incomingUpdates[message.address] = next;
 }
 
 const PathVerifiers = {
