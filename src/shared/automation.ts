@@ -57,10 +57,19 @@ export interface Automation {
   source: AutomationSource;
   /** Existing match syntax: "1", "> 0.5", "!= idle". A bare value means "=". Unused by `live`. */
   match: string;
+  /**
+   * Same syntax as `match`. Once matched, an `edge` or `while` rule stays matched until this is
+   * true, so a float settling around a threshold doesn't fire again. Left out, `match` decides.
+   */
+  releaseMatch?: string;
   mode: AutomationMode;
   /** Required on `live`, where it's the mapping from source to output. */
   range?: AutomationRange;
   cooldownMs?: number;
+  /** Blueprint ids this rule runs on. Left out, it runs on every avatar. */
+  avatarIds?: string[];
+  /** Set on rules that came from a bundle, so importing it again doesn't add them twice. */
+  importKey?: string;
   /** A migrated Sound Effects rule whose template relied on placeholders with side effects. */
   legacySideEffects?: boolean;
   actions: AutomationAction[];
