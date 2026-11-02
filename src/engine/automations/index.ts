@@ -48,6 +48,8 @@ const BREAKER_FIRES = 30;
 const BREAKER_WINDOW_MS = 3000;
 /** Avatar OSC ignores everything for a second after an avatar change. */
 const AVATAR_SETTLE_MS = 1100;
+/** Addresses ADVOSC makes up itself, like `/advosc/sps/...`. Only avatar OSC may deliver them. */
+const INTERNAL_PREFIX = "/advosc/";
 
 const TRIPPED_MESSAGE = `Turned off because it fired ${BREAKER_FIRES} times in ${BREAKER_WINDOW_MS / 1000} seconds. Check for rules setting each other off, then reset it.`;
 const SAFE_MODE_MESSAGE = "Automations are off in safe mode.";
@@ -73,8 +75,20 @@ function shortcuts(): Record<string, string> {
   return chatbox.modules.get("Shortcut")?.getValues().shortcuts ?? {};
 }
 
+function isAvatarLocked(rule: Automation): boolean {
+  return Array.isArray(rule.avatarIds) && rule.avatarIds.length > 0;
+}
+
+/** `local:` ids come from Build and Test, which a blueprint id could never match. */
+function runsOnThisAvatar(rule: Automation): boolean {
+  if (!isAvatarLocked(rule)) return true;
+  const avatarId = avatarOSC.lastAvatarId;
+  if (typeof avatarId !== "string") return false;
+  return avatarId.startsWith("local:") || rule.avatarIds!.includes(avatarId);
+}
+
 function isRunnable(state: RuleState): boolean {
-  return state.rule.enabled && !state.problem && !state.tripped;
+  return state.rule.enabled && !state.problem && !state.tripped && runsOnThisAvatar(state.rule);
 }
 
 function isActive(state: RuleState): boolean {
@@ -96,6 +110,10 @@ function findProblem(rule: Automation): EvalFailure | null {
   }
   if (rule.mode === "live" && !rule.range) return { kind: "error", message: "A live rule needs a range." };
   if (!Array.isArray(rule.actions)) return { kind: "error", message: "This rule's actions aren't valid." };
+  // Sound ids don't travel, so a bundle can only bring a placeholder.
+  if (rule.actions.some((action) => action?.type === "sound" && !action.soundIds?.length && !action.soundNames?.length)) {
+    return { kind: "no-data", message: "Pick a sound." };
+  }
   return null;
 }
 
@@ -108,7 +126,8 @@ function statusOf(state: RuleState): AutomationStatus {
   if (state.tripped) return { ...base, health: "tripped", active: false, message: TRIPPED_MESSAGE };
   if (!rule.enabled) return { ...base, health: "ok", active: false };
 
-  const failure = state.problem ?? state.failing;
+  // A rule waiting for its avatar isn't reading its source, so its last failure is out of date.
+  const failure = state.problem ?? (runsOnThisAvatar(rule) ? state.failing : null);
   if (failure) {
     return {
       ...base,
@@ -187,6 +206,17 @@ function fire(state: RuleState) {
   void runActions(state, ++state.runId);
 }
 
+/**
+ * With `releaseMatch`, a matched rule holds until the release is true. The release also blocks
+ * matching, so a value both patterns accept can't flip the rule on every update.
+ */
+function matchesNow(state: RuleState, value: string): boolean {
+  const { match, releaseMatch } = state.rule;
+  if (!releaseMatch?.trim()) return matches(value, match);
+  if (matches(value, releaseMatch)) return false;
+  return state.matched === true || matches(value, match);
+}
+
 function applyMatch(state: RuleState, matched: boolean) {
   const previous = state.matched;
   state.matched = matched;
@@ -241,7 +271,7 @@ function applyValue(state: RuleState, value: string) {
   statusDirty = true;
 
   if (state.rule.mode !== "live") {
-    applyMatch(state, matches(value, state.rule.match));
+    applyMatch(state, matchesNow(state, value));
     return;
   }
 
@@ -362,7 +392,9 @@ function tick() {
 // ------------------------------------------------------------------- parameter sources
 
 function readParameter(address: string): string | undefined {
-  const value = avatarOSC.getParameters()[address] ?? avatarOSC.allLastParameters[address]?.[0];
+  // `allLastParameters` keeps every packet, so a derived value can't be read back from there.
+  const heard = address.startsWith(INTERNAL_PREFIX) ? undefined : avatarOSC.allLastParameters[address]?.[0];
+  const value = avatarOSC.getParameters()[address] ?? heard;
   if (value === undefined || value === null) return undefined;
   return String(typeof value === "boolean" ? (value ? 1 : 0) : value);
 }
@@ -390,6 +422,10 @@ function handleParameter(address: string, value: number | string | boolean) {
   }
 }
 
+function lockedTemplateRules(): RuleState[] {
+  return [...states.values()].filter((state) => state.rule.source?.kind === "template" && isAvatarLocked(state.rule));
+}
+
 /**
  * Everything the old avatar reported is gone, and for a moment after a switch nothing is
  * processed. Waiting that out and looking again keeps a switch from reading as a press.
@@ -401,6 +437,11 @@ function handleAvatarChange() {
       forgetSource(state);
     }
   }
+  // Template rules carry on through a switch, unless the avatar decides whether they run.
+  for (const state of lockedTemplateRules()) {
+    endRun(state);
+    forgetSource(state);
+  }
   statusDirty = true;
 
   if (avatarSettleTimer) clearTimeout(avatarSettleTimer);
@@ -411,13 +452,15 @@ function handleAvatarChange() {
         if (isRunnable(state) && state.matched === undefined && !state.live?.seeded) seedParameter(state);
       }
     }
+    for (const state of lockedTemplateRules()) markDirty(state);
   }, AVATAR_SETTLE_MS);
 }
 
 function handleOsc(message: OSCIncomingMessage) {
   if (message.address === "/avatar/change") handleAvatarChange();
   // Avatar OSC delivers `/avatar/` values already batched, which is what paces those rules.
-  else if (!message.address.startsWith("/avatar/")) {
+  // `/advosc/` values are worked out here, so one arriving from the network is a fake.
+  else if (!message.address.startsWith("/avatar/") && !message.address.startsWith(INTERNAL_PREFIX)) {
     const value = message.args[0];
     if (value !== null && value !== undefined) handleParameter(message.address, value);
   }
@@ -469,8 +512,8 @@ function rebuildIndexes() {
 
 /** The fields that decide what a rule does. Renaming one doesn't restart it. */
 function behaviourOf(rule: Automation): string {
-  const { source, match, mode, range, enabled, actions, legacySideEffects } = rule;
-  return JSON.stringify([source, match, mode, range, enabled, actions, legacySideEffects]);
+  const { source, match, releaseMatch, mode, range, enabled, avatarIds, actions, legacySideEffects } = rule;
+  return JSON.stringify([source, match, releaseMatch, mode, range, enabled, avatarIds, actions, legacySideEffects]);
 }
 
 function resetState(state: RuleState) {
