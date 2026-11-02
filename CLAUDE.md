@@ -228,4 +228,6 @@ Reference tables (placeholders, parameters, outputs) stay as they are. This is a
 
 ## Docs
 
-`README.md` documents every module's user-facing placeholders; `LEARN_PLACEHOLDERS.md` and `LEARN_PLACEHOLDERS_EXPERT.md` are the user tutorials for the two-layer syntax. Update them when adding or changing placeholder behavior.
+`README.md` is the short overview: what ADVOSC is, how to install it, and links out. Detail lives in `docs/`, one file per topic, so add it there and keep the README short.
+
+`docs/MODULES.md` documents every module's user-facing placeholders; `LEARN_PLACEHOLDERS.md` and `LEARN_PLACEHOLDERS_EXPERT.md` are the user tutorials for the two-layer syntax. Update them when adding or changing placeholder behavior.
