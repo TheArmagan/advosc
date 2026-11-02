@@ -237,6 +237,7 @@
         {:else}
           <AddressField
             label="Parameter"
+            includeDerived
             value={source.address}
             onChange={(address) =>
               automations.update(rule.id, { source: { kind: "parameter", address } })}
@@ -248,6 +249,12 @@
       This only reads the value, so a placeholder that does something, like playing a sound, won't
       fire from here.
     </p>
+    {#if source.kind === "parameter"}
+      <p class="text-xs text-muted-foreground">
+        SPS depth is listed here once a socket or plug is sending. Turn on Keep SPS haptics on in
+        Settings and the socket in game, then touch it once.
+      </p>
+    {/if}
   </section>
 
   <section class="flex flex-col gap-2">

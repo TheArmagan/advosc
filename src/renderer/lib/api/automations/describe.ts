@@ -77,6 +77,12 @@ export function isContactRule(rule: Automation): boolean {
   return contact && !(last.includes("Self") && !last.includes("Others"));
 }
 
+/** Nothing in a plain parameter's name says whether a contact sets it, so it might be one. */
+export function mayBeContactRule(rule: Automation): boolean {
+  if (rule.source.kind !== "parameter" || !rule.source.address.startsWith(PARAMETER_PREFIX)) return false;
+  return !sourceParts(rule.source.address).contact;
+}
+
 export function hasToyAction(rule: Automation): boolean {
   return rule.actions.some((action) => action.type === "toy");
 }

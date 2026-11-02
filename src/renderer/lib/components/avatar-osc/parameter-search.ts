@@ -19,6 +19,20 @@ export type ParameterListItem = {
 
 export type ParameterSort = "name" | "address" | "recent" | "type";
 
+/** Values ADVOSC works out itself. They exist only here, so VRChat can't be sent one. */
+const DERIVED_PREFIX = "/advosc/";
+
+export function isDerivedParameter(address: string) {
+  return address.startsWith(DERIVED_PREFIX);
+}
+
+const DERIVED_SPS = /^\/advosc\/sps\/(socket|plug)\/([^/]+)\/([^/]+)$/;
+
+function derivedName(address: string) {
+  const sps = DERIVED_SPS.exec(address);
+  return sps ? `SPS ${sps[1]} ${sps[2]}: ${sps[3]}` : address;
+}
+
 export function shortAddress(address: string) {
   return address.startsWith(AVATAR_PARAMETER_PREFIX)
     ? address.slice(AVATAR_PARAMETER_PREFIX.length)
@@ -52,14 +66,15 @@ export function buildParameterList(
   for (const address of addresses) {
     const entry = schemaIndex[address];
     const short = shortAddress(address);
+    const derived = isDerivedParameter(address);
     items.push({
       address,
       short,
-      name: entry?.name ?? short,
-      type: getType(address),
+      name: entry?.name ?? (derived ? derivedName(address) : short),
+      type: getType(address) ?? (derived ? (address.endsWith("/active") ? "Bool" : "Float") : null),
       value: parameters[address],
       inSchema: !!entry,
-      writable: entry ? entry.writable : true,
+      writable: derived ? false : entry ? entry.writable : true,
       builtin: isBuiltinParameter(address),
     });
   }

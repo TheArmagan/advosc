@@ -7,6 +7,7 @@
     describeTrigger,
     hasToyAction,
     isContactRule,
+    mayBeContactRule,
   } from "$lib/api/automations/describe";
   import { toyStatus } from "$lib/api/toys/status.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -185,6 +186,11 @@
                 <p class="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <TriangleAlertIcon class="mt-0.5 size-3 shrink-0" />
                   Anyone nearby can trigger this rule.
+                </p>
+              {:else if mayBeContactRule(rule) && hasToyAction(rule)}
+                <p class="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <TriangleAlertIcon class="mt-0.5 size-3 shrink-0" />
+                  If a contact sets this parameter, anyone nearby can trigger this rule.
                 </p>
               {/if}
             </Card.Root>

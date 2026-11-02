@@ -7,6 +7,7 @@
   import TypeBadge from "./type-badge.svelte";
   import {
     buildParameterList,
+    isDerivedParameter,
     scoreParameter,
     sortParameters,
     type ParameterListItem,
@@ -16,12 +17,15 @@
     value = $bindable(""),
     placeholder = "Search parameters or type an address",
     exclude = [] as string[],
+    includeDerived = false,
     onpick,
     class: className = "",
   }: {
     value?: string;
     placeholder?: string;
     exclude?: string[];
+    /** Also list values ADVOSC works out, like SPS depth. They can be read but never sent. */
+    includeDerived?: boolean;
     onpick?: (address: string) => void;
     class?: string;
   } = $props();
@@ -46,7 +50,7 @@
       untrack(() => $parameters),
       $schemaIndex,
       avatarOSC.getParameterType,
-    ).filter((i) => !exclude.includes(i.address));
+    ).filter((i) => (includeDerived || !isDerivedParameter(i.address)) && !exclude.includes(i.address));
     // When the field already holds a full address, still list everything so you can switch.
     const query = value.startsWith("/") && items.some((i) => i.address === value) ? "" : value;
     if (!query.trim()) return sortParameters(items, "name", {});

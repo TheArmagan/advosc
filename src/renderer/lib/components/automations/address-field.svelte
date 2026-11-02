@@ -8,11 +8,14 @@
     value,
     onChange,
     placeholder,
+    includeDerived = false,
   }: {
     label: string;
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    /** For sources only: these values can be read but never sent. */
+    includeDerived?: boolean;
   } = $props();
 
   // A bare name is fine while typing, but the rule needs the full address.
@@ -27,6 +30,7 @@
   <Label class="text-xs">{label}</Label>
   <ParameterPicker
     {placeholder}
+    {includeDerived}
     bind:value={() => value, (next) => onChange(next)}
   />
 </div>
