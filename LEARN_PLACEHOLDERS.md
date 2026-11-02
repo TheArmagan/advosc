@@ -44,7 +44,7 @@ Same modules, same parameters, different punctuation. That is genuinely the whol
 
 ### Why bother with two
 
-Because sometimes you need the answer from one placeholder to feed the next one. Say you want your song position as `2m 5s` instead of `125000` milliseconds. The Time module can format a duration, but you have to hand it a number, and only MediaInfo knows that number.
+Because sometimes you need the answer from one placeholder to feed the next one. Say you want your song position as `2m5s` instead of `125000` milliseconds. The Time module can format a duration, but you have to hand it a number, and only MediaInfo knows that number.
 
 ```
 {{Time;FormatDuration;[[MediaInfo:Position]];Short}}
@@ -54,7 +54,7 @@ What happens, in order:
 
 1. `[[MediaInfo:Position]]` runs first and turns into `125000`
 2. now the outer one reads `{{Time;FormatDuration;125000;Short}}`
-3. that turns into `2m 5s`
+3. that turns into `2m5s`
 
 Inner first, then outer. Like getting your ingredients out before you start cooking.
 
@@ -68,7 +68,7 @@ The Shortcut module lets you give a name to a chunk of placeholder and use the n
 Shortcut A → Shortcut B → Shortcut C → actual data
 ```
 
-You can go as deep as you like.
+You can stack them far deeper than you'll ever need. ADVOSC only stops at around 60 levels, so a shortcut that calls itself can't take the app down.
 
 ---
 
@@ -135,10 +135,10 @@ Two placeholders with a dash between them. The inners resolve first:
 
 1. `[[MediaInfo:Position]]` gives `65000`
 2. `[[MediaInfo:Duration]]` gives `180000`
-3. `{{Time;FormatDuration;65000;Colon}}` gives `1:05`
-4. `{{Time;FormatDuration;180000;Colon}}` gives `3:00`
+3. `{{Time;FormatDuration;65000;Colon}}` gives `01:05`
+4. `{{Time;FormatDuration;180000;Colon}}` gives `03:00`
 
-Result: `1:05-3:00`
+Result: `01:05-03:00`
 
 ### `MediaProgressTextFormatted`, three layers
 
@@ -152,7 +152,7 @@ MediaProgressTextFormatted
         └── MediaInfo:Position and MediaInfo:Duration
 ```
 
-The shortcut resolves to `1:05-3:00`, then SuperScript shrinks it to `¹:⁰⁵⁻³:⁰⁰`. Tiny text takes less room in the chatbox, which is why people do this.
+The shortcut resolves to `01:05-03:00`, then SuperScript shrinks it to `⁰¹'⁰⁵⁻⁰³'⁰⁰`. The colon turns into `'` because there's no tiny colon to use. Tiny text takes less room in the chatbox, which is why people do this.
 
 ### `MediaWithLyric`, now with a condition
 
@@ -185,7 +185,7 @@ MediaWithLyric
 Output:
 
 ```
-Never Gonna Give You Up ᵇʸ Rick Astley ¹:⁰⁵⁻³:⁰⁰
+Never Gonna Give You Up ᵇʸ Rick Astley ⁰¹'⁰⁵⁻⁰³'⁰⁰
 ⁿᵉᵛᵉʳ ᵍᵒⁿⁿᵃ ˡᵉᵗ ʸᵒᵘ ᵈᵒʷⁿ
 ```
 
@@ -232,8 +232,8 @@ PlayStatus
 Which gives you one of:
 
 - `I'm AFK for 5m`
-- `85%🔋 (I'm on VR for 1h 30m)`
-- `Desktop⚡ (I'm on VR for 1h 30m)`
+- `85%🔋 (I'm on VR for 1h30m)`
+- `Desktop⚡ (I'm on VR for 1h30m)`
 
 ---
 
@@ -249,9 +249,9 @@ After all that, the actual template is three lines:
 
 ```
 02:30 PM
-Never Gonna Give You Up ᵇʸ Rick Astley ¹:⁰⁵⁻³:⁰⁰
+Never Gonna Give You Up ᵇʸ Rick Astley ⁰¹'⁰⁵⁻⁰³'⁰⁰
 ⁿᵉᵛᵉʳ ᵍᵒⁿⁿᵃ ˡᵉᵗ ʸᵒᵘ ᵈᵒʷⁿ
-Desktop⚡ (I'm on VR for 1h 30m)
+Desktop⚡ (I'm on VR for 1h30m)
 ```
 
 That is the point of shortcuts. All the mess lives in named pieces you wrote once, and the template you actually look at stays readable.
@@ -314,6 +314,8 @@ An automation watches a value and does something when it matches. Set the value 
 
 Automation values and previews are read only, so a placeholder that normally does something, like `{{Sound;Play;boop}}`, won't play anything there. Use an action instead.
 
+One catch: if you compare text with Expr in one of these fields, put quotes around the inner placeholder, like `{{Expr;'[[MediaInfo:Status]]'=='Playing';1;0}}`. In the chatbox you don't need them.
+
 To keep a value for later, use a variable. An automation's **Set a variable** action stores it, and this reads it back anywhere, even after a restart:
 
 ```
@@ -336,8 +338,8 @@ The last part is what you get if `mood` hasn't been set yet.
 
 ---
 
-## That is the whole idea
+## That's the whole idea
 
-Two kinds of placeholder, inner runs first, shortcuts let you name things and stack them. Everything else is just picking modules from the [README](./README.md) and trying stuff.
+Two kinds of placeholder, inner runs first, shortcuts let you name things and stack them. Everything else is just picking from the [module list](./docs/MODULES.md) and trying stuff.
 
 When you want parameterized shortcuts (`$0`, `$1`, shortcuts that work like functions), animation that stays in sync, and the patterns people use to build the really fancy chatboxes, the [expert guide](./LEARN_PLACEHOLDERS_EXPERT.md) picks up from here.

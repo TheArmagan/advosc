@@ -15,7 +15,7 @@ Refresher, in case you need it:
 
 ## Shortcuts that take parameters
 
-This is the feature that changes everything. A shortcut can reference `$0`, `$1`, `$2` and so on, and you fill those in when you call it. Shortcuts stop being copy-paste and start being functions.
+This is the big one. A shortcut can reference `$0`, `$1`, `$2` and so on, and you fill those in when you call it. Shortcuts stop being copy-paste and start being functions.
 
 ```
 Define:  "MyShortcut": "Hello $0, you are $1 years old!"
@@ -68,7 +68,7 @@ Nothing in there knows or cares what it is measuring. Health, song position, a c
 "MediaProgressBar": "{{Shortcut;ProgressBar;[[Shortcut:MediaProgressValue:$0]];$0;$1;$2;$3}}"
 ```
 
-`MediaProgressValue` takes position over duration (a ratio from 0 to 1), multiplies by whatever scale you ask for, rounds it, and falls back to `0` with `||0` when there is no music and the division goes to `NaN`.
+`MediaProgressValue` takes position over duration (a ratio from 0 to 1), multiplies by whatever scale you ask for, and rounds it. With no music the division goes to `NaN`, and `||0` turns that into `0`. Expr prints nothing for a `0`, so with no music, or right at the start of a song, the value comes out empty and the bar shows just its marker.
 
 `MediaProgressBar` is a thin wrapper: it passes your scale down to the calculator to get the current value, then hands everything to the generic bar.
 
@@ -118,7 +118,7 @@ which beats away as `❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️`.
 
 ### Using the same animation twice
 
-You can drop the exact same animated placeholder (or the same shortcut wrapping one) into a template as many times as you want, like the doubled `{{Shortcut;ScrollingHeartrate}}` above. Every occurrence keeps its own animation state, so copies no longer fight over one timeline and cycling animations no longer skip frames when duplicated.
+You can drop the exact same animated placeholder (or the same shortcut wrapping one) into a template as many times as you want, like the doubled `{{Shortcut;ScrollingHeartrate}}` above. Every occurrence keeps its own animation state, so copies don't fight over one timeline or skip frames.
 
 Occurrences that start at the same moment with the same parameters stay in sync, since they are running the same animation from the same start time. A copy that shows up later, say one that only appears when a condition flips true, animates on its own phase.
 
@@ -182,7 +182,7 @@ $3                    →  🔘
                          ███🔘░░░░░░░
 ```
 
-The `Math.max($0, $1)-$0` guards against a negative repeat count when the current value somehow overshoots the max. `Math.max(3, 10) - 3` gives 7 empty slots, and if current ever exceeds max you get 0 instead of a crash.
+The `Math.max($0, $1)-$0` guards against a negative repeat count when the current value somehow overshoots the max. `Math.max(3, 10) - 3` gives 7 empty slots, and if current ever exceeds max you get 0.
 
 ### `MediaProgressValue`
 
@@ -226,7 +226,7 @@ The interesting bit is `[[Shortcut:MediaProgressValue:$0]]`, which passes the sc
 ```
 
 ```
- ¹:²³ |˖⁺‧₊˖⁺‧🛸₊˖⁺‧₊| ³:⁴⁵
+ ⁰¹'²³ |˖⁺‧₊˖⁺‧🛸₊˖⁺‧₊| ⁰³'⁴⁵
   ↑          ↑          ↑
 elapsed   the bar     total
 ```
@@ -271,7 +271,7 @@ MediaMarquee
 "HeartrateComplete": "{{HeartRate;[[Shortcut:Source]];HeartRate}}"
 ```
 
-`Source` holds the name of a feed configured in **Modules → Heart Rate**, and everything else reads it through the shortcut. Swap platforms later and you edit one line instead of hunting through the template.
+`Source` holds the name of a feed configured in **Modules > Heart Rate**, and everything else reads it through the shortcut. Swap platforms later and you edit one line instead of hunting through the template.
 
 ```
 ❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️
@@ -306,7 +306,7 @@ MediaMarquee
 ```
 ╭────────★─╮
 *.⋆ | ᴅʀɪɴᴋ ᴡᴀᴛᴇʀ! | *.⋆
- ¹:²³ |˖⁺‧₊˖⁺‧🛸₊˖⁺‧₊| ³:⁴⁵
+ ⁰¹'²³ |˖⁺‧₊˖⁺‧🛸₊˖⁺‧₊| ⁰³'⁴⁵
 ♬ | ɴᴇᴠᴇʀ ɢᴏɴɴᴀ ɢɪᴠᴇ | ♬
 ❤️ |ﮩ٨ـﮩ٨ـ|⁷⁵|ﮩ٨ـﮩ٨ـ| ❤️
 ╰─★────────╯
@@ -319,8 +319,8 @@ MediaMarquee
 **Function shortcuts.** Write the generic version, use it everywhere.
 
 ```
-"Pad": "{{Text;Repeat;$1;[[Expr:Math.max(0, $0 - [[Text:Length:$2]])]]}}$2"
-{{Shortcut;Pad;5;0;42}}   →   00042
+"Zeros": "{{Text;Pad;Left;$0;0;$1}}"
+{{Shortcut;Zeros;5;42}}   →   00042
 ```
 
 **One place for secrets.** Keep a token or a source name in its own shortcut and reference it. Mark it hidden in the module settings and it gets stripped when you share.
@@ -349,7 +349,7 @@ template  the thing you actually see
 
 ## Things that will bite you
 
-**Parameter count.** A shortcut that references `$2` and only gets two parameters will show an error rather than guess. Count your `$N`s.
+**Parameter count.** A shortcut that references `$2` and only gets two parameters shows `(Requires 3 parameters, but got 2)` rather than guessing. Count your `$N`s.
 
 **Literal semicolons.** Escape them with `\;` or they split your parameters.
 
@@ -357,9 +357,15 @@ template  the thing you actually see
 {{Shortcut;MyShortcut;Hello\; World}}
 ```
 
-**Recursion.** ADVOSC limits how deep one render can go and how many placeholders it can resolve, so a shortcut that calls itself will not take the app down. It will still ruin your chatbox, so watch out for accidental loops.
+**Recursion.** ADVOSC limits how deep one render can go (64 levels) and how many placeholders it can resolve (5000), so a shortcut that calls itself won't take the app down. It'll still ruin your chatbox: you get `(Ignored: ...)` where the loop got cut off.
 
-**Debug mode.** Turn on `debugMode` in settings to watch placeholders resolve in the console. This is usually faster than staring at the template.
+**Debug mode.** Turn on **Enable Debug Mode** on the Chatbox settings tab, and shortcuts and failed expressions get written to `engine.log`, in the `logs` folder under `%APPDATA%\advosc`. This is usually faster than staring at the template.
+
+**Expr and zero.** Anything falsy counts as false, so `{{Expr;2-2}}` prints nothing, not `0`. If you need the `0` on screen, use `{{Number;Round;...}}` or give Expr a false branch: `{{Expr;2-2;;0}}`.
+
+**Comparing booleans.** `[[Hotkey:IsToggled:X]]=='true'` is always false, since `true` is a real boolean there. Use the placeholder on its own as the condition.
+
+**Comparing text outside the chatbox.** In automation values and previews, inner placeholders go in without quotes, so write `'[[MediaInfo:Status]]'=='Playing'`. In the chatbox, leave the quotes off.
 
 **Sound placeholders fire per occurrence.** Each `{{Sound;Play;...}}` in your template remembers its own last condition, so two copies of the same one fire independently. It also means a Sound placeholder inside a shortcut fires wherever that shortcut is used in a template. Previews and automation values are read only, so nothing fires there.
 
@@ -384,6 +390,6 @@ template  the thing you actually see
 
 ---
 
-That is everything the engine can do. Go make something absurd, and show it off in the [Discord](https://discord.gg/spfmB7S78n).
+That's what the engine can do. Go make something absurd, and show it off in the [Discord](https://discord.gg/spfmB7S78n).
 
 *Back to the [beginner guide](./LEARN_PLACEHOLDERS.md)*

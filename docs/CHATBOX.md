@@ -12,7 +12,7 @@ There are two ways to write one, and they both end up as the same template under
   <img src="../screenshots/chatbox-simple-editor.png" alt="Simple Chatbox Editor" width="700">
 </p>
 
-You stack blocks, reorder them, and watch the preview update as you go. No syntax to memorize. There are 30 block types:
+You stack blocks, reorder them, and watch the preview update as you go. No syntax to memorize. There are 32 block types:
 
 | Category | Blocks |
 |----------|--------|
@@ -21,10 +21,10 @@ You stack blocks, reorder them, and watch the preview update as you go. No synta
 | **Display** | Progress Bar, Health Bar, Star Rating, Toggle Text, Number Format |
 | **Animate** | Marquee / Scroll, Bounce, Typewriter, Blink, Cycle Texts |
 | **Logic** | Condition |
-| **VRChat** | Hotkey State, Avatar Param, VR Tracker |
-| **Tools** | Stopwatch, Session Time, Shortcut, Number Calc, Random Number |
+| **VRChat** | Hotkey State, Avatar Param, VR Tracker, Play Sound |
+| **Tools** | Stopwatch, Session Time, Shortcut, Number Calc, Random Number, Weather |
 
-The part that makes it actually usable for real templates: most blocks accept more than a plain value as their source. You can feed them:
+Most blocks accept more than a plain value as their source. You can feed them:
 
 - a literal like `42`, `true`, or some text
 - an OSC address like `/avatar/parameters/Health`
@@ -62,8 +62,13 @@ A saved template holds the whole setup: the template text, both editors' state, 
 | **Use** | Switches to a saved template, and can save your current one first so you can come back |
 | **Overwrite With Current Setup** | Updates a saved template in place after you tweak something |
 | **Share** | Gives you a compact share code, the raw JSON, or a `.advosc.json` file |
-| **Import** | Takes a share code, template JSON, template file, or an old "Export All Settings" bundle |
+| **Rename**, **Duplicate** | What they say |
+| **Import From Code Or JSON**, **Import From File** | Take a share code, template JSON, template file, or an "Export All Settings" file |
 
 Sharing strips your credentials. Heart rate tokens, API keys, widget ids, custom WebSocket URLs and shortcuts you marked hidden never leave your machine, and the share window tells you exactly what it removed. There is a checkbox to include them on purpose if you are exporting a backup for yourself.
 
 Imported templates just land in your list. Nothing switches until you say so.
+
+## Chatbox settings
+
+The Settings tab has **Enable auto send**, which is what actually sends your chatbox to VRChat every 2.2 seconds, and **Enable Egg Mode**, which makes the chatbox background transparent in game. **Enable Debug Mode** writes placeholder problems to the log, which helps when a template isn't doing what you expected. **Export All Settings** and its import live here too.

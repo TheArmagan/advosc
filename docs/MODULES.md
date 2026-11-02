@@ -2,7 +2,13 @@
 
 # Modules
 
-Modules are where live data comes from. They aren't only for the chatbox: the same placeholders work in automations, the OSC Forwarder, and anywhere else that takes a value. Many of them also have inputs, which are things the rest of the app can tell them to do, like starting a stopwatch. Inputs are listed on the Modules page and you can run them from an automation.
+<p align="center">
+  <img src="../screenshots/modules.png" alt="Modules page listing every module" width="700">
+</p>
+
+Modules are where live data comes from. They aren't only for the chatbox: the same placeholders work in automations, the OSC Forwarder, and anywhere else that takes a value. The exception is placeholders that do something, like `{{Sound;Play;boop}}`. Those only run in the chatbox, so in an automation use an action instead.
+
+Many modules also have inputs, which are things the rest of the app can tell them to do, like starting a stopwatch. They're listed below and on the Modules page, and you can run them from an automation.
 
 Click one to see what it does.
 
@@ -13,7 +19,7 @@ Reads Windows' own media session, so it works with Spotify, browsers, most playe
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
-| `{{MediaInfo;Status}}` | `Playing` | Playback status (Playing, Paused, Stopped) |
+| `{{MediaInfo;Status}}` | `Playing` | Playback status (Playing, Paused, Stopped, Unknown) |
 | `{{MediaInfo;Track}}` | `Never Gonna Give You Up` | Track title |
 | `{{MediaInfo;Artist}}` | `Rick Astley` | Artist name |
 | `{{MediaInfo;Album}}` | `Whenever You Need Somebody` | Album name |
@@ -21,6 +27,8 @@ Reads Windows' own media session, so it works with Spotify, browsers, most playe
 | `{{MediaInfo;Duration}}` | `300000` | Total duration in milliseconds |
 | `{{MediaInfo;AppName}}` | `Spotify` | Which app is playing it |
 | `{{MediaInfo;Lyric}}` | `Never gonna give you up` | Current synced lyric line |
+
+Its inputs are **Play or pause**, **Play**, **Pause**, **Next track** and **Previous track**.
 
 </details>
 
@@ -32,10 +40,16 @@ Reads Windows' own media session, so it works with Spotify, browsers, most playe
 | `{{Time;NowMillis}}` | `1700000000000` | Current time in milliseconds (Unix epoch) |
 | `{{Time;Now;HH:mm}}` | `14:30` | Current time, your format |
 | `{{Time;Now;yyyy-MM-dd}}` | `2023-11-14` | Current date, your format |
+| `{{Time;Timestamp;1700000000000;HH:mm}}` | `22:13` | Format a millisecond timestamp |
+| `{{Time;Format;2023-11-14;dd/MM/yyyy}}` | `14/11/2023` | Reformat a date string |
 | `{{Time;Timezone}}` | `America/New_York` | System timezone |
 | `{{Time;UTCOffset}}` | `+00:00` | Current UTC offset |
-| `{{Time;FormatDuration;3600000;Short}}` | `1h 0m 0s` | Milliseconds as a readable duration |
+| `{{Time;FormatDuration;5400000;Short}}` | `1h30m` | Milliseconds as a short duration, zero parts are left out |
+| `{{Time;FormatDuration;125000;Short; }}` | `2m 5s` | The last parameter goes between the parts |
+| `{{Time;FormatDuration;5400000;Long}}` | `1 hour, 30 minutes` | Written out |
+| `{{Time;FormatDuration;65000;Colon}}` | `01:05` | Like a media player |
 | `{{Time;ElapsedMillis;...}}` | `5000` | Time since a timestamp |
+| `{{Time;FromNowMilis;...}}` | `60000` | Time until a future timestamp (yes, one `l`) |
 
 </details>
 
@@ -55,18 +69,25 @@ The biggest module. Transform text, build meters out of it, animate it.
 | `{{Text;Reverse;hello}}` | `olleh` | Reverse it |
 | `{{Text;Repeat;3;Hi }}` | `Hi Hi Hi ` | Repeat N times |
 | `{{Text;Slice;0;5;Hello World}}` | `Hello` | Substring |
-| `{{Text;Format;Rounded;text}}` | `ⓣⓔⓧⓣ` | Unicode styling |
-| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | One of the newer styles |
-| `{{Text;Truncate;10;Long text...}}` | `Long text...` | Cut with an ellipsis |
+| `{{Text;Format;Rounded;text}}` | `ⓉⒺⓍⓉ` | Unicode styling |
+| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | Styles: SuperScript, SmallCaps, Rounded, Bold, Italic, BoldItalic, Fullwidth, Fraktur, DoubleStruck, Strikethrough |
+| `{{Text;Truncate;10;Long text here}}` | `Long text ...` | Cut to a length, then add `...` |
+| `{{Text;Pad;Left;5;0;42}}` | `00042` | Pad to a length on `Left`, `Right` or `Center` |
+| `{{Text;Capitalize;hello world}}` | `Hello world` | First letter only |
+| `{{Text;WordCount;hello world}}` | `2` | Count words |
+| `{{Text;If;Empty;;none;some}}` | `none` | Pick a text with `Empty`, `NotEmpty` or `Equals` |
+| `{{Text;Default;fallback;}}` | `fallback` | The text, or the fallback when it's empty |
 | `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Progress bar, optional head character |
 | `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Hearts style meter |
 | `{{Text;Build;StarRating;3;5;★;☆}}` | `★★★☆☆` | Rating display |
 | `{{Text;Build;Toggle;true;ON;OFF}}` | `ON` | Truthy or falsy to text |
 | `{{Text;NumberFormat;2;.;,;1234.5}}` | `1,234.50` | Format a number for display |
-| `{{Text;Animate;Marquee;...}}` | `scrolling` | Marquee |
-| `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal over time |
+| `{{Text;Animate;Marquee;Hello;Left;3}}` | `Hel` → `ell` → `llo` | Scroll inside a window of that length, `Left` or `Right` |
+| `{{Text;Animate;Bounce;Hello;8}}` | `Hello` → ` Hello` | Bounce side to side |
+| `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal over time, starts empty and loops |
 | `{{Text;Animate;Blink;ON;OFF}}` | `ON` → `OFF` | Alternate two texts |
 | `{{Text;Animate;EachOne;A;B;C}}` | `A` → `B` → `C` | Cycle through items |
+| `{{Text;Animate;EachOneCustom;2:A;1:B}}` | `A` → `A` → `B` | Same, each item holds for that many 2.2 second steps |
 
 </details>
 
@@ -98,12 +119,16 @@ When a condition gets too weird for the other modules, write it out.
 | `{{Expr;Math.sin(Math.PI/2)}}` | `1` | Trig |
 | `{{Expr;[[MediaInfo:Status]]=='Playing';🎵;⏸️}}` | `🎵` | Conditions on live data |
 
+Two things worth knowing. A result of `0`, `false` or an empty value counts as false, so `{{Expr;2-2}}` gives you nothing rather than `0`. And `true` and `false` are real booleans here, so check them with `[[Hotkey:IsToggled:X]]` on its own, not `=='true'`.
+
+In an automation's value field, put quotes around text you compare: `{{Expr;'[[MediaInfo:Status]]'=='Playing';1;0}}`.
+
 </details>
 
 <details>
 <summary><strong>❤️ Heart Rate</strong> :: Pulsoid, HypeRate, Stromno, custom</summary>
 
-Add your feeds under **Modules → Heart Rate**. Each one gets a name that you use in the placeholder, so your token never ends up sitting inside a template you might share.
+Add your feeds under **Modules > Heart Rate**. Each one gets a name that you use in the placeholder, so your token never ends up sitting inside a template you might share.
 
 | Platform | What you need |
 |----------|---------------|
@@ -127,7 +152,7 @@ Add your feeds under **Modules → Heart Rate**. Each one gets a name that you u
 
 **Bluetooth notes.** Anything implementing the standard heart rate service (`0x180D`) works: Coospo, Polar, Garmin, Amazfit, Xiaomi and so on. There is no pairing step, and you should not pair the device in Windows Settings, since a bonded device that is not broadcasting is a common cause of stuck connections.
 
-Your device has to actually be broadcasting. On Xiaomi bands that is Settings → Heart rate → Bluetooth broadcast, and it is off by default. While broadcasting, the band drops its connection to your phone, so if the phone app grabs it first the PC will never see it. Broadcast usually stops when the band screen goes back to the watchface. Drops are normal and ADVOSC reconnects on its own with a backoff.
+Your device has to actually be broadcasting. On Xiaomi bands that is Settings > Heart rate > Bluetooth broadcast, and it is off by default. While broadcasting, the band drops its connection to your phone, so if the phone app grabs it first the PC will never see it. Broadcast usually stops when the band screen goes back to the watchface. Drops are normal and ADVOSC reconnects on its own with a backoff.
 
 > Old templates using `{{Pulsoid;TOKEN;…}}` migrate themselves: the token becomes a named source and the template gets rewritten. `Pulsoid` still works as an alias too.
 
@@ -140,15 +165,14 @@ Your device has to actually be broadcasting. On Xiaomi bands that is Settings �
 |-------------|--------|-------------|
 | `{{OSCData;/avatar/parameters/AFK}}` | `true` | Any OSC parameter value |
 | `{{OSCData;/avatar/parameters/VelocityX}}` | `0.5` | Floats too |
+| `{{OSCData;/some/address;1}}` | `0.5` | The second value of a message, counting from 0 |
+
+An address nothing has sent yet gives `0`.
 
 </details>
 
 <details>
 <summary><strong>🎮 OpenVR Trackers</strong> :: battery and status</summary>
-
-<p align="center">
-  <img src="../screenshots/chatbox-modules-ovr.png" alt="OVR Trackers Module" width="500">
-</p>
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
@@ -157,6 +181,8 @@ Your device has to actually be broadcasting. On Xiaomi bands that is Settings �
 | `{{OVRTrackers;ModelNumber;finder}}` | `Vive Tracker 3.0` | Model |
 | `{{OVRTrackers;SerialNumber;finder}}` | `LHR-12345678` | Serial |
 | `{{OVRTrackers;IsExists;finder}}` | `true` | Whether it is there at all |
+| `{{OVRTrackers;DeviceClass;finder}}` | `GenericTracker` | Kind of device |
+| `{{OVRTrackers;DeviceIndex;finder}}` | `3` | SteamVR device index |
 
 The finder can be a device index, serial number, device class, or model number.
 
@@ -176,7 +202,7 @@ The finder can be a device index, serial number, device class, or model number.
 <details>
 <summary><strong>🖥️ System Resources</strong> :: CPU, GPU, memory, network</summary>
 
-What your PC is doing right now, sampled by a native helper twice a second.
+What your PC is doing right now, sampled by a native helper every 2 seconds.
 
 **CPU**
 
@@ -199,10 +225,10 @@ What your PC is doing right now, sampled by a native helper twice a second.
 | `{{System;MemoryAvailable}}` | `95.9 GB` | Available to applications |
 | `{{System;MemoryUsage}}` | `24.6` | Usage percentage |
 | `{{System;SwapUsed}}` | `0 B` | Page file in use |
-| `{{System;SwapTotal}}` | `8 GB` | Total page file size |
+| `{{System;SwapTotal}}` | `8.0 GB` | Total page file size |
 | `{{System;SwapUsage}}` | `0.0` | Page file usage percentage |
 
-**GPU.** Every GPU placeholder takes an optional finder as its first parameter: a zero based index, or part of the name or vendor. Leave it empty and you get the GPU with the most VRAM, which is the discrete card on a laptop or APU system.
+**GPU.** GPU placeholders (except `GPUCount`) take an optional finder as their first parameter: a zero based index, or part of the name or vendor. Leave it empty and you get the GPU with the most VRAM, which is the discrete card on a laptop or APU system.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
@@ -210,7 +236,7 @@ What your PC is doing right now, sampled by a native helper twice a second.
 | `{{System;GPUVendor}}` | `NVIDIA` | NVIDIA, AMD, Intel or Unknown |
 | `{{System;GPUUsage}}` | `42.0` | Utilization percentage |
 | `{{System;VRAMUsed}}` | `2.7 GB` | VRAM in use |
-| `{{System;VRAMTotal}}` | `8 GB` | Total VRAM |
+| `{{System;VRAMTotal}}` | `8.0 GB` | Total VRAM |
 | `{{System;VRAMUsage}}` | `34.3` | VRAM usage percentage |
 | `{{System;GPUTemperature}}` | `53` | Celsius, NVIDIA only |
 | `{{System;GPUPower}}` | `52.1` | Watts, NVIDIA only |
@@ -229,14 +255,14 @@ What your PC is doing right now, sampled by a native helper twice a second.
 | `{{System;TotalDownloaded}}` | `24.0 GB` | Downloaded since boot |
 | `{{System;Uptime}}` | `22h 41m` | Since boot, also takes `seconds`, `minutes`, `hours`, `days` or `clock` |
 
-**Units and decimals.** Every byte and speed placeholder takes a unit and a decimal count. With `auto` (the default) the value scales itself and keeps its label. Give it an explicit unit and you get a bare number, which is what you want when feeding it into math or a progress bar.
+**Units and decimals.** Byte and speed placeholders take a unit and a decimal count, after the finder on `VRAMUsed` and `VRAMTotal` (`{{System;VRAMUsed;;GB;1}}`). With `auto` (the default) the value scales itself and keeps its label. Give it an explicit unit and you get a bare number, which is what you want when feeding it into math or a progress bar.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{System;MemoryUsed}}` | `31.2 GB` | Auto unit, one decimal |
 | `{{System;MemoryUsed;GB}}` | `31.2` | Fixed unit, number only |
 | `{{System;MemoryUsed;GB;0}}` | `31` | Fixed unit and decimal count |
-| `{{System;CPUUsage;0}}` | `14` | Percentages take a decimal count directly |
+| `{{System;CPUUsage;0}}` | `14` | Percentages take a decimal count, after the finder or core index on `GPUUsage`, `VRAMUsage` and `CPUCoreUsage` |
 | `{{System;Download;MB;2}}` | `12.15` | MB/s as a bare number |
 
 Heads up: GPU temperature, power, fan speed and core clock come from NVIDIA's NVML, so they are empty on AMD and Intel. Usage and VRAM work everywhere. CPU temperature needs a sensor Windows actually exposes, which it usually does not.
@@ -246,7 +272,7 @@ Heads up: GPU temperature, power, fan speed and core clock come from NVIDIA's NV
 <details>
 <summary><strong>🌤️ Weather</strong> :: current conditions and forecast</summary>
 
-Live weather and a 7 day forecast from [Open-Meteo](https://open-meteo.com), free and no API key needed. Save your locations under **Modules → Weather**. Each gets a name, and the first one becomes the default that gets used when you leave the location parameter empty.
+Live weather and a 7 day forecast from [Open-Meteo](https://open-meteo.com), free and no API key needed. Save your locations under **Modules > Weather**. Each gets a name, and the first one becomes the default that gets used when you leave the location parameter empty.
 
 The location parameter takes a saved name, any place name (it gets looked up for you), or `lat,lon` coordinates.
 
@@ -278,6 +304,9 @@ The location parameter takes a saved name, any place name (it gets looked up for
 |-------------|--------|-------------|
 | `{{Weather;High;;0}}` | `24.1` | Day's high |
 | `{{Weather;Low;;0}}` | `12.6` | Day's low |
+| `{{Weather;FeelsLikeHigh;;0}}` | `23.0` | Apparent high |
+| `{{Weather;FeelsLikeLow;;0}}` | `11.2` | Apparent low |
+| `{{Weather;MaxWindSpeed;;0}}` | `31` | Top wind speed of the day |
 | `{{Weather;Sunrise;;0}}` | `1700000000000` | Sunrise timestamp in milliseconds |
 | `{{Weather;Sunset;;0}}` | `1700000000000` | Sunset timestamp in milliseconds |
 | `{{Weather;UVIndex;;0}}` | `5.3` | Max UV index of the day |
@@ -285,6 +314,7 @@ The location parameter takes a saved name, any place name (it gets looked up for
 | `{{Weather;PrecipitationSum;;1}}` | `3.4` | Total precipitation for the day |
 | `{{Weather;DailyCondition;;1}}` | `Slight rain` | Condition text for the whole day |
 | `{{Weather;DailyEmoji;;1}}` | `🌦️` | Condition emoji for the whole day |
+| `{{Weather;DailyCode;;1}}` | `61` | WMO weather code for the whole day |
 | `{{Weather;Date;;1}}` | `2023-11-15` | Local calendar date |
 
 **Location and status**
@@ -292,12 +322,14 @@ The location parameter takes a saved name, any place name (it gets looked up for
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
 | `{{Weather;Location}}` | `Berlin, Berlin, DE` | Resolved location name |
+| `{{Weather;Latitude}}` | `52.52` | Latitude |
+| `{{Weather;Longitude}}` | `13.41` | Longitude |
 | `{{Weather;Timezone}}` | `Europe/Berlin` | Timezone there |
 | `{{Weather;UpdatedAt}}` | `1700000000000` | When it was last fetched |
 | `{{Weather;IsOnline}}` | `true` | Whether the last fetch worked |
 | `{{Weather;Unit;Temperature}}` | `°C` | Unit symbol for `Temperature`, `Wind` or `Precipitation` |
 
-Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refresh interval live in the module tab. Timestamps pair up with the Time module:
+Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refresh interval live in the module tab. Its input is **Refresh**. Timestamps pair up with the Time module:
 
 ```
 {{Weather;Emoji}} {{Weather;Temperature}}{{Weather;Unit;Temperature}} • sunset {{Time;Timestamp;[[Weather:Sunset]];HH:mm}}
@@ -308,7 +340,7 @@ Units (Celsius / Fahrenheit, km/h / m/s / mph / knots, mm / inch) and the refres
 <details>
 <summary><strong>🌐 HTTP & WebSocket</strong> :: pull in anything else</summary>
 
-If a module for it does not exist, make one out of this. Add endpoints under **Modules → HTTP & WebSocket** and each gets a name you use in placeholders.
+If a module for it does not exist, make one out of this. Add endpoints under **Modules > HTTP & WebSocket** and each gets a name you use in placeholders.
 
 Two kinds of source:
 
@@ -345,10 +377,10 @@ The URL, headers and body can all contain placeholders, filled in right before t
 Pair it with Expr to show something sensible while a source is down:
 
 ```
-{{Expr;[[Request:IsOnline:MyApi]]=='true';Players online: [[Request:Value:MyApi:server.players]];Server offline}}
+{{Expr;[[Request:IsOnline:MyApi]];Players online: [[Request:Value:MyApi:server.players]];Server offline}}
 ```
 
-Requests are made by ADVOSC itself and not by the page, so browser CORS rules do not apply and any endpoint works. Bodies are capped at 2 MB. A source is only polled while a template or the module tab is using it, and a source that is already failing never blocks your chatbox while it retries.
+Requests are made by ADVOSC itself and not by the page, so browser CORS rules do not apply and any endpoint works. Bodies are capped at 2 MB. A source is only polled while a template or the module tab is using it, and a source that is already failing never blocks your chatbox while it retries. Its input is **Refresh**, which fetches a source again or reconnects its WebSocket.
 
 </details>
 
@@ -360,12 +392,14 @@ Requests are made by ADVOSC itself and not by the page, so browser CORS rules do
 | `{{Hotkey;IsPressed;MyHotkey;1000}}` | `true` | Pressed within a timeout |
 | `{{Hotkey;IsToggled;MyHotkey}}` | `false` | Toggle state, press to flip |
 
+Its input is **Press**, which acts as if you pressed the hotkey, including any stopwatch bound to it.
+
 </details>
 
 <details>
 <summary><strong>⏱️ Stopwatch</strong> :: timers driven by hotkeys</summary>
 
-Stopwatches you control with hotkeys from the Hotkey module. Good for AFK detection and session tracking.
+Stopwatches you control with hotkeys from the Hotkey module, or from an automation. Good for AFK detection and session tracking.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|
@@ -373,7 +407,7 @@ Stopwatches you control with hotkeys from the Hotkey module. Good for AFK detect
 | `{{Stopwatch;IsRunning;MyTimer}}` | `true` | Currently running |
 | `{{Stopwatch;IsPaused;MyTimer}}` | `false` | Currently paused |
 
-The hotkey actions are Start/Toggle, Pause (keeps the time), Reset (back to zero, keeps running), Stop (reset and pause), and Reset + Start, which is the one you want for AFK timers.
+The hotkey actions are Start/Toggle, Pause (keeps the time), Reset (back to zero, keeps running), Stop (reset and pause), and Reset + Start, which is the one you want for AFK timers. The same actions are available as inputs.
 
 </details>
 
@@ -381,6 +415,12 @@ The hotkey actions are Start/Toggle, Pause (keeps the time), Reset (back to zero
 <summary><strong>📝 Shortcut</strong> :: name your own placeholders</summary>
 
 Give a name to a chunk of placeholder soup you keep retyping, then use the name instead. The simple editor also generates these for you behind the scenes.
+
+| Placeholder | Output | Description |
+|-------------|--------|-------------|
+| `{{Shortcut;MyName}}` | `whatever it holds` | Call a shortcut |
+| `{{Shortcut;MyName;World;25}}` | `Hello World, you are 25` | Fills `$0`, `$1` and so on in the shortcut |
+| `[[Shortcut:MyName]]` | | The same thing as an inner placeholder |
 
 </details>
 
@@ -404,8 +444,13 @@ Speech to text, with optional live translation. Electron has no speech recogniti
 | `{{Speech;IsMuted}}` | `false` | VRChat reports your own mic as muted |
 | `{{Speech;Age}}` | `3200` | Milliseconds since the last thing you said |
 | `{{Speech;Confidence}}` | `0.92` | Recognizer confidence for the last sentence, 0 to 1 |
+| `{{Speech;LastSpokenAt}}` | `1700000000000` | When you last said something |
 | `{{Speech;Language}}` | `en-US` | Recognition language |
+| `{{Speech;LanguageName}}` | `English (United States)` | Recognition language, spelled out |
 | `{{Speech;TargetLanguage}}` | `tr` | Language it translates into |
+| `{{Speech;TargetLanguageName}}` | `Turkish` | Target language, spelled out |
+| `{{Speech;IsTranslationEnabled}}` | `true` | Translation is turned on |
+| `{{Speech;IsTranslating}}` | `false` | A translation is in progress |
 | `{{Speech;DetectedLanguage}}` | `en` | What the translation provider detected |
 | `{{Speech;Provider}}` | `Google Translate` | Translation provider in use |
 | `{{Speech;IsServerRunning}}` | `true` | The local speech server is up |
@@ -422,8 +467,10 @@ There is also an option to follow VRChat's own mute. Turn on "Clear and stop cap
 A line that only appears while you are talking:
 
 ```
-{{Expr;[[Speech:HasText]]=='true';🎤 [[Speech:Both; | ]]}}
+{{Expr;[[Speech:HasText]];🎤 [[Speech:Both: | ]]}}
 ```
+
+Its inputs are **Clear text**, **Start listening** and **Stop listening**.
 
 </details>
 
@@ -448,6 +495,8 @@ Play a boop sound whenever someone boops you:
 {{Sound;Play;boop;[[OSCData:/avatar/parameters/Booped]]}}
 ```
 
+Its inputs are **Play**, **Stop**, **Stop all** and **Set volume**.
+
 </details>
 
 <details>
@@ -460,7 +509,7 @@ A place to keep a value for later. An automation sets it, and anything that take
 | `{{Var;mood}}` | `sleepy` | The variable's value, or nothing if it isn't set |
 | `{{Var;mood;fine}}` | `fine` | The variable's value, or the default if it isn't set |
 
-To set one, add a **Set a variable** action to an automation.
+To set one, add a **Set a variable** action to an automation. It also has **Set** and **Clear** inputs.
 
 </details>
 
