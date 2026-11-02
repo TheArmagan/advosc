@@ -17,6 +17,7 @@
     defaultAction,
   } from "$lib/api/automations/actions";
   import { toyStatus } from "$lib/api/toys/status.svelte";
+  import { avatarOSC } from "$lib/api/vrc-osc";
   import NumberField from "$lib/components/number-field.svelte";
   import ValuePicker from "$lib/components/value-picker/value-picker.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -26,6 +27,8 @@
   import * as Select from "$lib/components/ui/select/index.js";
   import {
     ArrowRightIcon,
+    LockIcon,
+    LockOpenIcon,
     PlayIcon,
     PlusIcon,
     Trash2Icon,
@@ -46,6 +49,8 @@
     { id: "template", label: "A value or placeholder" },
     { id: "parameter", label: "An avatar parameter" },
   ];
+
+  const currentAvatarId = avatarOSC.avatarId;
 
   let testing = $state(false);
 
@@ -75,6 +80,31 @@
     if (status.lastValue.trim() === "" || Number.isNaN(number)) return null;
     return { input: number, output: mapRange(number, range) };
   });
+
+  const lockedIds = $derived(rule.avatarIds ?? []);
+  const lockedHere = $derived(!!$currentAvatarId && lockedIds.includes($currentAvatarId));
+
+  const lockText = $derived.by(() => {
+    if (lockedIds.length === 0) return "Runs on every avatar.";
+    if (lockedHere) {
+      return lockedIds.length === 1
+        ? "Only runs on the avatar you're in."
+        : `Only runs on the avatar you're in and ${lockedIds.length - 1} more.`;
+    }
+    return lockedIds.length === 1
+      ? "Only runs on one avatar, and it's not the one you're in."
+      : `Only runs on ${lockedIds.length} avatars, and none of them is the one you're in.`;
+  });
+
+  function lockToCurrentAvatar() {
+    if (!$currentAvatarId || lockedHere) return;
+    automations.update(rule.id, { avatarIds: [...lockedIds, $currentAvatarId] });
+  }
+
+  /** An empty box takes the field away, so `match` decides on its own again. */
+  function setReleaseMatch(value: string) {
+    automations.update(rule.id, { releaseMatch: value.trim() ? value : undefined });
+  }
 
   /** Keeps what's typed when switching, where that's possible. */
   function setSourceKind(kind: AutomationSource["kind"]) {
@@ -284,6 +314,16 @@
               automations.update(rule.id, { match: (e.target as HTMLInputElement).value })}
           />
         </div>
+        <div class="flex flex-col gap-1">
+          <Label class="text-xs">Stays matched until (optional)</Label>
+          <Input
+            class="h-8 w-48 font-mono text-xs"
+            placeholder="<= 0.05"
+            aria-label="Stays matched until"
+            value={rule.releaseMatch ?? ""}
+            oninput={(e) => setReleaseMatch((e.target as HTMLInputElement).value)}
+          />
+        </div>
         <NumberField
           label="Cooldown (ms)"
           integer
@@ -300,8 +340,40 @@
           Right now it's <span class="font-mono">{status?.lastValue || "empty"}</span>, which
           {matchNow ? "matches" : "doesn't match"}.
         {/if}
+        Fill in "Stays matched until" if a value hovering around the match keeps setting this off.
       </p>
     {/if}
+
+    <div class="flex flex-wrap items-center gap-2">
+      <span
+        class="min-w-48 flex-1 text-xs text-muted-foreground"
+        title={lockedIds.join("\n") || undefined}
+      >
+        {lockText}
+      </span>
+      {#if !lockedHere}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!$currentAvatarId}
+          title={$currentAvatarId ? undefined : "ADVOSC hasn't seen an avatar yet."}
+          onclick={lockToCurrentAvatar}
+        >
+          <LockIcon class="size-4" />
+          Lock to current avatar
+        </Button>
+      {/if}
+      {#if lockedIds.length > 0}
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => automations.update(rule.id, { avatarIds: undefined })}
+        >
+          <LockOpenIcon class="size-4" />
+          Clear lock
+        </Button>
+      {/if}
+    </div>
   </section>
 
   <section class="flex flex-col gap-2">

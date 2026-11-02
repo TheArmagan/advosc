@@ -27,9 +27,21 @@
   const tripped = $derived(status?.health === "tripped");
   const broken = $derived(tripped || status?.health === "error");
 
+  /** Rules from a bundle carry an empty sound and arrive off, where the engine reports nothing. */
+  const needsSound = $derived(
+    rule.actions.some((action) => action.type === "sound" && action.soundIds.length === 0),
+  );
+
   const health = $derived.by((): { label: string; tone: PillTone; title?: string } => {
     if (status?.health === "tripped") return { label: "Stopped itself", tone: "error" };
     if (status?.health === "error") return { label: "Error", tone: "error" };
+    if (needsSound) {
+      return {
+        label: "Pick a sound",
+        tone: "warn",
+        title: "This rule plays a sound, but none is picked yet.",
+      };
+    }
     if (!rule.enabled) return { label: "Off", tone: "muted" };
     if (status?.health === "no-data") {
       return {

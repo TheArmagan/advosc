@@ -64,6 +64,12 @@ function add(): Automation {
   return rule;
 }
 
+/** For rules from outside the app. They always arrive off, whatever they were built with. */
+function addImported(imported: Automation[]) {
+  const off = imported.map((rule) => ({ ...rule, enabled: false }));
+  rules.update((prev) => [...prev, ...off]);
+}
+
 /** Puts a rule back where it was, for undo. */
 function restore(rule: Automation, index: number) {
   rules.update((prev) => [...prev.slice(0, index), rule, ...prev.slice(index)]);
@@ -83,6 +89,7 @@ export const automations = {
   rules,
   statuses,
   add,
+  addImported,
   update,
   setMode,
   remove,
