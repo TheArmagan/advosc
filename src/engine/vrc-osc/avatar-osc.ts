@@ -32,13 +32,7 @@ const avatarIdStore = writable<string | null>(null);
  * Plain maps, not stores. VRChat can send these at 30 Hz, and with no window open that has to
  * cost nothing beyond this assignment.
  */
-let derivedParameters: Record<string, number> = {};
-/**
- * Derived values sit on the prototype, so `getParameters()[address]` finds them while spreads,
- * JSON and `Object.keys` don't. They aren't avatar state: they must stay out of saved profiles
- * and the parameter stream, and a profile load must never send them to VRChat.
- */
-let parameters: Record<string, number> = Object.create(derivedParameters);
+let parameters: Record<string, number> = {};
 let changedAt: Record<string, number> = {};
 let parameterStream: Stream;
 let changedAtStream: Stream;
@@ -234,12 +228,14 @@ export const avatarOSC = {
   },
   /**
    * Hand a value computed inside the engine to the same callbacks as a real parameter, so
-   * rules can use it as a source. Internal only: nothing from the network reaches this, and
-   * `handleMessage` drops `/advosc/` packets.
+   * rules can use it as a source. It's stored with the others because a rule's first look
+   * reads `parameters`. Internal only: nothing from the network reaches this, and
+   * `handleMessage` drops `/advosc/` packets. Profiles leave these out.
    */
   publishDerived(address: string, value: number) {
     if (!Number.isFinite(value)) return;
-    derivedParameters[address] = value;
+    parameters[address] = value;
+    if (parameterStream.active()) parameterStream.publish({ [address]: value });
     notifyParameterChange(address, value);
   },
   updateOSCSchema,
@@ -298,8 +294,7 @@ function handleAvatarChange(message: { address: string; args: any[] }) {
   lastAvatarId = avatarId as string;
   avatarIdStore.set(lastAvatarId);
   stopAllAnimations();
-  derivedParameters = {};
-  parameters = Object.create(derivedParameters);
+  parameters = {};
   changedAt = {};
   parameterStream.reset({});
   changedAtStream.reset({});

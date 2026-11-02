@@ -20,7 +20,10 @@ export const avatarProfiles = {
       name,
       avatarId,
       avatarName: get(avatarOSC.schema)?.name || "Unknown Avatar",
-      parameters: { ...avatarOSC.getParameters() },
+      // Derived values aren't avatar state, and loading a profile sends everything in it.
+      parameters: Object.fromEntries(
+        Object.entries(avatarOSC.getParameters()).filter(([address]) => !address.startsWith("/advosc/")),
+      ),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
