@@ -17,6 +17,9 @@ export const BUNDLE_CODE_PREFIX = "ADVOSCR1:";
 export const BUNDLE_LINK_PREFIX = "advosc://import?d=";
 export const BUNDLE_WEB_ORIGIN = "https://thearmagan.github.io/advosc-triggers/link/";
 
+const APP_LINK = /^\s*advosc:/i;
+const APP_LINK_PAYLOAD = /^advosc:\/\/import\/?\?d=([A-Za-z0-9_-]+)\/?$/i;
+
 /** Longest encoded payload a link may carry. Larger bundles go through a file. */
 export const MAX_LINK_PAYLOAD = 16 * 1024;
 /** Most JSON a bundle may expand to, so a small payload can't inflate into a huge one. */
@@ -97,12 +100,30 @@ export function decodeBundlePayload(payload: string): unknown {
   }
 }
 
+/** Whether this is meant as an app link at all, good or bad. */
+export function isAppLink(value: string): boolean {
+  return APP_LINK.test(value);
+}
+
+/**
+ * The payload of an app link, or null if there isn't a usable one. URL handling on the way here
+ * can add a slash after the host, a slash at the end, or change the case of the scheme, and none
+ * of that touches the payload, so all of those forms have to work.
+ */
+export function appLinkPayload(value: string): string | null {
+  return APP_LINK_PAYLOAD.exec(value.trim())?.[1] ?? null;
+}
+
 /** Takes an `advosc://` link, a web link, an `ADVOSCR1:` code or a bundle's raw JSON. */
 export function parseBundleInput(input: string): AutomationBundle {
   const trimmed = input.trim();
   if (!trimmed) throw new Error("Nothing to import.");
 
-  for (const prefix of [BUNDLE_LINK_PREFIX, `${BUNDLE_WEB_ORIGIN}#`, BUNDLE_CODE_PREFIX]) {
+  if (isAppLink(trimmed)) {
+    return validateBundle(decodeBundlePayload(appLinkPayload(trimmed.replace(/\s+/g, "")) ?? ""));
+  }
+
+  for (const prefix of [`${BUNDLE_WEB_ORIGIN}#`, BUNDLE_CODE_PREFIX]) {
     if (trimmed.startsWith(prefix)) {
       return validateBundle(decodeBundlePayload(trimmed.slice(prefix.length).replace(/\s+/g, "")));
     }
