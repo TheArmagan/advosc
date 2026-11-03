@@ -80,8 +80,10 @@ The `advosc://` protocol is registered on `--squirrel-install` and `--squirrel-u
 Releasing means bumping `package.json` and tagging to match:
 
 ```bash
-git commit -am "0.1.1" && git tag v0.1.1 && git push --follow-tags
+git commit -am "0.1.1" && git tag -a v0.1.1 -m v0.1.1 && git push --follow-tags
 ```
+
+The tag has to be annotated. `--follow-tags` skips lightweight tags, so a plain `git tag` pushes the commit and never starts the release.
 
 The release job fails if the tag and `package.json` disagree, because the Squirrel package version comes from `package.json` and a mismatch would publish a `v0.1.1` release full of `0.1.0` artifacts. The `natives/*.exe` binaries are committed, so CI never needs Rust, cmake, or LLVM.
 
