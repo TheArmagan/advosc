@@ -11,7 +11,8 @@
     type NavItem,
   } from "$lib/nav";
   import { cn } from "$lib/utils";
-  import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
+  import { PATREON_URL, openLink } from "$lib/links";
+  import { HeartIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
 
   const COLLAPSED_KEY = "Sidebar;Collapsed";
 
@@ -93,6 +94,26 @@
       )}
     >
       <UpdateStatus {collapsed} />
+      <div class={cn("flex items-center gap-0.5", collapsed && "flex-col")}>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground hover:text-[#F96854]"
+              aria-label="Support ADVOSC on Patreon"
+              onclick={() => openLink(PATREON_URL)}
+            >
+              <HeartIcon />
+            </Button>
+          {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content side="right" sideOffset={8}>
+          Support ADVOSC on Patreon
+        </Tooltip.Content>
+      </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}
@@ -116,6 +137,7 @@
           {toggleLabel}
         </Tooltip.Content>
       </Tooltip.Root>
+      </div>
     </div>
   </aside>
 </Tooltip.Provider>

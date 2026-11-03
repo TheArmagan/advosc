@@ -14,12 +14,14 @@
   import { cn } from "$lib/utils";
   import {
     CircleAlertIcon,
+    HeartIcon,
     CircleCheckIcon,
     DownloadIcon,
     LoaderCircleIcon,
     RotateCwIcon,
   } from "@lucide/svelte";
   import { onDestroy } from "svelte";
+  import { PATREON_URL, RELEASES_URL, openLink } from "$lib/links";
 
   const version = window.ADVOSCNative.version;
   const update = $derived(updates.state);
@@ -149,9 +151,17 @@
       <button
         type="button"
         class="underline-offset-2 hover:text-foreground hover:underline"
-        onclick={() => window.ADVOSCNative.shell.openExternal("https://github.com/TheArmagan/advosc/releases")}
+        onclick={() => openLink(RELEASES_URL)}
       >
         Release notes
+      </button>
+      <button
+        type="button"
+        class="ml-auto inline-flex items-center gap-1 underline-offset-2 hover:text-[#F96854] hover:underline"
+        onclick={() => openLink(PATREON_URL)}
+      >
+        <HeartIcon class="size-3" />
+        Support ADVOSC on Patreon
       </button>
     </div>
   </Card.Root>
