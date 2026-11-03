@@ -1,6 +1,6 @@
 import { buildTemplateState } from "$shared/simple-editor/template";
 import { ruleUsesToys, type AllValues } from "$shared/chatbox/preset-share";
-import { cleanTemplate, splitParams, type ChatboxPlaceholder, type ChatboxSettings } from "$shared/template-syntax";
+import { cleanRendered, cleanTemplate, splitParams, type ChatboxPlaceholder, type ChatboxSettings } from "$shared/template-syntax";
 import { notify } from "../runtime/notify";
 import mapReplace from "stuffs/lib/mapReplace";
 import type { AppModule } from "$shared/chatbox/module-base";
@@ -71,7 +71,6 @@ const RUNAWAY_NOTICE_FLOOR_MS = 5000;
 const defaultSettings: ChatboxSettings = {
   template: `// Example placeholders:\n// Normal placehodler: {{ModuleId;Param}}\n// Inner placeholder: [[ModuleId:Param]]\n// To get auto complete type {{ or [[ and then press CTRL + SPACE.\n{{Time;Now;HH:mm}}\n{{Expr;[[MediaInfo:Status]]=='Playing';[[MediaInfo:Track]] ᵇʸ [[MediaInfo:Artist]]}}\n{{Text;Format;SuperScript;[[MediaInfo:Lyric]]}}`,
   autoSend: true,
-  eggMode: false,
   debugMode: false,
 };
 
@@ -428,15 +427,15 @@ async function renderTemplate() {
 
     let template = cleanTemplate(s.template);
     template = await fillTemplate(template, "{{;}}", false, "Chatbox");
-    template = cleanTemplate(template);
+    template = cleanRendered(template);
     renderedTemplate.set(template);
 
     if (s.autoSend && template) {
       sentClear = false
-      chatboxOSC.send(template, s.eggMode);
+      chatboxOSC.send(template);
     } else {
       if (!sentClear) {
-        chatboxOSC.send("", false);
+        chatboxOSC.send("");
         sentClear = true;
       }
     }

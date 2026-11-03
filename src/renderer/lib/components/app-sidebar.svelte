@@ -3,6 +3,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import RouteLink from "$lib/components/route-link.svelte";
+  import UpdateStatus from "$lib/components/update-status.svelte";
   import {
     NAV_GROUP_LABELS,
     getNavItems,
@@ -91,9 +92,7 @@
         collapsed ? "flex-col gap-1" : "justify-between pl-3",
       )}
     >
-      <code class={cn("text-white/50", collapsed ? "text-[10px]" : "text-xs")}
-        >v{window.ADVOSCNative.version}</code
-      >
+      <UpdateStatus {collapsed} />
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}

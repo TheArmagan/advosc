@@ -3,6 +3,7 @@
   import GeneralSettingsTab from "$lib/components/settings/general-settings-tab.svelte";
   import LovenseSettingsTab from "$lib/components/settings/lovense-settings-tab.svelte";
   import StartupSettingsTab from "$lib/components/settings/startup-settings-tab.svelte";
+  import UpdatesSettingsTab from "$lib/components/settings/updates-settings-tab.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
 
@@ -15,6 +16,7 @@
       <Tabs.Trigger value="general">General</Tabs.Trigger>
       <Tabs.Trigger value="startup">Startup</Tabs.Trigger>
       <Tabs.Trigger value="backup">Backup</Tabs.Trigger>
+      <Tabs.Trigger value="updates">Updates</Tabs.Trigger>
       <Tabs.Trigger value="lovense">Lovense</Tabs.Trigger>
     </Tabs.List>
     <Tabs.Content value="general">
@@ -25,6 +27,11 @@
     <Tabs.Content value="startup">
       <Card.Root class="p-1 bg-transparent border">
         <StartupSettingsTab />
+      </Card.Root>
+    </Tabs.Content>
+    <Tabs.Content value="updates">
+      <Card.Root class="p-1 bg-transparent border">
+        <UpdatesSettingsTab />
       </Card.Root>
     </Tabs.Content>
     <Tabs.Content value="backup">

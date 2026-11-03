@@ -47,7 +47,8 @@ Its inputs are **Play or pause**, **Play**, **Pause**, **Next track** and **Prev
 | `{{Time;FormatDuration;5400000;Short}}` | `1h30m` | Milliseconds as a short duration, zero parts are left out |
 | `{{Time;FormatDuration;125000;Short; }}` | `2m 5s` | The last parameter goes between the parts |
 | `{{Time;FormatDuration;5400000;Long}}` | `1 hour, 30 minutes` | Written out |
-| `{{Time;FormatDuration;65000;Colon}}` | `01:05` | Like a media player |
+| `{{Time;FormatDuration;65000;Colon}}` | `01:05` | Padded with zeros |
+| `{{Time;FormatDuration;205000;Clock}}` | `3:25` | Like a media player, hours only once there are some (`1:02:03`) |
 | `{{Time;ElapsedMillis;...}}` | `5000` | Time since a timestamp |
 | `{{Time;FromNowMilis;...}}` | `60000` | Time until a future timestamp (yes, one `l`) |
 
@@ -70,19 +71,22 @@ The biggest module. Transform text, build meters out of it, animate it.
 | `{{Text;Repeat;3;Hi }}` | `Hi Hi Hi ` | Repeat N times |
 | `{{Text;Slice;0;5;Hello World}}` | `Hello` | Substring |
 | `{{Text;Format;Rounded;text}}` | `ⓉⒺⓍⓉ` | Unicode styling |
-| `{{Text;Format;Bold;text}}` | `𝐭𝐞𝐱𝐭` | Styles: SuperScript, SmallCaps, Rounded, Bold, Italic, BoldItalic, Fullwidth, Fraktur, DoubleStruck, Strikethrough |
+| `{{Text;Format;Bold;Text}}` | `𝐓𝐞𝐱𝐭` | Styles: SuperScript, SmallCaps, Rounded, Bold, Italic, BoldItalic, Fullwidth, Fraktur, DoubleStruck, Strikethrough. Bold, Italic, BoldItalic, Fullwidth, Fraktur and DoubleStruck keep capitals, the rest come out lowercase |
 | `{{Text;Truncate;10;Long text here}}` | `Long text ...` | Cut to a length, then add `...` |
 | `{{Text;Pad;Left;5;0;42}}` | `00042` | Pad to a length on `Left`, `Right` or `Center` |
 | `{{Text;Capitalize;hello world}}` | `Hello world` | First letter only |
 | `{{Text;WordCount;hello world}}` | `2` | Count words |
 | `{{Text;If;Empty;;none;some}}` | `none` | Pick a text with `Empty`, `NotEmpty` or `Equals` |
 | `{{Text;Default;fallback;}}` | `fallback` | The text, or the fallback when it's empty |
-| `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Progress bar, optional head character |
-| `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Hearts style meter |
+| `{{Text;Wrap;🎵 ;!;Song}}` | `🎵 Song!` | Prefix and suffix, or nothing at all when the text is empty |
+| `{{Text;Join;Song; \| ;; \| ;72 BPM}}` | `Song \| 72 BPM` | Items and separators take turns. An empty item drops out with the separator in front of it |
+| `{{Text;Build;ProgressBar;30;100;10;█;░;▓}}` | `██▓░░░░░░░` | Progress bar, optional head character. Takes decimals, so an avatar float works with a total of `1` |
+| `{{Text;Build;HealthBar;3;5;♥;♡}}` | `♥♥♥♡♡` | Hearts style meter, one symbol per point up to 20, scaled down past that |
 | `{{Text;Build;StarRating;3;5;★;☆}}` | `★★★☆☆` | Rating display |
 | `{{Text;Build;Toggle;true;ON;OFF}}` | `ON` | Truthy or falsy to text |
 | `{{Text;NumberFormat;2;.;,;1234.5}}` | `1,234.50` | Format a number for display |
-| `{{Text;Animate;Marquee;Hello;Left;3}}` | `Hel` → `ell` → `llo` | Scroll inside a window of that length, `Left` or `Right` |
+| `{{Text;Animate;Marquee;Hello;Left;3}}` | `Hel` → `ell` → `llo` | Scroll inside a window of that length, `Left` or `Right`. Text that already fits doesn't move |
+| `{{Text;Animate;MarqueeCustom;Hello World;Left;5;2}}` | `Hello` → `llo W` → `o Wor` | Marquee that moves that many characters per step. Text that already fits doesn't move |
 | `{{Text;Animate;Bounce;Hello;8}}` | `Hello` → ` Hello` | Bounce side to side |
 | `{{Text;Animate;Typewriter;Hello}}` | `H` → `He` → `Hel` | Reveal over time, starts empty and loops |
 | `{{Text;Animate;Blink;ON;OFF}}` | `ON` → `OFF` | Alternate two texts |
@@ -119,7 +123,7 @@ When a condition gets too weird for the other modules, write it out.
 | `{{Expr;Math.sin(Math.PI/2)}}` | `1` | Trig |
 | `{{Expr;[[MediaInfo:Status]]=='Playing';🎵;⏸️}}` | `🎵` | Conditions on live data |
 
-Two things worth knowing. A result of `0`, `false` or an empty value counts as false, so `{{Expr;2-2}}` gives you nothing rather than `0`. And `true` and `false` are real booleans here, so check them with `[[Hotkey:IsToggled:X]]` on its own, not `=='true'`.
+Two things worth knowing. With a then and an otherwise, a result of `0`, `false` or an empty value counts as false. With only an expression, a number always shows, so `{{Expr;2-2}}` gives you `0`. An empty then shows nothing, not `true`. And `true` and `false` are real booleans here, so check them with `[[Hotkey:IsToggled:X]]` on its own, not `=='true'`.
 
 In an automation's value field, put quotes around text you compare: `{{Expr;'[[MediaInfo:Status]]'=='Playing';1;0}}`.
 

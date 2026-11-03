@@ -6,7 +6,7 @@
 
 Closing the window sends ADVOSC to the tray, and everything keeps running with no window at all. To really quit, use **Quit** in the tray menu.
 
-The tray menu also has **Start hidden**, which skips the window on launch. When an update has downloaded, a **Restart to update** item shows up there too.
+The tray menu also has **Start hidden**, which skips the window on launch. When an update has downloaded, a **Restart to update** item shows up there too, next to the one in the app's sidebar.
 
 ADVOSC doesn't use your GPU by default, so it takes up no video memory while you're in game. This matters because closing a window doesn't give video memory back on its own. If the window feels choppy, turn on **GPU acceleration** in Settings and restart.
 

@@ -23,7 +23,12 @@ export class ExpressionModule extends AppModule {
         isNaN,
         isFinite
       });
-      return typeof result !== "undefined" && result ? (trueValue || String(result)) : falseValue;
+      // No branches: show the result itself, including a 0 from a math expression.
+      if (params.length === 0) {
+        if (typeof result === "number") return String(result);
+        return typeof result !== "undefined" && result ? String(result) : "";
+      }
+      return result ? trueValue : falseValue;
     } catch (e) {
       console.error("Chatbox", "Failed to evaluate an expression:", (e as Error).message);
       if (chatbox.getSettings().debugMode) {

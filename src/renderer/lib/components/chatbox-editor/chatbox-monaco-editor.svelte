@@ -309,6 +309,8 @@
 
   // Example highlighting rules
   const highlightRules: RegexHighlightRule[] = [
+    // A `//` right after text (like `https://`) isn't a comment, same rule as cleanTemplate.
+    { pattern: /[^\s{}\[\]]\/\/[^\s{\[]*/, token: "" },
     { pattern: /\/\/.*$/, token: "comment" },
     { pattern: /{{[^}]*}}/, token: "advosc.placeholder" },
     { pattern: /\[\[[^\]]*\]\]/, token: "advosc.innerPlaceholder" },
@@ -361,6 +363,22 @@
       theme: "advosc-theme",
       minimap: { enabled: false },
       automaticLayout: true,
+      // Chatbox lines are long and there's no horizontal layout to preserve.
+      wordWrap: "on",
+      fontSize: 13,
+      lineHeight: 21,
+      padding: { top: 10, bottom: 10 },
+      scrollBeyondLastLine: false,
+      lineNumbersMinChars: 3,
+      glyphMargin: false,
+      folding: false,
+      overviewRulerLanes: 0,
+      hideCursorInOverviewRuler: true,
+      renderLineHighlight: "line",
+      scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10, useShadows: false },
+      // The suggest list would otherwise be cut off by the card around the editor.
+      fixedOverflowWidgets: true,
+      tabSize: 2,
     });
 
     const model = monaco.editor.createModel(

@@ -3,8 +3,8 @@ import { native } from "../native";
 
 let lastTypingState = false;
 
-function send(message: string, egg: boolean = false) {
-  native.osc.send("/chatbox/input", threeDots(message, egg ? 142 : 144) + (egg ? "\u0003\u001f" : ""), true);
+function send(message: string) {
+  native.osc.send("/chatbox/input", threeDots(message, 144), true);
 }
 
 function fill(message: string) {

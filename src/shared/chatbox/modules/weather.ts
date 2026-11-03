@@ -103,6 +103,21 @@ export const weatherOptions: ModuleOptions = {
       description: "Lowest temperature of the day. Day offset 0 is today, 1 is tomorrow, up to 6.",
       fillText: "Weather;Low;${1:location};${2:0}",
     },
+    "FeelsLikeHigh": {
+      value: "25.3",
+      description: "Highest feels like temperature of the day. Day offset 0 is today, up to 6.",
+      fillText: "Weather;FeelsLikeHigh;${1:location};${2:0}",
+    },
+    "FeelsLikeLow": {
+      value: "10.8",
+      description: "Lowest feels like temperature of the day. Day offset 0 is today, up to 6.",
+      fillText: "Weather;FeelsLikeLow;${1:location};${2:0}",
+    },
+    "MaxWindSpeed": {
+      value: "21.4",
+      description: "Strongest wind speed of the day. Day offset 0 is today, up to 6.",
+      fillText: "Weather;MaxWindSpeed;${1:location};${2:0}",
+    },
     "Sunrise": {
       value: "1700000000000",
       description:

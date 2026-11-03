@@ -14,7 +14,7 @@ It's Windows only, since a few parts (media info, trackers, hardware sensors) ta
 
 ## Install
 
-Grab `ADVOSC-Setup.exe` from [Releases](https://github.com/TheArmagan/advosc/releases/latest) and run it. It installs and opens itself, there's no wizard to click through. After that it checks for updates on its own, downloads them in the background, and asks before it restarts.
+Grab `ADVOSC-Setup.exe` from [Releases](https://github.com/TheArmagan/advosc/releases/latest) and run it. It installs and opens itself, there's no wizard to click through. After that it checks for updates on its own, downloads them in the background (you can watch the progress in the sidebar), and asks before it restarts.
 
 If you'd rather update by hand, use the zip. It's the same app, it just never updates itself.
 

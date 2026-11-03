@@ -167,6 +167,26 @@ export const speechOptions: ModuleOptions = {
       description: "The language speech is being translated into.",
       fillText: "Speech;TargetLanguage",
     },
+    "TargetLanguageName": {
+      value: "Turkish",
+      description: "Display name of the language speech is being translated into.",
+      fillText: "Speech;TargetLanguageName",
+    },
+    "IsTranslating": {
+      value: "false",
+      description: "Whether a translation is in progress right now.",
+      fillText: "Speech;IsTranslating",
+    },
+    "IsTranslationEnabled": {
+      value: "true",
+      description: "Whether translation is turned on.",
+      fillText: "Speech;IsTranslationEnabled",
+    },
+    "LastSpokenAt": {
+      value: "1700000000000",
+      description: "Timestamp in milliseconds of the last recognized speech.",
+      fillText: "Speech;LastSpokenAt",
+    },
     "DetectedLanguage": {
       value: "en",
       description: "Language the translation provider detected in the last translation.",

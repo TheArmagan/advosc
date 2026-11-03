@@ -7,7 +7,7 @@ import {
   registerLinkProtocol,
   requestRunningInstanceQuit,
 } from './lib/squirrel-startup';
-import { startAutoUpdater } from './lib/auto-updater';
+import { setupUpdateIpc, startAutoUpdater } from './lib/auto-updater';
 import { onSafeModeChanged, startEngine, stopEngine } from './lib/engine-host';
 import { runLegacyImport } from './lib/legacy-import';
 import { getBootstrap } from './lib/bootstrap';
@@ -75,6 +75,7 @@ function start() {
     await runLegacyImport();
 
     setupIpcHandlers();
+    setupUpdateIpc();
     setupDeepLinks();
     queueLinks(process.argv);
     startEngine();

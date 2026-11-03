@@ -217,6 +217,11 @@ export function registerRegexHighlighting(
 ): monaco.IDisposable {
   // Register language
   monaco.languages.register({ id: languageId });
+  // Lets Ctrl+/ toggle a line comment, the way cleanTemplate reads them.
+  monaco.languages.setLanguageConfiguration(languageId, {
+    comments: { lineComment: '//', blockComment: ['/*', '*/'] },
+    brackets: [['{{', '}}'], ['[[', ']]']],
+  });
 
   // Configure tokenizer
   monaco.languages.setMonarchTokensProvider(languageId, {
@@ -242,10 +247,25 @@ export function registerRegexHighlighting(
       { token: 'function', foreground: 'DCDCAA' },
       { token: 'variable', foreground: '9CDCFE' },
       { token: 'operator', foreground: 'D4D4D4' },
-      { token: 'advosc.placeholder', foreground: 'FF8800', fontStyle: 'underline' },
-      { token: 'advosc.innerPlaceholder', foreground: '00AAFF', fontStyle: 'underline' },
+      { token: 'advosc.placeholder', foreground: 'F5A524' },
+      { token: 'advosc.innerPlaceholder', foreground: '4CB8F0' },
     ],
-    colors: {},
+    // Matches the app's dark card so the editor sits in it instead of on top of it.
+    colors: {
+      'editor.background': '#1c1917',
+      'editor.lineHighlightBackground': '#ffffff08',
+      'editor.lineHighlightBorder': '#00000000',
+      'editorLineNumber.foreground': '#57534e',
+      'editorLineNumber.activeForeground': '#a8a29e',
+      'editorGutter.background': '#1c1917',
+      'editorWidget.background': '#292524',
+      'editorSuggestWidget.background': '#292524',
+      'editorSuggestWidget.border': '#44403c',
+      'editorSuggestWidget.selectedBackground': '#44403c',
+      'editorHoverWidget.background': '#292524',
+      'editorHoverWidget.border': '#44403c',
+      'editor.selectionBackground': '#f5a52433',
+    },
   });
 
   return {

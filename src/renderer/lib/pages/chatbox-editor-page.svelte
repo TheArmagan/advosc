@@ -23,15 +23,12 @@
       <Tabs.Trigger value="templates">My Templates</Tabs.Trigger>
       <Tabs.Trigger value="settings">Settings</Tabs.Trigger>
     </Tabs.List>
-    <Tabs.Content value="simple">
-      <Card.Root class="p-1 bg-transparent border">
-        <ChatboxSimpleEditorTab isActive={activeTab === "simple"} />
-      </Card.Root>
+    <!-- Both editors draw their own cards, so they sit straight on the page. -->
+    <Tabs.Content value="simple" class="pt-1">
+      <ChatboxSimpleEditorTab isActive={activeTab === "simple"} />
     </Tabs.Content>
-    <Tabs.Content value="editor" class="flex flex-col">
-      <Card.Root class="p-1 bg-transparent border flex-1">
-        <ChatboxAdvancedEditorTab isActive={activeTab === "editor"} />
-      </Card.Root>
+    <Tabs.Content value="editor" class="pt-1">
+      <ChatboxAdvancedEditorTab isActive={activeTab === "editor"} />
     </Tabs.Content>
     <Tabs.Content value="templates">
       <Card.Root class="p-1 bg-transparent border">

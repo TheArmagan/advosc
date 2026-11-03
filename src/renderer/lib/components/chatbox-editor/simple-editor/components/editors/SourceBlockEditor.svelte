@@ -1,9 +1,5 @@
 <script lang="ts">
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
   import {
-    genericSourceHint,
     mediaFields,
     numberCalcModes,
     randomNumberTypes,
@@ -11,637 +7,388 @@
     textPadSides,
     textTransformModes,
   } from "../../options";
+  import type { Block, UpdateBlock } from "../../types";
   import SourceInput from "../SourceInput.svelte";
-  import type {
-    Block,
-    HealthBarBlock,
-    MediaBlock,
-    MediaProgressBlock,
-    NumberCalcBlock,
-    NumberFormatBlock,
-    ProgBarBlock,
-    RandomBlock,
-    StarRatingBlock,
-    TextDefaultBlock,
-    TextPadBlock,
-    TextReplaceBlock,
-    TextTransformBlock,
-    TextTruncateBlock,
-    ToggleBlock,
-    UpdateBlock,
-  } from "../../types";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
+  import CheckField from "../fields/CheckField.svelte";
+  import Field from "../fields/Field.svelte";
+  import RichTextField from "../fields/RichTextField.svelte";
+  import SelectField from "../fields/SelectField.svelte";
+  import TextField from "../fields/TextField.svelte";
 
   let { block, upd }: { block: Block; upd: UpdateBlock } = $props();
 
-  function renderProgressPreview(
-    length: string,
-    fillChar: string,
-    emptyChar: string,
-    headChar: string,
-    ratio: number,
-  ) {
-    const total = Math.max(2, Number(length || 10));
-    const filled = Math.max(0, Math.min(total, Math.floor(total * ratio)));
-    const empty = total - filled;
-    return headChar && filled > 0 && filled < total
-      ? fillChar.repeat(filled - 1) + headChar + emptyChar.repeat(empty)
-      : fillChar.repeat(filled) + emptyChar.repeat(empty);
+  function bar(length: string, fill: string, empty: string, head: string, ratio: number) {
+    const total = Math.min(40, Math.max(1, Number(length) || 10));
+    const filled = Math.round(total * ratio);
+    return head && filled > 0 && filled < total
+      ? fill.repeat(filled - 1) + head + empty.repeat(total - filled)
+      : fill.repeat(filled) + empty.repeat(total - filled);
   }
 </script>
 
-{#if block.type === "media"}
-  {@const current = block as MediaBlock}
-  <div class="flex gap-1.5 flex-wrap">
-    <div class="flex flex-col gap-0.5 flex-1 min-w-40">
-      <Label class="text-xs text-muted-foreground">Show</Label>
-      <Select.Root
-        type="single"
-        value={current.field}
-        onValueChange={(v) => upd(current.id, { field: v ?? "Track" })}
-      >
-        <Select.Trigger class="w-full"
-          >{mediaFields.find((item) => item.value === current.field)?.label ??
-            current.field}</Select.Trigger
-        >
-        <Select.Content>
-          {#each mediaFields as item}
-            <Select.Item value={item.value}>{item.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+{#snippet barChars(current: { fillChar: string; emptyChar: string; headChar?: string; id: string }, withHead: boolean)}
+  <TextField
+    label="Filled"
+    class="w-16"
+    inputClass="text-center"
+    value={current.fillChar}
+    onChange={(fillChar) => upd(current.id, { fillChar })}
+  />
+  <TextField
+    label="Empty"
+    class="w-16"
+    inputClass="text-center"
+    value={current.emptyChar}
+    onChange={(emptyChar) => upd(current.id, { emptyChar })}
+  />
+  {#if withHead}
+    <TextField
+      label="Tip"
+      class="w-16"
+      inputClass="text-center"
+      placeholder="none"
+      value={current.headChar}
+      onChange={(headChar) => upd(current.id, { headChar })}
+    />
+  {/if}
+{/snippet}
+
+{#snippet sample(text: string)}
+  <Field label="Looks like" class="min-w-32 flex-1">
+    <div class="flex h-9 items-center overflow-hidden rounded-md bg-muted/60 px-2 font-mono text-sm whitespace-pre">
+      {text}
     </div>
-    <div class="flex flex-col gap-0.5 justify-end">
-      <Label class="text-xs text-muted-foreground">Visibility</Label>
-      <div class="flex items-center gap-1.5 h-9">
-        <Checkbox
-          checked={current.ifPlaying}
-          onCheckedChange={(v) => upd(current.id, { ifPlaying: Boolean(v) })}
-        />
-        <span class="text-sm">Only show when playing</span>
-      </div>
+  </Field>
+{/snippet}
+
+{#if block.type === "media"}
+  {@const current = block}
+  <div class="flex flex-wrap items-start gap-2">
+    <SelectField
+      label="Show"
+      class="w-56"
+      value={current.field}
+      options={mediaFields}
+      onChange={(field) => upd(current.id, { field: field || "Track" })}
+    />
+    <div class="pt-5">
+      <CheckField
+        label="Only while something plays"
+        checked={current.ifPlaying}
+        onChange={(ifPlaying) => upd(current.id, { ifPlaying })}
+      />
     </div>
   </div>
   {#if current.ifPlaying}
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground"
-        >Fallback text (shown when nothing plays)</Label
-      >
-      <Input
-        placeholder="Nothing playing..."
-        value={current.fallback}
-        oninput={(e) =>
-          upd(current.id, { fallback: (e.target as HTMLInputElement).value })}
-      />
-    </div>
+    <RichTextField
+      label="Otherwise show (leave empty to show nothing)"
+      placeholder="Nothing playing"
+      value={current.fallback}
+      onChange={(fallback) => upd(current.id, { fallback })}
+    />
   {/if}
+{:else if block.type === "mediaprog"}
+  {@const current = block}
+  <div class="flex flex-wrap items-start gap-2">
+    <TextField
+      label="Length"
+      class="w-20"
+      type="number"
+      min={2}
+      max={40}
+      value={current.length}
+      onChange={(length) => upd(current.id, { length })}
+    />
+    {@render barChars(current, true)}
+    {@render sample(bar(current.length, current.fillChar, current.emptyChar, current.headChar, 0.6))}
+  </div>
 {:else if block.type === "texttransform"}
-  {@const current = block as TextTransformBlock}
+  {@const current = block}
   <SourceInput
-    label="Source text"
+    label="Value"
     value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
+    onChange={(source) => upd(current.id, { source })}
+    showHint
   />
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Transform</Label>
-      <Select.Root
-        type="single"
-        value={current.mode}
-        onValueChange={(v) => upd(current.id, { mode: v ?? "Upper" })}
-      >
-        <Select.Trigger class="w-52"
-          >{textTransformModes.find((item) => item.value === current.mode)
-            ?.label ?? current.mode}</Select.Trigger
-        >
-        <Select.Content>
-          {#each textTransformModes as item}
-            <Select.Item value={item.value}>{item.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-    </div>
+  <div class="flex flex-wrap items-start gap-2">
+    <SelectField
+      label="Transform"
+      class="w-52"
+      value={current.mode}
+      options={textTransformModes}
+      onChange={(mode) => upd(current.id, { mode: mode || "Upper" })}
+    />
     {#if current.mode === "Format"}
-      <div class="flex flex-col gap-0.5">
-        <Label class="text-xs text-muted-foreground">Style</Label>
-        <Select.Root
-          type="single"
-          value={current.format}
-          onValueChange={(v) => upd(current.id, { format: v ?? "Rounded" })}
-        >
-          <Select.Trigger class="w-44"
-            >{textFormats.find((item) => item.value === current.format)
-              ?.label ?? current.format}</Select.Trigger
-          >
-          <Select.Content>
-            {#each textFormats.filter((item) => item.value) as item}
-              <Select.Item value={item.value}>{item.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
+      <SelectField
+        label="Style"
+        class="w-44"
+        value={current.format}
+        options={textFormats.filter((item) => item.value)}
+        onChange={(format) => upd(current.id, { format })}
+      />
+    {:else if current.mode === "Repeat"}
+      <TextField
+        label="Times"
+        class="w-20"
+        type="number"
+        min={1}
+        max={50}
+        value={current.count ?? "2"}
+        onChange={(count) => upd(current.id, { count })}
+      />
+    {:else if current.mode === "Slice"}
+      <TextField
+        label="From character"
+        class="w-32"
+        type="number"
+        value={current.start ?? "0"}
+        onChange={(start) => upd(current.id, { start })}
+      />
+      <TextField
+        label="To character (optional)"
+        class="w-40"
+        type="number"
+        placeholder="end"
+        value={current.end ?? ""}
+        onChange={(end) => upd(current.id, { end })}
+      />
     {/if}
   </div>
+  {#if current.mode === "Slice"}
+    <p class="text-xs text-muted-foreground">Counting starts at 0. A negative number counts from the end.</p>
+  {/if}
 {:else if block.type === "textreplace"}
-  {@const current = block as TextReplaceBlock}
-  <SourceInput
-    label="Source text"
-    value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
-  />
-  <div class="flex gap-1.5 flex-wrap">
-    <div class="flex flex-col gap-0.5 flex-1 min-w-28">
-      <Label class="text-xs text-muted-foreground">Search</Label>
-      <Input
-        value={current.search}
-        oninput={(e) =>
-          upd(current.id, { search: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 flex-1 min-w-28">
-      <Label class="text-xs text-muted-foreground">Replace with</Label>
-      <Input
-        value={current.replace}
-        oninput={(e) =>
-          upd(current.id, { replace: (e.target as HTMLInputElement).value })}
-      />
-    </div>
+  {@const current = block}
+  <SourceInput label="Value" value={current.source} onChange={(source) => upd(current.id, { source })} showHint />
+  <div class="flex flex-wrap gap-2">
+    <TextField
+      label="Find"
+      class="min-w-32 flex-1"
+      value={current.search}
+      onChange={(search) => upd(current.id, { search })}
+    />
+    <RichTextField
+      label="Replace with"
+      class="min-w-32 flex-1"
+      placeholder="nothing"
+      value={current.replace}
+      onChange={(replace) => upd(current.id, { replace })}
+    />
   </div>
 {:else if block.type === "texttruncate"}
-  {@const current = block as TextTruncateBlock}
-  <SourceInput
-    label="Source text"
-    value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
-  />
-  <div class="flex flex-col gap-0.5 w-24">
-    <Label class="text-xs text-muted-foreground">Max length</Label>
-    <Input
+  {@const current = block}
+  <div class="flex flex-wrap items-start gap-2">
+    <SourceInput
+      label="Value"
+      widthClass="min-w-48 flex-1"
+      value={current.source}
+      onChange={(source) => upd(current.id, { source })}
+      showHint
+    />
+    <TextField
+      label="Max length"
+      class="w-24"
       type="number"
-      min="1"
-      max="200"
+      min={1}
+      max={144}
       value={current.length}
-      oninput={(e) =>
-        upd(current.id, { length: (e.target as HTMLInputElement).value })}
+      onChange={(length) => upd(current.id, { length })}
     />
   </div>
+  <p class="text-xs text-muted-foreground">Longer text is cut and gets "..." at the end.</p>
 {:else if block.type === "textpad"}
-  {@const current = block as TextPadBlock}
-  <SourceInput
-    label="Source text"
-    value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
-  />
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Pad side</Label>
-      <Select.Root
-        type="single"
-        value={current.side}
-        onValueChange={(v) => upd(current.id, { side: v ?? "Left" })}
-      >
-        <Select.Trigger class="w-32"
-          >{textPadSides.find((item) => item.value === current.side)?.label ??
-            current.side}</Select.Trigger
-        >
-        <Select.Content>
-          {#each textPadSides as item}
-            <Select.Item value={item.value}>{item.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-    </div>
-    <div class="flex flex-col gap-0.5 w-24">
-      <Label class="text-xs text-muted-foreground">Target length</Label>
-      <Input
-        type="number"
-        min="1"
-        max="200"
-        value={current.length}
-        oninput={(e) =>
-          upd(current.id, { length: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 w-24">
-      <Label class="text-xs text-muted-foreground">Pad char</Label>
-      <Input
-        value={current.padChar}
-        oninput={(e) =>
-          upd(current.id, { padChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
+  {@const current = block}
+  <SourceInput label="Value" value={current.source} onChange={(source) => upd(current.id, { source })} showHint />
+  <div class="flex flex-wrap items-start gap-2">
+    <SelectField
+      label="Pad on"
+      class="w-28"
+      value={current.side}
+      options={textPadSides}
+      onChange={(side) => upd(current.id, { side: side || "Left" })}
+    />
+    <TextField
+      label="Width"
+      class="w-20"
+      type="number"
+      min={1}
+      max={144}
+      value={current.length}
+      onChange={(length) => upd(current.id, { length })}
+    />
+    <TextField
+      label="With"
+      class="w-16"
+      inputClass="text-center font-mono"
+      placeholder="space"
+      value={current.padChar}
+      onChange={(padChar) => upd(current.id, { padChar })}
+    />
   </div>
+  <p class="text-xs text-muted-foreground">Keeps a changing number from making the line jump around.</p>
 {:else if block.type === "textdefault"}
-  {@const current = block as TextDefaultBlock}
-  <SourceInput
-    label="Primary source"
-    value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
+  {@const current = block}
+  <SourceInput label="Value" value={current.source} onChange={(source) => upd(current.id, { source })} showHint />
+  <RichTextField
+    label="When it's empty, show"
+    value={current.fallback}
+    onChange={(fallback) => upd(current.id, { fallback })}
   />
-  <div class="flex flex-col gap-0.5">
-    <Label class="text-xs text-muted-foreground">Fallback text</Label>
-    <Input
-      value={current.fallback}
-      oninput={(e) =>
-        upd(current.id, { fallback: (e.target as HTMLInputElement).value })}
-    />
-  </div>
-{:else if block.type === "mediaprog"}
-  {@const current = block as MediaProgressBlock}
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Bar length</Label>
-      <Input
-        class="w-20"
-        type="number"
-        min="2"
-        max="30"
-        value={current.length}
-        oninput={(e) =>
-          upd(current.id, { length: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Filled char</Label>
-      <Input
-        class="w-16"
-        value={current.fillChar}
-        oninput={(e) =>
-          upd(current.id, { fillChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Empty char</Label>
-      <Input
-        class="w-16"
-        value={current.emptyChar}
-        oninput={(e) =>
-          upd(current.id, { emptyChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Head char</Label>
-      <Input
-        class="w-16"
-        value={current.headChar}
-        placeholder="▓"
-        oninput={(e) =>
-          upd(current.id, { headChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 flex-1">
-      <Label class="text-xs text-muted-foreground">Preview (~60%)</Label>
-      <div
-        class="h-9 flex items-center px-1.5 bg-muted/50 rounded font-mono text-sm"
-      >
-        {renderProgressPreview(
-          current.length,
-          current.fillChar,
-          current.emptyChar,
-          current.headChar,
-          0.6,
-        )}
-      </div>
-    </div>
-  </div>
 {:else if block.type === "progbar"}
-  {@const current = block as ProgBarBlock}
-  <p class="text-xs text-muted-foreground">{genericSourceHint}</p>
-  <div class="flex gap-1.5 flex-wrap">
+  {@const current = block}
+  <div class="flex flex-wrap gap-2">
     <SourceInput
-      label="Current source"
+      label="Value"
+      widthClass="min-w-40 flex-1"
       value={current.currentSrc}
-      widthClass="flex-1 min-w-36"
-      onChange={(value) => upd(current.id, { currentSrc: value })}
-      showHint={true}
+      onChange={(currentSrc) => upd(current.id, { currentSrc })}
+      showHint
     />
     <SourceInput
-      label="Total / max source"
+      label="Full at"
+      widthClass="w-36"
       value={current.totalSrc}
-      widthClass="flex-1 min-w-36"
-      onChange={(value) => upd(current.id, { totalSrc: value })}
+      onChange={(totalSrc) => upd(current.id, { totalSrc })}
     />
   </div>
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Bar length</Label>
-      <Input
-        class="w-20"
-        type="number"
-        min="2"
-        max="40"
-        value={current.length}
-        oninput={(e) =>
-          upd(current.id, { length: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Filled</Label>
-      <Input
-        class="w-14"
-        value={current.fillChar}
-        oninput={(e) =>
-          upd(current.id, { fillChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-1">
-      <Label class="text-xs text-muted-foreground">Empty</Label>
-      <Input
-        class="w-14"
-        value={current.emptyChar}
-        oninput={(e) =>
-          upd(current.id, { emptyChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-1">
-      <Label class="text-xs text-muted-foreground">Head</Label>
-      <Input
-        class="w-14"
-        value={current.headChar}
-        placeholder="▓"
-        oninput={(e) =>
-          upd(current.id, { headChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 flex-1">
-      <Label class="text-xs text-muted-foreground">Preview (50%)</Label>
-      <div
-        class="h-9 flex items-center px-1.5 bg-muted/50 rounded font-mono text-sm"
-      >
-        {renderProgressPreview(
-          current.length,
-          current.fillChar,
-          current.emptyChar,
-          current.headChar,
-          0.5,
-        )}
-      </div>
-    </div>
+  <div class="flex flex-wrap items-start gap-2">
+    <TextField
+      label="Length"
+      class="w-20"
+      type="number"
+      min={2}
+      max={40}
+      value={current.length}
+      onChange={(length) => upd(current.id, { length })}
+    />
+    {@render barChars(current, true)}
+    {@render sample(bar(current.length, current.fillChar, current.emptyChar, current.headChar, 0.5))}
   </div>
+  <p class="text-xs text-muted-foreground">Avatar floats go from 0 to 1, so "Full at" is 1 for them.</p>
 {:else if block.type === "healthbar"}
-  {@const current = block as HealthBarBlock}
-  <p class="text-xs text-muted-foreground">{genericSourceHint}</p>
-  <div class="flex gap-2 flex-wrap">
+  {@const current = block}
+  <div class="flex flex-wrap gap-2">
     <SourceInput
-      label="Current source"
+      label="Value"
+      widthClass="min-w-40 flex-1"
       value={current.currentSrc}
-      widthClass="flex-1 min-w-36"
-      onChange={(value) => upd(current.id, { currentSrc: value })}
-      showHint={true}
+      onChange={(currentSrc) => upd(current.id, { currentSrc })}
+      showHint
     />
     <SourceInput
-      label="Max source"
+      label="Max"
+      widthClass="w-36"
       value={current.totalSrc}
-      widthClass="flex-1 min-w-36"
-      onChange={(value) => upd(current.id, { totalSrc: value })}
+      onChange={(totalSrc) => upd(current.id, { totalSrc })}
     />
   </div>
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Filled</Label>
-      <Input
-        class="w-16"
-        value={current.fillChar}
-        oninput={(e) =>
-          upd(current.id, { fillChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Empty</Label>
-      <Input
-        class="w-16"
-        value={current.emptyChar}
-        oninput={(e) =>
-          upd(current.id, { emptyChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 flex-1">
-      <Label class="text-xs text-muted-foreground">Preview</Label>
-      <div
-        class="h-9 flex items-center px-1.5 bg-muted/50 rounded font-mono text-sm"
-      >
-        {current.fillChar.repeat(3)}{current.emptyChar.repeat(2)}
-      </div>
-    </div>
+  <div class="flex flex-wrap items-start gap-2">
+    {@render barChars(current, false)}
+    {@render sample(current.fillChar.repeat(3) + current.emptyChar.repeat(2))}
   </div>
+  <p class="text-xs text-muted-foreground">One symbol per point of max, up to 20 symbols.</p>
 {:else if block.type === "starrating"}
-  {@const current = block as StarRatingBlock}
-  <p class="text-xs text-muted-foreground">
-    Value and max both accept generic sources now.
-  </p>
-  <div class="flex gap-1.5 flex-wrap items-end">
+  {@const current = block}
+  <div class="flex flex-wrap items-start gap-2">
     <SourceInput
-      label="Value source"
+      label="Value"
+      widthClass="min-w-40 flex-1"
       value={current.valueSrc}
-      widthClass="flex-1 min-w-36"
-      onChange={(value) => upd(current.id, { valueSrc: value })}
-      showHint={true}
+      onChange={(valueSrc) => upd(current.id, { valueSrc })}
+      showHint
     />
     <SourceInput
-      label="Max stars / max source"
+      label="Stars"
+      widthClass="w-24"
       value={current.maxStars}
-      widthClass="flex-1 min-w-28"
-      onChange={(value) => upd(current.id, { maxStars: value })}
+      onChange={(maxStars) => upd(current.id, { maxStars })}
     />
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Filled</Label>
-      <Input
-        class="w-14"
-        value={current.fillChar}
-        oninput={(e) =>
-          upd(current.id, { fillChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Empty</Label>
-      <Input
-        class="w-14"
-        value={current.emptyChar}
-        oninput={(e) =>
-          upd(current.id, { emptyChar: (e.target as HTMLInputElement).value })}
-      />
-    </div>
   </div>
-  <div
-    class="text-[11px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-1 rounded leading-tight"
-  >
-    Preview: {current.fillChar.repeat(3)}{current.emptyChar.repeat(2)}
+  <div class="flex flex-wrap items-start gap-2">
+    {@render barChars(current, false)}
+    {@render sample(current.fillChar.repeat(3) + current.emptyChar.repeat(2))}
   </div>
 {:else if block.type === "toggle"}
-  {@const current = block as ToggleBlock}
-  <SourceInput
-    label="Value source"
-    value={current.valueSrc}
-    onChange={(value) => upd(current.id, { valueSrc: value })}
-    showHint={true}
-  />
-  <div class="flex gap-1.5 flex-wrap">
-    <div class="flex flex-col gap-0.5 flex-1 min-w-28">
-      <Label class="text-xs text-muted-foreground">True text</Label>
-      <Input
-        value={current.trueText}
-        oninput={(e) =>
-          upd(current.id, { trueText: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-0.5 flex-1 min-w-28">
-      <Label class="text-xs text-muted-foreground">False text</Label>
-      <Input
-        value={current.falseText}
-        oninput={(e) =>
-          upd(current.id, { falseText: (e.target as HTMLInputElement).value })}
-      />
-    </div>
+  {@const current = block}
+  <SourceInput label="Value" value={current.valueSrc} onChange={(valueSrc) => upd(current.id, { valueSrc })} showHint />
+  <div class="flex flex-wrap gap-2">
+    <RichTextField
+      label="When true"
+      class="min-w-32 flex-1"
+      value={current.trueText}
+      onChange={(trueText) => upd(current.id, { trueText })}
+    />
+    <RichTextField
+      label="When false"
+      class="min-w-32 flex-1"
+      placeholder="nothing"
+      value={current.falseText}
+      onChange={(falseText) => upd(current.id, { falseText })}
+    />
   </div>
+  <p class="text-xs text-muted-foreground">False is empty, 0 or false. Anything else counts as true.</p>
 {:else if block.type === "numberformat"}
-  {@const current = block as NumberFormatBlock}
-  <SourceInput
-    label="Value source"
-    value={current.valueSrc}
-    onChange={(value) => upd(current.id, { valueSrc: value })}
-    showHint={true}
-  />
-  <div class="flex gap-2 flex-wrap items-end">
-    <div class="flex flex-col gap-1">
-      <Label class="text-xs text-muted-foreground">Decimals</Label>
-      <Input
-        class="w-20"
-        type="number"
-        min="0"
-        max="10"
-        value={current.decimals}
-        oninput={(e) =>
-          upd(current.id, { decimals: (e.target as HTMLInputElement).value })}
-      />
-    </div>
-    <div class="flex flex-col gap-1">
-      <Label class="text-xs text-muted-foreground">Decimal separator</Label>
-      <Input
-        class="w-20"
-        value={current.decimalSeparator}
-        oninput={(e) =>
-          upd(current.id, {
-            decimalSeparator: (e.target as HTMLInputElement).value,
-          })}
-      />
-    </div>
-    <div class="flex flex-col gap-1">
-      <Label class="text-xs text-muted-foreground">Thousands separator</Label>
-      <Input
-        class="w-20"
-        value={current.thousandsSeparator}
-        oninput={(e) =>
-          upd(current.id, {
-            thousandsSeparator: (e.target as HTMLInputElement).value,
-          })}
-      />
-    </div>
+  {@const current = block}
+  <SourceInput label="Value" value={current.valueSrc} onChange={(valueSrc) => upd(current.id, { valueSrc })} showHint />
+  <div class="flex flex-wrap items-start gap-2">
+    <TextField
+      label="Decimals"
+      class="w-20"
+      type="number"
+      min={0}
+      max={10}
+      value={current.decimals}
+      onChange={(decimals) => upd(current.id, { decimals })}
+    />
+    <TextField
+      label="Decimal mark"
+      class="w-28"
+      inputClass="text-center"
+      value={current.decimalSeparator}
+      onChange={(decimalSeparator) => upd(current.id, { decimalSeparator })}
+    />
+    <TextField
+      label="Thousands mark"
+      class="w-28"
+      inputClass="text-center"
+      placeholder="none"
+      value={current.thousandsSeparator}
+      onChange={(thousandsSeparator) => upd(current.id, { thousandsSeparator })}
+    />
   </div>
 {:else if block.type === "numbercalc"}
-  {@const current = block as NumberCalcBlock}
-  <SourceInput
-    label="Value source"
-    value={current.source}
-    onChange={(value) => upd(current.id, { source: value })}
-    showHint={true}
-  />
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Operation</Label>
-      <Select.Root
-        type="single"
-        value={current.mode}
-        onValueChange={(v) => upd(current.id, { mode: v ?? "Clamp" })}
-      >
-        <Select.Trigger class="w-56"
-          >{numberCalcModes.find((item) => item.value === current.mode)
-            ?.label ?? current.mode}</Select.Trigger
-        >
-        <Select.Content>
-          {#each numberCalcModes as item}
-            <Select.Item value={item.value}>{item.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-    </div>
+  {@const current = block}
+  <SourceInput label="Value" value={current.source} onChange={(source) => upd(current.id, { source })} showHint />
+  <div class="flex flex-wrap items-start gap-2">
+    <SelectField
+      label="Operation"
+      class="w-52"
+      value={current.mode}
+      options={numberCalcModes}
+      onChange={(mode) => upd(current.id, { mode: mode || "Clamp" })}
+    />
     {#if current.mode === "Clamp"}
-      <SourceInput
-        label="Min"
-        value={current.min}
-        widthClass="w-28"
-        onChange={(value) => upd(current.id, { min: value })}
-      />
-      <SourceInput
-        label="Max"
-        value={current.max}
-        widthClass="w-28"
-        onChange={(value) => upd(current.id, { max: value })}
-      />
+      <SourceInput label="Min" widthClass="w-28" value={current.min} onChange={(min) => upd(current.id, { min })} />
+      <SourceInput label="Max" widthClass="w-28" value={current.max} onChange={(max) => upd(current.id, { max })} />
     {:else if current.mode === "Map"}
-      <SourceInput
-        label="Input min"
-        value={current.inMin}
-        widthClass="w-24"
-        onChange={(value) => upd(current.id, { inMin: value })}
-      />
-      <SourceInput
-        label="Input max"
-        value={current.inMax}
-        widthClass="w-24"
-        onChange={(value) => upd(current.id, { inMax: value })}
-      />
-      <SourceInput
-        label="Output min"
-        value={current.outMin}
-        widthClass="w-24"
-        onChange={(value) => upd(current.id, { outMin: value })}
-      />
-      <SourceInput
-        label="Output max"
-        value={current.outMax}
-        widthClass="w-24"
-        onChange={(value) => upd(current.id, { outMax: value })}
-      />
+      <SourceInput label="From min" widthClass="w-24" value={current.inMin} onChange={(inMin) => upd(current.id, { inMin })} />
+      <SourceInput label="From max" widthClass="w-24" value={current.inMax} onChange={(inMax) => upd(current.id, { inMax })} />
+      <SourceInput label="To min" widthClass="w-24" value={current.outMin} onChange={(outMin) => upd(current.id, { outMin })} />
+      <SourceInput label="To max" widthClass="w-24" value={current.outMax} onChange={(outMax) => upd(current.id, { outMax })} />
     {/if}
   </div>
 {:else if block.type === "random"}
-  {@const current = block as RandomBlock}
-  <div class="flex gap-1.5 flex-wrap items-end">
-    <div class="flex flex-col gap-0.5">
-      <Label class="text-xs text-muted-foreground">Type</Label>
-      <Select.Root
-        type="single"
-        value={current.numberType}
-        onValueChange={(v) => upd(current.id, { numberType: v ?? "Int" })}
-      >
-        <Select.Trigger class="w-32"
-          >{randomNumberTypes.find((item) => item.value === current.numberType)
-            ?.label ?? current.numberType}</Select.Trigger
-        >
-        <Select.Content>
-          {#each randomNumberTypes as item}
-            <Select.Item value={item.value}>{item.label}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-    </div>
-    <SourceInput
-      label="Min source"
-      value={current.min}
-      widthClass="w-28"
-      onChange={(value) => upd(current.id, { min: value })}
-      showHint={true}
+  {@const current = block}
+  <div class="flex flex-wrap items-start gap-2">
+    <SelectField
+      label="Type"
+      class="w-40"
+      value={current.numberType}
+      options={randomNumberTypes}
+      onChange={(numberType) => upd(current.id, { numberType: numberType || "Int" })}
     />
-    <SourceInput
-      label="Max source"
-      value={current.max}
-      widthClass="w-28"
-      onChange={(value) => upd(current.id, { max: value })}
-    />
+    <SourceInput label="From" widthClass="w-28" value={current.min} onChange={(min) => upd(current.id, { min })} />
+    <SourceInput label="To" widthClass="w-28" value={current.max} onChange={(max) => upd(current.id, { max })} />
   </div>
+  <p class="text-xs text-muted-foreground">Picks a new number on every update.</p>
 {/if}

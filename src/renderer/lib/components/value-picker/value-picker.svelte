@@ -3,7 +3,6 @@
 </script>
 
 <script lang="ts">
-  import { automations } from "$lib/api/automations";
   import { chatbox } from "$lib/api/chatbox";
   import { LOVENSE_MODULE_ID } from "$lib/api/toys";
   import { toyStatus } from "$lib/api/toys/status.svelte";
@@ -25,10 +24,8 @@
     type ValueSuggestion,
     type ValueToken,
   } from "./value-suggestions";
+  import { livePreview } from "./live-preview.svelte";
 
-  const PREVIEW_DEBOUNCE_MS = 300;
-  /** Values like the time keep moving after you stop typing, so this repeats while you're here. */
-  const PREVIEW_REFRESH_MS = 1000;
   const POPUP_GAP = 4;
   const POPUP_MIN_WIDTH = 320;
   const POPUP_MAX_HEIGHT = 256;
@@ -234,59 +231,11 @@
 
   // ------------------------------------------------------------------ preview
 
-  let previewText = $state<string | null>(null);
-  let previewFailed = $state(false);
-  let onScreen = $state(false);
-  // Keeps a preview from polling while the window is minimized.
-  let pageVisible = $state(!document.hidden);
-
   const wantsPreview = $derived(preview && hasPlaceholders(value));
-
-  $effect(() => {
-    if (!root || !preview) return;
-    const observer = new IntersectionObserver(([entry]) => (onScreen = entry.isIntersecting));
-    observer.observe(root);
-    return () => observer.disconnect();
-  });
-
-  $effect(() => {
-    if (!preview) return;
-    const update = () => (pageVisible = !document.hidden);
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
-  });
-
-  $effect(() => {
-    if (!wantsPreview) {
-      previewText = null;
-      previewFailed = false;
-      return;
-    }
-    if (!onScreen) return;
-
-    const template = value;
-    const repeat = pageVisible;
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-
-    async function run() {
-      try {
-        const result = await automations.preview(template);
-        if (stopped) return;
-        previewText = result;
-        previewFailed = false;
-      } catch {
-        if (stopped) return;
-        previewFailed = true;
-      }
-      if (repeat) timer = setTimeout(run, PREVIEW_REFRESH_MS);
-    }
-
-    timer = setTimeout(run, PREVIEW_DEBOUNCE_MS);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
+  const live = livePreview({
+    template: () => value,
+    enabled: () => wantsPreview,
+    element: () => root,
   });
 </script>
 
@@ -388,14 +337,14 @@
   {#if wantsPreview}
     <p class="flex min-w-0 items-baseline gap-1 text-[11px] text-muted-foreground">
       <span class="shrink-0">Preview:</span>
-      {#if previewFailed}
+      {#if live.failed}
         <span>not available right now</span>
-      {:else if previewText === null}
+      {:else if live.text === null}
         <span>...</span>
-      {:else if previewText === ""}
+      {:else if live.text === ""}
         <span class="italic">empty</span>
       {:else}
-        <span class="truncate font-mono text-foreground" title={previewText}>{previewText}</span>
+        <span class="truncate font-mono text-foreground" title={live.text}>{live.text}</span>
       {/if}
     </p>
   {/if}

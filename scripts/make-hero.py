@@ -17,7 +17,7 @@ FONTS = Path(r"C:\Windows\Fonts")
 TITLE = "ADVOSC"
 DESCRIPTION = "A desktop app for your VRChat chatbox, avatar parameters and automations."
 FOOTNOTE = "Runs in your tray. Free and open source."
-TILES = ["chatbox-advanced-editor", "automations-rule", "avatar-osc-parameters", "modules"]
+TILES = ["chatbox-simple-editor", "automations-rule", "avatar-osc-parameters", "chatbox-advanced-editor"]
 
 WIDTH, HEIGHT = 1600, 760
 MARGIN = 44

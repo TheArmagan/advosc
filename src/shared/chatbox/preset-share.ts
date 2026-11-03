@@ -4,7 +4,7 @@ import { heartRatePlatforms } from "./heart-rate";
 
 export type AllValues = {
   modules: Record<string, any>;
-  settings: { template: string; autoSend: boolean; eggMode: boolean; debugMode: boolean };
+  settings: { template: string; autoSend: boolean; debugMode: boolean };
   editorState?: {
     advancedTemplate?: string;
     simpleBlocks?: any[];

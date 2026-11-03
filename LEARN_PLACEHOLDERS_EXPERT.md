@@ -99,6 +99,18 @@ Direction is `Left` or `Right`, visible length is how many characters fit in the
 "MediaMarquee": "{{Text;Animate;Marquee;[[Shortcut:MediaTitle]];Left;14}}"
 ```
 
+### MarqueeCustom
+
+```
+{{Text;Animate;MarqueeCustom;TEXT;Direction;VisibleLength;CharsPerFrame}}
+```
+
+Same as Marquee, but it moves `CharsPerFrame` characters every 2.2 second step instead of one. Handy for long titles that take forever to scroll by. It always loops without padding, and `Right` scrolls the other way.
+
+```
+"FastMarquee": "{{Text;Animate;MarqueeCustom;[[Shortcut:MediaTitle]];Left;14;3}}"
+```
+
 ### EachOne
 
 ```
@@ -158,7 +170,6 @@ This one is by **x᙭x ᗪᕮᗩᗪ x᙭x** ([Discord: deadelixor](https://disco
   "settings": {
     "template": "╭────────★─╮\n{{Shortcut;EditedStatusCycle}}\n{{Shortcut;EditedPB}}\n{{Shortcut;MediaMarquee}}\n{{Shortcut;FormattedHR}}\n╰─★────────╯",
     "autoSend": true,
-    "eggMode": true,
     "debugMode": false
   }
 }

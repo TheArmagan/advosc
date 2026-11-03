@@ -65,6 +65,11 @@ export const textOptions: ModuleOptions = {
       description: "Creates a marquee animation effect for the input text. Specify direction (Left or Right), and maximum visible length. Default is NoPadding mode.",
       fillText: "Text;Animate;Marquee;${1:inputText};${2:Left|Right};${3:maxLength}"
     },
+    "Animate;MarqueeCustom": {
+      value: "llo World He",
+      description: "Like Marquee, but you set how many characters it moves each frame (one frame is 2.2 seconds). Direction is Left or Right.",
+      fillText: "Text;Animate;MarqueeCustom;${1:inputText};${2:Left|Right};${3:maxLength};${4:charsPerFrame}"
+    },
     "Animate;EachOne": {
       value: "Hello",
       description: "Animates list of texts by displaying each one sequentially.",
@@ -134,6 +139,16 @@ export const textOptions: ModuleOptions = {
       value: "fallback",
       description: "Returns the text if non-empty, otherwise the fallback value.",
       fillText: "Text;Default;${1:fallbackText};${2:inputText}"
+    },
+    "Wrap": {
+      value: "🎵 Song name",
+      description: "Adds a prefix and suffix around the text, and shows nothing at all when the text is empty.",
+      fillText: "Text;Wrap;${1:prefix};${2:suffix};${3:inputText}"
+    },
+    "Join": {
+      value: "Song | 72 BPM",
+      description: "Joins items with the separators between them, skipping empty items and the separator in front of them. Items and separators alternate.",
+      fillText: "Text;Join;${1:item1};${2: | };${3:item2}"
     },
     "NumberFormat": {
       value: "1,234.56",

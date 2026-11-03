@@ -1,114 +1,48 @@
 <script lang="ts">
-  import ChatboxMonacoEditor from "./chatbox-monaco-editor.svelte";
-  import * as monaco from "monaco-editor";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
   import { chatbox } from "$lib/api/chatbox";
-  import { BracesIcon, BracketsIcon } from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import Input from "../ui/input/input.svelte";
-
-  let insertText = (text: string) => {};
-  let setText = (text: string) => {};
+  import {
+    BracesIcon,
+    BracketsIcon,
+    CheckIcon,
+    CopyIcon,
+    MessageSquareOffIcon,
+    Redo2Icon,
+    TypeIcon,
+    Undo2Icon,
+  } from "@lucide/svelte";
+  import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api";
+  import { toast } from "svelte-sonner";
+  import PlaceholderBrowser from "./advanced/PlaceholderBrowser.svelte";
+  import ChatboxMonacoEditor from "./chatbox-monaco-editor.svelte";
+  import PreviewCard from "./shared/PreviewCard.svelte";
+  import { oneOffMessage } from "./shared/one-off-message.svelte";
+  import { textFormats } from "./simple-editor/options";
 
   let { isActive = false }: { isActive?: boolean } = $props();
 
   const settings = chatbox.settings;
   const renderedTemplate = chatbox.renderedTemplate;
-  const placeholders = chatbox.placeholders;
   const advancedTemplate = chatbox.advancedTemplate;
 
+  let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
+  let setText = (text: string) => {};
+
   let originalTemplate = $advancedTemplate;
-  let isOverwriteActive = $state(false);
-  let overwriteInput = $state("");
-  let overwriteTimer: ReturnType<typeof setTimeout> | null = null;
+  const oneOff = oneOffMessage(() => originalTemplate);
 
-  // Parse fillText and format it as HTML for a compact white tooltip
-  const formatFillTextHTML = (
-    fillText: string,
-    separator: string = ";",
-  ): string => {
-    const parts = chatbox.splitParams(fillText, separator);
-
-    let items = "";
-
-    parts.forEach((part, index) => {
-      // Parse ${1:inputText} format
-      const placeholderMatch = part.match(/\$\{(\d+):([^}]+)\}/);
-
-      if (placeholderMatch) {
-        const [_, paramIndex, content] = placeholderMatch;
-
-        // Parameters ending with ... (variadic)
-        if (content.endsWith("...")) {
-          const paramName = content.slice(0, -3); // Remove the "..." suffix
-
-          // Option-based variadic values like Left|Right|...
-          if (paramName.includes("|")) {
-            const options = paramName.split("|");
-            items += `
-              <div class="flex items-center gap-1.5 text-xs">
-                <span class="text-gray-500 font-mono">${index + 1}.</span>
-                <span class="font-semibold text-gray-900">${options[0]}...</span>
-                <div class="flex gap-0.5">
-                  ${options.map((opt) => `<span class="bg-gray-100 px-1 py-0.5 rounded text-[10px]">${opt}</span>`).join("")}
-                </div>
-                <span class="text-gray-400 italic text-[10px]">repeat</span>
-              </div>
-            `;
-          } else {
-            items += `
-              <div class="flex items-center gap-1.5 text-xs">
-                <span class="text-gray-500 font-mono">${index + 1}.</span>
-                <span class="font-semibold text-gray-900">${paramName}...</span>
-                <span class="text-gray-400 italic text-[10px]">repeat</span>
-              </div>
-            `;
-          }
-        }
-        // Split options like Left|Right
-        else if (content.includes("|")) {
-          const options = content.split("|");
-          items += `
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-gray-500 font-mono">${index + 1}.</span>
-              <span class="font-semibold text-gray-900">${options[0]}</span>
-              <div class="flex gap-0.5">
-                ${options.map((opt) => `<span class="bg-gray-100 px-1 py-0.5 rounded text-[10px]">${opt}</span>`).join("")}
-              </div>
-            </div>
-          `;
-        } else {
-          items += `
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-gray-500 font-mono">${index + 1}.</span>
-              <span class="font-semibold text-gray-900">${content}</span>
-            </div>
-          `;
-        }
-      } else {
-        // Normal parameter (fixed value)
-        items += `
-          <div class="flex items-center gap-1.5 text-xs">
-            <span class="text-gray-500 font-mono">${index + 1}.</span>
-            <code class="bg-gray-100 px-1 py-0.5 rounded text-[11px] font-mono text-gray-700">${part}</code>
-            <span class="text-gray-400 text-[10px]">fixed</span>
-          </div>
-        `;
-      }
-    });
-
-    return `<div class="flex flex-col gap-0.5">${items}</div>`;
-  };
+  let cursor = $state({ line: 1, column: 1 });
+  let length = $state(0);
+  let copied = $state(false);
 
   $effect(() => {
     if (!isActive) return;
 
     const savedTemplate = $advancedTemplate;
 
-    if (!isOverwriteActive && savedTemplate !== $settings.template) {
+    if (!oneOff.active && savedTemplate !== $settings.template) {
       originalTemplate = savedTemplate;
       $settings.template = savedTemplate;
       setText(savedTemplate);
@@ -116,175 +50,185 @@
     }
 
     const current = $settings.template;
-    if (!isOverwriteActive) {
+    if (!oneOff.active) {
       originalTemplate = current;
       $advancedTemplate = current;
       setText(current);
     }
   });
+
+  // ------------------------------------------------------------------ toolbar
+
+  function run(action: string) {
+    if (!editor) return;
+    editor.focus();
+    editor.trigger("toolbar", action, null);
+  }
+
+  /** Tabstops in the snippet let you Tab through a placeholder's arguments. */
+  function insertSnippet(snippet: string) {
+    if (!editor) return;
+    editor.focus();
+    const controller = editor.getContribution("snippetController2") as
+      | { insert: (template: string) => void }
+      | null;
+    if (controller) controller.insert(snippet);
+    else editor.trigger("toolbar", "type", { text: snippet });
+  }
+
+  function styleSelection(style: string) {
+    if (!editor) return;
+    const model = editor.getModel();
+    const selection = editor.getSelection();
+    if (!model || !selection) return;
+    const text = model.getValueInRange(selection);
+    if (!text) {
+      insertSnippet(`{{Text;Format;${style};\${1:text}}}`);
+      return;
+    }
+    if (text.includes("{{")) {
+      toast.error("Can't style text that holds a {{ }} placeholder", {
+        description: "Use the [[ ]] form inside it, or put it in a shortcut first.",
+      });
+      return;
+    }
+    const escaped = text.replace(/\\/g, "\\\\").replace(/;/g, "\\;");
+    editor.focus();
+    editor.executeEdits("toolbar", [
+      { range: selection, text: `{{Text;Format;${style};${escaped}}}`, forceMoveMarkers: true },
+    ]);
+  }
+
+  async function copyTemplate() {
+    try {
+      await navigator.clipboard.writeText(editor?.getValue() ?? $advancedTemplate);
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch {
+      toast.error("Couldn't copy the template");
+    }
+  }
+
+  const styles = textFormats.filter((format) => format.value);
 </script>
 
-<div class="flex flex-1 flex-col gap-2">
-  <div class="flex w-full gap-2 items-center">
-    <Input
-      type="text"
-      bind:value={overwriteInput}
-      placeholder="Template Overwrite (Auto-reset in 30s)"
-      oninput={() => {
-        if (overwriteTimer) {
-          clearTimeout(overwriteTimer);
-          overwriteTimer = null;
-        }
-        if (overwriteInput.trim() === "") {
-          isOverwriteActive = false;
-          $settings.template = originalTemplate;
-        } else {
-          isOverwriteActive = true;
-          $settings.template = overwriteInput;
-          overwriteTimer = setTimeout(() => {
-            overwriteInput = "";
-            isOverwriteActive = false;
-            $settings.template = originalTemplate;
-            overwriteTimer = null;
-          }, 30000);
-        }
-      }}
-    />
-    <Button
-      variant="outline"
-      onclick={() => {
-        overwriteInput = "";
-        if (overwriteTimer) {
-          clearTimeout(overwriteTimer);
-          overwriteTimer = null;
-        }
-        isOverwriteActive = false;
-        $settings.template = originalTemplate;
-      }}>Reset</Button
+{#snippet toolButton(label: string, onclick: () => void, Icon: typeof TypeIcon, shortcut?: string)}
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} variant="ghost" size="icon" class="size-8 text-muted-foreground" aria-label={label} {onclick}>
+          <Icon class="size-4" />
+        </Button>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>{label}{shortcut ? ` (${shortcut})` : ""}</Tooltip.Content>
+  </Tooltip.Root>
+{/snippet}
+
+<Tooltip.Provider delayDuration={300}>
+  <div class="grid gap-3 min-[1100px]:grid-cols-[minmax(0,1fr)_20rem]">
+    <!-- One height for the editor and the column next to it, so neither leaves a gap. -->
+    <div
+      class="flex h-[clamp(22rem,65vh,40rem)] min-w-0 flex-col overflow-hidden rounded-lg border bg-card shadow-sm min-[1100px]:h-[calc(100vh-7rem)] min-[1100px]:min-h-[30rem]"
     >
-  </div>
-  <!-- The list is taller than the window, so the row is absolutely sized to keep it from setting the page height. -->
-  <div class="relative flex-1 min-h-64">
-    <div class="absolute inset-0 flex gap-2">
-    <Card.Root
-      class="p-2 flex flex-col gap-2 shrink-0 max-w-[250px]"
-    >
-      <Card.Title>Insert Placeholders</Card.Title>
-      <div class="flex flex-col gap-1 overflow-auto min-h-0">
-        {#each $placeholders as ph}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger class="w-full">
-              <Tooltip.Provider>
-                <Tooltip.Root>
-                  <Tooltip.Trigger class="w-full">
-                    <Button variant="outline" size="sm" class="w-full">
-                      <code
-                        class="font-mono text-xs bg-black/50 px-1 py-0.5 rounded text-foreground/70 truncate"
-                        >{ph.params.join(";")}</code
-                      >
-                    </Button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content class="max-w-md">
-                    <div class="flex flex-col gap-1.5">
-                      <p class="font-semibold text-sm text-gray-900">
-                        {ph.description}
-                      </p>
-                      {#if ph.value}
-                        <div class="text-xs flex items-center gap-1">
-                          <span class="text-gray-500">Example:</span>
-                          <code
-                            class="bg-gray-100 px-1 py-0.5 rounded font-mono text-gray-700"
-                            >{ph.value}</code
-                          >
-                        </div>
-                      {/if}
-                      {#if ph.fillText}
-                        <div class="text-xs mt-0.5">
-                          <p
-                            class="font-medium mb-1 text-gray-600 text-[10px] uppercase tracking-wide"
-                          >
-                            parameters
-                          </p>
-                          {@html formatFillTextHTML(ph.fillText, ";")}
-                        </div>
-                      {/if}
-                    </div>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              </Tooltip.Provider>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Group>
-                <DropdownMenu.Item
-                  onclick={() => insertText(`{{${ph.params.join(";")}}}`)}
-                >
-                  <BracesIcon />
-                  Normal Placeholder
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onclick={() => {
-                    insertText(`[[${ph.params.join(":")}]]`);
-                  }}
-                >
-                  <BracketsIcon />
-                  Inner Placeholder
-                </DropdownMenu.Item>
-              </DropdownMenu.Group>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        {/each}
+      <div class="flex flex-wrap items-center gap-0.5 border-b px-1.5 py-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 gap-1.5 px-2 font-mono text-xs"
+          onclick={() => insertSnippet("{{${1}}}")}
+        >
+          <BracesIcon class="size-3.5 text-amber-500" />
+          {"{{ }}"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 gap-1.5 px-2 font-mono text-xs"
+          onclick={() => insertSnippet("[[${1}]]")}
+        >
+          <BracketsIcon class="size-3.5 text-sky-500" />
+          [[ ]]
+        </Button>
+
+        <div class="mx-1 h-5 w-px bg-border"></div>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button {...props} variant="ghost" size="sm" class="h-8 gap-1.5 px-2 text-xs">
+                <TypeIcon class="size-3.5" />
+                Style
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" class="w-52">
+            <DropdownMenu.Label class="text-xs font-normal text-muted-foreground">
+              Styles the selected text
+            </DropdownMenu.Label>
+            {#each styles as style (style.value)}
+              <DropdownMenu.Item onclick={() => styleSelection(style.value)}>{style.label}</DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        {@render toolButton("Comment out lines", () => run("editor.action.commentLine"), MessageSquareOffIcon, "Ctrl+/")}
+
+        <div class="mx-1 h-5 w-px bg-border"></div>
+
+        {@render toolButton("Undo", () => run("undo"), Undo2Icon, "Ctrl+Z")}
+        {@render toolButton("Redo", () => run("redo"), Redo2Icon, "Ctrl+Y")}
+
+        <Button variant="ghost" size="sm" class="ml-auto h-8 gap-1.5 px-2 text-xs" onclick={copyTemplate}>
+          {#if copied}<CheckIcon class="size-3.5" /> Copied{:else}<CopyIcon class="size-3.5" /> Copy{/if}
+        </Button>
       </div>
-    </Card.Root>
-    <div class="flex flex-1 min-w-0">
+
+      <div class="min-h-0 flex-1">
       <ChatboxMonacoEditor
         height="100%"
-        onLoad={(editor) => {
-          insertText = (text: string) => {
-            const position = editor.getPosition();
-            if (position) {
-              editor.executeEdits("", [
-                {
-                  range: new monaco.Range(
-                    position.lineNumber,
-                    position.column,
-                    position.lineNumber,
-                    position.column,
-                  ),
-                  text,
-                  forceMoveMarkers: true,
-                },
-              ]);
-              editor.focus();
-            }
-          };
+        onLoad={(instance) => {
+          editor = instance;
           setText = (text: string) => {
-            if (text && text.trim() !== editor.getValue().trim()) {
-              editor.setValue(text);
+            if (text && text.trim() !== instance.getValue().trim()) {
+              instance.setValue(text);
             }
           };
           setText($settings.template);
+          length = instance.getValue().length;
+          instance.onDidChangeCursorPosition((e) => {
+            cursor = { line: e.position.lineNumber, column: e.position.column };
+          });
         }}
         onChange={(value) => {
+          length = value.length;
           if (isActive && originalTemplate !== value) {
             originalTemplate = value;
             $advancedTemplate = value;
-            $settings.template = value;
+            if (!oneOff.active) $settings.template = value;
           }
         }}
       />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-3 py-1.5 text-[11px] text-muted-foreground">
+        <span class="tabular-nums">Line {cursor.line}, column {cursor.column}</span>
+        <span class="tabular-nums">{length} characters</span>
+        <span class="ml-auto">
+          Type {"{{"} or [[ for suggestions, Ctrl+Space for more. Lines starting with // are skipped.
+        </span>
+      </div>
     </div>
-    </div>
-  </div>
-  <div class="flex w-full">
-    <Card.Root class="p-2 gap-2 flex w-full">
-      <Card.Title>Template Preview</Card.Title>
-      <Textarea
-        id="template-preview"
-        value={$renderedTemplate}
-        class="w-full h-24 [@media(min-height:720px)]:h-38 font-mono bg-secondary text-foreground text-center"
-        placeholder="Template preview will appear here..."
-        readonly
+
+    <div class="flex min-w-0 flex-col gap-3 min-[1100px]:h-[calc(100vh-7rem)] min-[1100px]:min-h-[30rem]">
+      <PreviewCard
+        rendered={$renderedTemplate}
+        overwrite={oneOff.text}
+        overwriteActive={oneOff.active}
+        onOverwrite={oneOff.input}
+        onOverwriteReset={oneOff.reset}
+        onOverwriteBlur={oneOff.blur}
       />
-    </Card.Root>
+      <PlaceholderBrowser class="h-[28rem] min-[1100px]:h-auto min-[1100px]:min-h-64 min-[1100px]:flex-1" onInsert={insertSnippet} />
+    </div>
   </div>
-</div>
+</Tooltip.Provider>

@@ -261,3 +261,16 @@ export interface StartupSettings {
   /** The saved GPU setting differs from the one this run started with. */
   restartNeeded: boolean;
 }
+
+/**
+ * What the updater is doing, owned by main. Squirrel reports no byte progress, so
+ * `received` comes from watching the package grow in its folder, and either number can be
+ * missing when that can't be worked out.
+ */
+export type UpdateState =
+  | { status: 'unsupported'; reason: 'dev' | 'portable' | 'platform' }
+  | { status: 'idle'; checkedAt?: number }
+  | { status: 'checking' }
+  | { status: 'downloading'; version?: string; received?: number; total?: number; startedAt: number }
+  | { status: 'ready'; version: string }
+  | { status: 'error'; message: string; checkedAt: number };

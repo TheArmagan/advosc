@@ -6,6 +6,7 @@ import type {
   OSCSourcesResult,
   OSCSourceStatus,
   StartupSettings,
+  UpdateState,
 } from '../shared/native-types';
 import type { PanicApi, PanicState } from '../shared/toys';
 
@@ -57,6 +58,13 @@ export interface PreloadElectronAPI {
   deeplink: {
     ready: () => void;
     onLink: (callback: (link: string) => void) => () => void;
+  };
+  /** Owned by main like panic, so it doesn't depend on the engine. */
+  updates: {
+    get: () => Promise<UpdateState>;
+    check: () => void;
+    restart: () => void;
+    onChange: (callback: (state: UpdateState) => void) => () => void;
   };
   version: string;
 }
@@ -200,6 +208,16 @@ const api: PreloadElectronAPI = {
       const listener = (_e: unknown, state: PanicState) => callback(state);
       ipcRenderer.on('panic:changed', listener as any);
       return () => ipcRenderer.removeListener('panic:changed', listener as any);
+    },
+  },
+  updates: {
+    get: () => ipcRenderer.invoke('updates:get'),
+    check: () => ipcRenderer.send('updates:check'),
+    restart: () => ipcRenderer.send('updates:restart'),
+    onChange: (callback) => {
+      const listener = (_event: unknown, state: UpdateState) => callback(state);
+      ipcRenderer.on('updates:changed', listener as any);
+      return () => ipcRenderer.removeListener('updates:changed', listener as any);
     },
   },
   deeplink: {

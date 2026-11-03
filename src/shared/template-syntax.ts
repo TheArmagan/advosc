@@ -23,8 +23,14 @@ export function splitParams(text: string, delimiter: string): string[] {
   return result;
 }
 
+/** A `//` comment starts a line or follows whitespace, so `https://...` stays text. */
 export function cleanTemplate(text: string) {
-  return text.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, "").split("\n").filter(i => i.trim()).join("\n").trim();
+  return cleanRendered(text.replace(/(^|[ \t])\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//gm, ""));
+}
+
+/** For rendered output: drops blank lines only, since a song title can contain `//`. */
+export function cleanRendered(text: string) {
+  return text.split("\n").filter(i => i.trim()).join("\n").trim();
 }
 
 export type ChatboxPlaceholder = {
@@ -37,6 +43,5 @@ export type ChatboxPlaceholder = {
 export interface ChatboxSettings {
   template: string;
   autoSend: boolean;
-  eggMode: boolean;
   debugMode: boolean;
 }

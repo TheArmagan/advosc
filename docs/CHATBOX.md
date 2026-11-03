@@ -12,35 +12,28 @@ There are two ways to write one, and they both end up as the same template under
   <img src="../screenshots/chatbox-simple-editor.png" alt="Simple Chatbox Editor" width="700">
 </p>
 
-You stack blocks, reorder them, and watch the preview update as you go. No syntax to memorize. There are 32 block types:
+You stack blocks, drag them into order, and watch a preview of the chatbox as you go. No syntax to memorize. If you don't know where to start, pick a recipe (now playing, clock and heart rate, PC stats, AFK status, weather, rotating messages, speech captions) and change it from there.
+
+Blocks go left to right, and a **New line** block starts the next line. A line that ends up empty is left out, so a now playing line just disappears when nothing plays.
 
 | Category | Blocks |
 |----------|--------|
-| **Basic** | Text, Text Transform, Text Replace, Text Truncate, Text Pad, Text Fallback, Current Time, New Line |
-| **Media** | Now Playing, Song Progress, Heart Rate |
-| **Display** | Progress Bar, Health Bar, Star Rating, Toggle Text, Number Format |
-| **Animate** | Marquee / Scroll, Bounce, Typewriter, Blink, Cycle Texts |
-| **Logic** | Condition |
-| **VRChat** | Hotkey State, Avatar Param, VR Tracker, Play Sound |
-| **Tools** | Stopwatch, Session Time, Shortcut, Number Calc, Random Number, Weather |
+| **Basics** | Text, New line, Separator, Current time, Countdown |
+| **Media and you** | Now playing, Song progress, Heart rate, Speech to text |
+| **VRChat** | Avatar param, Hotkey state, VR tracker, Play sound |
+| **Data** | PC stats, Weather, Web request, Variable, Session time, Stopwatch, Shortcut |
+| **Display** | Progress bar, Health bar, Star rating, Toggle text, Condition |
+| **Animation** | Scrolling text, Bounce, Typewriter, Blink, Rotating texts |
+| **Numbers** | Math, Number format, Number calc, Random number |
+| **Text tools** | Text transform, Text replace, Text truncate, Text pad, Text fallback |
 
-Most blocks accept more than a plain value as their source. You can feed them:
+Every block has an **Output** section: text before and after it, what to show when it's empty, a max length, and a fancy style. Before and after only show when the block has a value, so `❤ ` and ` BPM` don't hang around when the heart rate monitor is off. A **Separator** works the same way: it only shows when there's something on both sides of it.
 
-- a literal like `42`, `true`, or some text
-- an OSC address like `/avatar/parameters/Health`
-- an inner placeholder like `[[MediaInfo:Duration]]`
-- a full placeholder like `{{Shortcut;Time}}`
+Text fields take placeholders too. Type `{{` or `[[` for autocomplete, or click the list icon to browse modules and your avatar's parameters. Source fields also take a plain number or an OSC address like `/avatar/parameters/Health`.
 
-So mixing media data, tracker battery, heart rate, hotkeys and conditions in one visual flow works fine. A few things people tend to build:
+The header of each block shows its live value. From its menu you can duplicate it, turn it off without deleting it, or see the template it makes. Deleting a block or clearing everything can be undone from the message that pops up.
 
-- a now playing line that falls back to something else when nothing is playing
-- a song progress bar with a moving head character
-- a status line driven by a hotkey or an avatar parameter
-- a weather line with a condition emoji, temperature and sunset time
-- long media titles truncated so they fit, HP padded so the layout stops jumping
-- numbers clamped, mapped into another range, rounded, or randomized
-- marquee, blink, typewriter, rotating messages
-- AFK or stream status that swaps text depending on a condition
+The box under the preview sends a one-off message for 30 seconds, and shows VRChat's typing bubble while you type in it.
 
 ## Advanced editor
 
@@ -49,6 +42,8 @@ So mixing media data, tracker battery, heart rate, hotkeys and conditions in one
 </p>
 
 If you would rather just write the template, this is a real editor with autocomplete for every module and placeholder. Nothing is hidden from you here, and anything the simple editor can produce you can also write by hand.
+
+Type `{{` or `[[` and suggestions come up. The placeholder list on the right is searchable, groups everything by module, and shows what a placeholder returns right now when it needs no arguments. Inserting one puts in its arguments as stops you can Tab through. The toolbar can style selected text, comment lines out (`Ctrl+/`), and copy the template. The preview and the one-off message box work the same as in the simple editor.
 
 Whichever editor you have open is the one that gets sent.
 
@@ -71,4 +66,4 @@ Imported templates just land in your list. Nothing switches until you say so.
 
 ## Chatbox settings
 
-The Settings tab has **Enable auto send**, which is what actually sends your chatbox to VRChat every 2.2 seconds, and **Enable Egg Mode**, which makes the chatbox background transparent in game. **Enable Debug Mode** writes placeholder problems to the log, which helps when a template isn't doing what you expected. **Export All Settings** and its import live here too.
+The Settings tab has **Enable auto send**, which is what actually sends your chatbox to VRChat every 2.2 seconds. **Enable Debug Mode** writes placeholder problems to the log, which helps when a template isn't doing what you expected. **Export All Settings** and its import live here too.

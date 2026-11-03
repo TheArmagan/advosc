@@ -67,6 +67,13 @@ export class TimeModule extends AppModule {
           const days = Math.floor(absMillis / (1000 * 60 * 60 * 24));
 
           let parts: string[] = [];
+          if (format === "Clock") {
+            // Media player style: 3:25, or 1:02:03 once there are hours.
+            const totalHours = Math.floor(absMillis / (1000 * 60 * 60));
+            const sign = millis < 0 ? "-" : "";
+            const mm = totalHours > 0 ? String(minutes).padStart(2, "0") : String(minutes);
+            return `${sign}${totalHours > 0 ? `${totalHours}:` : ""}${mm}:${String(seconds).padStart(2, "0")}`;
+          }
           if (format === "Colon") {
             if (days > 0) parts.push(String(days));
             if (hours > 0) parts.push(String(hours).padStart(2, '0'));

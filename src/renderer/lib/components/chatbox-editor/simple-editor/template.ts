@@ -1,7 +1,7 @@
 import { chatbox } from "$lib/api/chatbox";
 import type { ShortcutModule } from "$lib/api/chatbox/modules/chatbox-shortcut-module";
 
-export { buildTemplateState, previewBlock, supportsSourceInput } from "$shared/simple-editor/template";
+export { buildTemplateState, previewBlock } from "$shared/simple-editor/template";
 
 export function getUserShortcutNames() {
   const module = chatbox.modules.get("Shortcut") as ShortcutModule | undefined;

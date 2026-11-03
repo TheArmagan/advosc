@@ -73,7 +73,6 @@ registerModule(new ModuleClient(lovenseOptions));
 const settings = synced<ChatboxSettings>("Chatbox;Settings", {
   template: "",
   autoSend: true,
-  eggMode: false,
   debugMode: false,
 });
 const advancedTemplate = synced<string>("Chatbox;AdvancedTemplate", "");
@@ -108,5 +107,7 @@ export const chatbox = {
   placeholders,
   getAllValues: (): Promise<AllValues> => call("chatbox.getAllValues"),
   setAllValues: (values: AllValues): Promise<void> => call("chatbox.setAllValues", values),
+  /** Shows or hides VRChat's typing bubble. The engine turns it off on its own after 5 s. */
+  setTyping: (state: boolean): Promise<void> => call("chatbox.setTyping", state),
   getSettings: () => get(settings),
 };

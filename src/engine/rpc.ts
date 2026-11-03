@@ -8,12 +8,26 @@ import { backupApi } from "./persistence/backup-api";
 import { soundEffects } from "./sound-effects/rpc";
 import { handle, handleAll } from "./sync/hub";
 import { avatarOSC, avatarProfiles, avatarScale } from "./vrc-osc";
+import { chatboxOSC } from "./vrc-osc/chatbox-osc";
 
 /**
  * What a window can ask the engine to do. Reads go through synced and mirrored stores, and
  * pure edits happen on synced stores in the renderer, so this is only what needs engine state
  * or has to run here.
  */
+
+/**
+ * A window that closes mid-sentence never says it stopped typing, so the indicator turns
+ * itself off unless the window keeps renewing it.
+ */
+const TYPING_FAILSAFE_MS = 5000;
+let typingTimer: ReturnType<typeof setTimeout> | null = null;
+
+function setTyping(state: boolean) {
+  if (typingTimer) clearTimeout(typingTimer);
+  typingTimer = state ? setTimeout(() => setTyping(false), TYPING_FAILSAFE_MS) : null;
+  if (chatboxOSC.lastTypingState !== state || state) chatboxOSC.toggleTyping(state);
+}
 
 /** Allowlist, since the method name comes from a window. */
 const moduleMethods: Record<string, string[]> = {
@@ -45,6 +59,7 @@ export function registerRpc() {
   handleAll("chatbox", {
     fillTemplate: chatbox.fillTemplate,
     getAllValues: chatbox.getAllValues,
+    setTyping: (state: boolean) => setTyping(!!state),
     setAllValues: (values) => {
       chatbox.setAllValues(values, { automations: "replace" });
       chatbox.updatePlaceholders();

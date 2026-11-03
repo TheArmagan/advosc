@@ -41,9 +41,9 @@ export const timeOptions: ModuleOptions = {
       fillText: "Time;FromNowMilis;${1:futureTimestampMillis}"
     },
     "FormatDuration": {
-      value: "1h 30m 0s",
-      description: "Formats a duration in milliseconds into a human-readable string.",
-      fillText: "Time;FormatDuration;${1:durationMillis};${2:Short|Long|Colon};${3:delimiter}"
+      value: "1h30m",
+      description: "Formats a duration in milliseconds. Short is 1h30m (add a delimiter for 1h 30m), Long is 1 hour, 30 minutes, Colon is 01:30:00, Clock is 3:25 or 1:30:00.",
+      fillText: "Time;FormatDuration;${1:durationMillis};${2:Short|Long|Colon|Clock};${3:delimiter}"
     },
     "ElapsedMillis": {
       value: "5000",

@@ -111,7 +111,6 @@ Here is a working configuration. Do not try to read it yet, we go through it pie
   "settings": {
     "template": "{{Shortcut;Time}}\n{{Shortcut;MediaWithLyric}}\n{{Shortcut;PlayStatus}}",
     "autoSend": true,
-    "eggMode": true,
     "debugMode": false
   }
 }

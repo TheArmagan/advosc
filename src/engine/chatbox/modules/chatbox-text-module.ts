@@ -3,7 +3,8 @@ import { textOptions } from "$shared/chatbox/modules/text";
 import { chatbox } from "..";
 import { AppModule } from "$shared/chatbox/module-base";
 import * as textFormats from "$shared/chatbox/text-formats.json";
-import mapReplace from "stuffs/lib/mapReplace";
+
+const MAX_HEALTH_SYMBOLS = 20;
 
 export class TextModule extends AppModule {
   animationData: Map<string, { at: number, index: number, last: string, lastUsed: number }> = new Map();
@@ -69,7 +70,11 @@ export class TextModule extends AppModule {
         if (formatKey === "Strikethrough") {
           return inputText.split("").join("\u0336") + "\u0336";
         }
-        return mapReplace(inputText.toLowerCase(), textFormats[formatKey as keyof typeof textFormats] ?? {});
+        const map = textFormats[formatKey as keyof typeof textFormats] as Record<string, string> | undefined;
+        if (!map) return inputText.toLowerCase();
+        // Per character, so a style with capital glyphs keeps the case and one without them
+        // falls back to its lowercase glyph like it always did.
+        return Array.from(inputText, (ch) => map[ch] ?? map[ch.toLowerCase()] ?? ch.toLowerCase()).join("");
       }
       case "Truncate": {
         const [lengthStr, ...texts] = params;
@@ -84,8 +89,9 @@ export class TextModule extends AppModule {
         switch (buildType) {
           case "ProgressBar": {
             const [currentStr, totalStr, lengthStr, fillChar = "█", emptyChar = "░", headChar = ""] = args;
-            const current = Math.max(0, parseInt(currentStr, 10) || 0);
-            const total = Math.max(1, parseInt(totalStr, 10) || 1);
+            // Floats, so a 0 to 1 avatar parameter fills the bar instead of rounding to 0.
+            const total = parseFloat(totalStr) > 0 ? parseFloat(totalStr) : 1;
+            const current = Math.min(total, Math.max(0, parseFloat(currentStr) || 0));
             const length = Math.max(1, parseInt(lengthStr, 10) || 10);
             const filledLength = Math.round((current / total) * length);
             const emptyLength = length - filledLength;
@@ -96,17 +102,18 @@ export class TextModule extends AppModule {
           }
           case "StarRating": {
             const [ratingStr, maxRatingStr, filledChar = "★", emptyChar = "☆"] = args;
-            const rating = Math.max(0, parseFloat(ratingStr) || 0);
-            const maxRating = Math.max(1, parseFloat(maxRatingStr) || 1);
-            const filledCount = Math.round((rating / maxRating) * maxRating);
+            const maxRating = Math.max(1, Math.round(parseFloat(maxRatingStr) || 1));
+            const rating = Math.min(maxRating, Math.max(0, parseFloat(ratingStr) || 0));
+            const filledCount = Math.round(rating);
             const emptyCount = maxRating - filledCount;
             return filledChar.repeat(filledCount) + emptyChar.repeat(emptyCount);
           }
           case "HealthBar": {
             const [currentStr, maxStr, filledChar = "♥", emptyChar = "♡"] = args;
-            const current = Math.max(0, parseFloat(currentStr) || 0);
-            const max = Math.max(1, parseFloat(maxStr) || 1);
-            const totalBars = Math.round(max);
+            const max = parseFloat(maxStr) > 0 ? parseFloat(maxStr) : 1;
+            const current = Math.min(max, Math.max(0, parseFloat(currentStr) || 0));
+            // One symbol per point reads well for 5 hearts, not for 200 HP, so big maxes scale down.
+            const totalBars = Math.min(MAX_HEALTH_SYMBOLS, Math.max(1, Math.round(max)));
             const filledCount = Math.min(totalBars, Math.round((current / max) * totalBars));
             const emptyCount = totalBars - filledCount;
             return filledChar.repeat(filledCount) + emptyChar.repeat(emptyCount);
@@ -117,6 +124,7 @@ export class TextModule extends AppModule {
             return isTruthy ? trueText : falseText;
           }
         }
+        return "";
       }
       case "Animate": {
         const [animationType, ...args] = params;
@@ -138,6 +146,8 @@ export class TextModule extends AppModule {
             const noPadding = paddingFlag !== "Padding";
             const now = Date.now();
 
+            if (noPadding && text.trimEnd().length <= maxLength) return text.trimEnd();
+
             if (data.last !== text) {
               data.at = now;
               data.index = 0;
@@ -153,8 +163,9 @@ export class TextModule extends AppModule {
 
             if (noPadding) {
               // Seamless loop without padding
-              const doubledText = text.repeat(2);
-              displayText = doubledText.slice(currentIndex, currentIndex + maxLength);
+              const doubledText = text.repeat(Math.ceil(maxLength / text.length) + 1);
+              const offset = direction === "Right" ? (text.length - currentIndex) % text.length : currentIndex;
+              displayText = doubledText.slice(offset, offset + maxLength);
             } else {
               // With padding animation
               if (direction === "Left") {
@@ -184,6 +195,36 @@ export class TextModule extends AppModule {
             }
 
             return displayText;
+          }
+          case "MarqueeCustom": {
+            const [text = "", direction, maxLengthStr, stepStr] = args;
+            // Code points, not UTF-16 units, so a skip never splits an emoji in half.
+            const chars = Array.from(text);
+            if (!chars.length) return "";
+            const speed = 2200;
+            const maxLength = Math.max(1, parseInt(maxLengthStr, 10) || chars.length);
+            const skip = Math.max(1, parseInt(stepStr, 10) || 1);
+            const now = Date.now();
+
+            // Text that already fits has nothing to scroll. Trailing spaces are the loop gap.
+            const fitted = Array.from(text.trimEnd());
+            if (fitted.length <= maxLength) return fitted.join("");
+
+            if (data.last !== text) {
+              data.at = now;
+              data.index = 0;
+              data.last = text;
+            }
+
+            const frame = Math.floor((now - data.at) / speed);
+            const moved = (frame * skip) % chars.length;
+            const offset = direction === "Right" ? (chars.length - moved) % chars.length : moved;
+
+            // Seamless loop: repeat enough copies that the window never runs off the end.
+            const copies = Math.ceil((offset + maxLength) / chars.length);
+            const looped: string[] = [];
+            for (let i = 0; i < copies; i++) looped.push(...chars);
+            return looped.slice(offset, offset + maxLength).join("");
           }
           case "EachOne": {
             const parts = args;
@@ -270,6 +311,23 @@ export class TextModule extends AppModule {
             return text.slice(pos, pos + maxLength);
           }
         }
+        return "";
+      }
+      case "Wrap": {
+        // Prefix and suffix only when there's something to wrap, so labels don't dangle.
+        const [prefix = "", suffix = "", ...texts] = params;
+        const text = texts.join(";");
+        return text.trim() === "" ? "" : prefix + text + suffix;
+      }
+      case "Join": {
+        // item;sep;item;sep;item. An empty item takes the separator in front of it along.
+        let output = "";
+        for (let i = 0; i < params.length; i += 2) {
+          const item = params[i] ?? "";
+          if (item.trim() === "") continue;
+          output += (output ? params[i - 1] ?? "" : "") + item;
+        }
+        return output;
       }
       case "Trim": {
         const text = params.join(";");

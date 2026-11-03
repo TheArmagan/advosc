@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { previewBlock } from "../template";
+  import { meta } from "../registry";
   import type { Block, UpdateBlock } from "../types";
   import CoreBlockEditor from "./editors/CoreBlockEditor.svelte";
+  import DataBlockEditor from "./editors/DataBlockEditor.svelte";
   import SourceBlockEditor from "./editors/SourceBlockEditor.svelte";
   import SystemBlockEditor from "./editors/SystemBlockEditor.svelte";
+  import OutputOptions from "./OutputOptions.svelte";
 
   let {
     block,
@@ -17,44 +19,20 @@
     getShortcutParamCount: (name: string) => number;
   } = $props();
 
-  const sourceTypes = new Set([
-    "texttransform",
-    "textreplace",
-    "texttruncate",
-    "textpad",
-    "textdefault",
-    "media",
-    "mediaprog",
-    "progbar",
-    "healthbar",
-    "starrating",
-    "toggle",
-    "numberformat",
-    "numbercalc",
-    "random",
-  ]);
-  const coreTypes = new Set([
-    "newline",
-    "text",
-    "time",
-    "marquee",
-    "bounce",
-    "typewriter",
-    "blink",
-    "eachone",
-  ]);
+  const editor = $derived(meta[block.type]?.editor ?? "system");
+  const hasOutput = $derived(!["newline", "separator", "sound"].includes(block.type));
 </script>
 
-{#if coreTypes.has(block.type)}
+{#if editor === "core"}
   <CoreBlockEditor {block} {upd} />
-{:else if sourceTypes.has(block.type)}
+{:else if editor === "source"}
   <SourceBlockEditor {block} {upd} />
+{:else if editor === "data"}
+  <DataBlockEditor {block} {upd} />
 {:else}
   <SystemBlockEditor {block} {upd} {getShortcutNames} {getShortcutParamCount} />
 {/if}
 
-<p
-  class="text-[11px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-1 rounded break-all leading-tight"
->
-  {previewBlock(block) || "(configure this block above)"}
-</p>
+{#if hasOutput}
+  <OutputOptions {block} {upd} />
+{/if}
