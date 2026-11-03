@@ -13,7 +13,7 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { toast } from "svelte-sonner";
   import ParameterRow from "$lib/components/avatar-osc/parameter-row.svelte";
   import AnimateDrawer from "$lib/components/avatar-osc/animate-drawer.svelte";
@@ -87,15 +87,34 @@
   let linkAddress = $state("");
   let sendAddress = $state("");
 
-  function effectiveType(item: ParameterListItem): AvatarParameterType {
+  function effectiveType(item: ParameterListItem, v = item.value): AvatarParameterType {
     if (typeOverrides[item.address]) return typeOverrides[item.address];
     if (item.type) return item.type;
-    const v = item.value;
     if (v === undefined || v % 1 !== 0) return "Float";
     return v === 0 || v === 1 ? "Bool" : "Int";
   }
 
-  const allItems = $derived(buildParameterList($parameters, $schemaIndex, avatarOSC.getParameterType));
+  // Values arrive about 30 times a second, but the list only changes shape when an address
+  // appears or goes away. Rebuilding and re-sorting a couple of thousand rows on every update
+  // is what made big avatars lag, so the rows read their live value on their own instead.
+  const addressKey = $derived(Object.keys($parameters).join("\n"));
+  const allItems = $derived.by(() => {
+    addressKey;
+    return buildParameterList(untrack(() => $parameters), $schemaIndex, avatarOSC.getParameterType);
+  });
+
+  // "Recently changed" would re-sort on every update too, so it only re-sorts once a second.
+  let sortTick = $state(0);
+  const sortChangedAt = $derived.by<Record<string, number>>(() => {
+    if (view.sort !== "recent") return {};
+    sortTick;
+    return untrack(() => $changedAt);
+  });
+  $effect(() => {
+    if (view.sort !== "recent") return;
+    const timer = setInterval(() => sortTick++, 1000);
+    return () => clearInterval(timer);
+  });
   const lockedSet = $derived(new Set($lockedParameterAddresses));
   const favoriteSet = $derived(new Set($favorites));
 
@@ -117,7 +136,7 @@
         .sort((a, b) => b.score - a.score)
         .map((r) => r.item);
     } else {
-      items = sortParameters(items, view.sort, $changedAt);
+      items = sortParameters(items, view.sort, sortChangedAt);
     }
 
     const pinned = items.filter((i) => favoriteSet.has(i.address));
@@ -174,7 +193,8 @@
 {#snippet parameterRow(item: ParameterListItem)}
   <ParameterRow
     {item}
-    sendType={effectiveType(item)}
+    value={$parameters[item.address]}
+    sendType={effectiveType(item, $parameters[item.address])}
     typeOverridden={!!typeOverrides[item.address]}
     typeGuessed={!typeOverrides[item.address] && !item.type}
     locked={lockedSet.has(item.address)}

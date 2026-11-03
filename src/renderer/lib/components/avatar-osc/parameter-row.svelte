@@ -21,6 +21,7 @@
 
   let {
     item,
+    value,
     sendType,
     typeOverridden,
     typeGuessed,
@@ -35,6 +36,8 @@
     onsendtype,
   }: {
     item: ParameterListItem;
+    /** The live value. `item.value` is only a snapshot from when the list was built. */
+    value: number | undefined;
     sendType: AvatarParameterType;
     typeOverridden: boolean;
     typeGuessed: boolean;
@@ -58,7 +61,7 @@
     if (locked) {
       avatarOSC.unlockParameter(item.address);
     } else {
-      avatarOSC.lockParameter(item.address, item.value ?? 0, sendType);
+      avatarOSC.lockParameter(item.address, value ?? 0, sendType);
     }
   }
 
@@ -109,16 +112,16 @@
       <div class="h-1 w-24 overflow-hidden rounded-full bg-primary/15">
         <div
           class="h-full bg-primary transition-[width] duration-75"
-          style="width: {valuePercent(item.value, sendType)}%"
+          style="width: {valuePercent(value, sendType)}%"
         ></div>
       </div>
       <span class="font-mono text-[11px] text-muted-foreground">
-        {formatValue(item.value, sendType)}
+        {formatValue(value, sendType)}
       </span>
     </div>
   </div>
 
-  <ValueControl type={sendType} value={item.value} onsend={send} />
+  <ValueControl type={sendType} {value} onsend={send} />
 
   <div class="flex shrink-0 items-center gap-0.5">
     <Button

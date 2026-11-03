@@ -109,13 +109,16 @@ export function scoreParameter(item: ParameterListItem, query: string) {
 
 const TYPE_ORDER: Record<string, number> = { Bool: 0, Int: 1, Float: 2 };
 
+// localeCompare with options builds a collator on every call, which is slow over a couple of thousand rows.
+const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const addressCollator = new Intl.Collator(undefined, { numeric: true });
+
 export function sortParameters(items: ParameterListItem[], sort: ParameterSort, changedAt: Record<string, number>) {
-  const byName = (a: ParameterListItem, b: ParameterListItem) =>
-    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  const byName = (a: ParameterListItem, b: ParameterListItem) => nameCollator.compare(a.name, b.name);
 
   switch (sort) {
     case "address":
-      return items.sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true }));
+      return items.sort((a, b) => addressCollator.compare(a.address, b.address));
     case "recent":
       return items.sort((a, b) => (changedAt[b.address] ?? 0) - (changedAt[a.address] ?? 0) || byName(a, b));
     case "type":
