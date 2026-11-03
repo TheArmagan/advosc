@@ -509,7 +509,7 @@ A place to keep a value for later. An automation sets it, and anything that take
 | `{{Var;mood}}` | `sleepy` | The variable's value, or nothing if it isn't set |
 | `{{Var;mood;fine}}` | `fine` | The variable's value, or the default if it isn't set |
 
-To set one, add a **Set a variable** action to an automation. It also has **Set** and **Clear** inputs.
+To set one, add a **Set a variable** action to an automation. It also has **Set** and **Clear** inputs. For a counter, use **Change a variable**, which can add, subtract, multiply and so on. See [Automations](AUTOMATIONS.md#variables).
 
 </details>
 

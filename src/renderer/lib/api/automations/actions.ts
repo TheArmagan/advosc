@@ -1,4 +1,4 @@
-import type { AutomationAction, AutomationActionType, AutomationMode } from "$shared/automation";
+import type { AutomationAction, AutomationActionType, AutomationMode, VariableOp } from "$shared/automation";
 import type { ToyAction, ToyTarget } from "$shared/toys";
 import { chatbox } from "../chatbox";
 import { LOVENSE_MODULE_ID } from "../toys";
@@ -13,6 +13,7 @@ export const ACTION_LABELS: Record<AutomationActionType, string> = {
   loadProfile: "Load avatar profile",
   moduleInput: "Run a module input",
   setVariable: "Set a variable",
+  changeVariable: "Change a variable",
   toy: "Control toys",
 };
 
@@ -23,8 +24,21 @@ export const ACTION_ORDER: AutomationActionType[] = [
   "loadProfile",
   "moduleInput",
   "setVariable",
+  "changeVariable",
   "toy",
 ];
+
+/** Read as "<label> <value>", so "Add 1" or "At most 10". */
+export const VARIABLE_OP_LABELS: Record<VariableOp, string> = {
+  add: "Add",
+  subtract: "Subtract",
+  multiply: "Multiply by",
+  divide: "Divide by",
+  modulo: "Remainder after dividing by",
+  min: "Keep at most",
+  max: "Keep at least",
+  append: "Add text to the end",
+};
 
 export const MODE_LABELS: Record<AutomationMode, string> = {
   edge: "Once",
@@ -41,6 +55,7 @@ const ACTION_MODES: Record<AutomationActionType, { modes: AutomationMode[]; why?
   loadProfile: { modes: ["edge", "while"], why: NOT_LIVE },
   moduleInput: { modes: ["edge", "while"], why: NOT_LIVE },
   setVariable: { modes: ["edge", "while", "live"] },
+  changeVariable: { modes: ["edge", "while"], why: NOT_LIVE },
   toy: { modes: ["edge", "while", "live"] },
 };
 
@@ -102,6 +117,8 @@ export function defaultAction(type: AutomationActionType, mode: AutomationMode):
       return { type, moduleId: "", inputId: "", args: {} };
     case "setVariable":
       return { type, name: "", value: "" };
+    case "changeVariable":
+      return { type, name: "", op: "add", value: "1" };
     case "toy":
       return { type, action: defaultToyAction(mode === "live" ? "link" : "pulse") };
   }

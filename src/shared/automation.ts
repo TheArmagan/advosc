@@ -45,10 +45,20 @@ export type AutomationAction =
   | { type: "loadProfile"; profileId: string }
   /** Arg values may hold placeholders. */
   | { type: "moduleInput"; moduleId: string; inputId: string; args: Record<string, string> }
+  /** `$value` in `value` stands for the variable's current value. */
   | { type: "setVariable"; name: string; value: string }
+  /** Does math on a variable's current value. An unset or empty variable counts as 0. */
+  | { type: "changeVariable"; name: string; op: VariableOp; value: string }
   | { type: "toy"; action: ToyAction };
 
 export type AutomationActionType = AutomationAction["type"];
+
+export type VariableOp = "add" | "subtract" | "multiply" | "divide" | "modulo" | "min" | "max" | "append";
+
+export const VARIABLE_OPS: VariableOp[] = ["add", "subtract", "multiply", "divide", "modulo", "min", "max", "append"];
+
+/** Stands for the variable's current value in a Set a variable action. */
+export const VARIABLE_SELF = "$value";
 
 export interface Automation {
   id: string;

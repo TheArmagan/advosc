@@ -16,7 +16,7 @@ A rule runs in one of three modes:
 | **While it matches** | Starts when the value starts matching, and ends when it stops |
 | **Live** | Keeps following the value, mapped from one range to another |
 
-The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). A rule can then do any mix of: play a sound, send OSC, set an avatar parameter, load an avatar profile, run a module input, set a variable, or control a toy. Live rules can only send OSC, set a parameter, set a variable, or have a toy follow the value, since the others don't make sense on a value that changes all the time.
+The match can be a plain value (`1`, `true`, `idle`) or start with an operator (`> 0.5`, `!= 0`, `<= 3`). A rule can then do any mix of: play a sound, send OSC, set an avatar parameter, load an avatar profile, run a module input, set or change a variable, or control a toy. Live rules can only send OSC, set a parameter, set a variable, or have a toy follow the value, since the others don't make sense on a value that changes all the time.
 
 **Test actions** runs a rule's actions once without waiting for the value, so you can check it before going in game.
 
@@ -25,6 +25,14 @@ Rules that read an avatar parameter react the moment OSC comes in, so short flip
 A rule on a value that hovers around its threshold can use "Stays matched until". Once the rule matches, it stays matched until that second match is true, so `> 0.1` with `<= 0.05` fires once instead of flickering. A rule can also be locked to the avatar you're in, so it stays quiet on your other avatars.
 
 If you had triggers in Sound Effects, they've been moved here for you.
+
+## Variables
+
+**Set a variable** stores a value you can read anywhere with `{{Var;name}}`. In its value, `$value` is what the variable holds right now, so `{{Expr;$value * 2}}` doubles it and `$value!` adds an exclamation mark.
+
+**Change a variable** does math on it without writing an expression: add, subtract, multiply by, divide by, the remainder after dividing by, keep at most, keep at least, or add text to the end. A variable that isn't set yet counts as 0, so "Add 1" on a Once rule is a counter. If the variable holds text, the math ones leave it alone and the rule shows an error. It only runs in Once and While it matches.
+
+Use Change a variable for counting down. `{{Expr;$value - 1}}` gives you nothing instead of `0` when it gets there, because Expr treats `0` as false.
 
 ## Importing rules
 

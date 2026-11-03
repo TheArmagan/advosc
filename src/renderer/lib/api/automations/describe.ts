@@ -1,4 +1,4 @@
-import type { Automation, AutomationAction } from "$shared/automation";
+import type { Automation, AutomationAction, VariableOp } from "$shared/automation";
 import type { ToyTarget } from "$shared/toys";
 
 /**
@@ -118,6 +118,27 @@ function shortParameter(address: string): string {
   return address.startsWith(PARAMETER_PREFIX) ? address.slice(PARAMETER_PREFIX.length) : address;
 }
 
+function describeVariableChange(name: string, op: VariableOp, value: string): string {
+  switch (op) {
+    case "add":
+      return `Add ${value} to the variable ${name}`;
+    case "subtract":
+      return `Subtract ${value} from the variable ${name}`;
+    case "multiply":
+      return `Multiply the variable ${name} by ${value}`;
+    case "divide":
+      return `Divide the variable ${name} by ${value}`;
+    case "modulo":
+      return `Set the variable ${name} to its remainder after dividing by ${value}`;
+    case "min":
+      return `Keep the variable ${name} at most ${value}`;
+    case "max":
+      return `Keep the variable ${name} at least ${value}`;
+    case "append":
+      return `Add ${value} to the end of the variable ${name}`;
+  }
+}
+
 export function describeAction(action: AutomationAction): string {
   switch (action.type) {
     case "sound":
@@ -128,6 +149,8 @@ export function describeAction(action: AutomationAction): string {
       return `Set ${shortParameter(action.address)} to ${action.value}`;
     case "setVariable":
       return `Set the variable ${action.name} to ${action.value}`;
+    case "changeVariable":
+      return describeVariableChange(action.name, action.op, action.value);
     case "loadProfile":
       return "Load an avatar profile";
     case "moduleInput":

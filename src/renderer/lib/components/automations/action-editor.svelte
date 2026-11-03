@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AutomationAction, AutomationMode } from "$lib/api/automations";
-  import { ACTION_LABELS, actionProblem } from "$lib/api/automations/actions";
+  import { ACTION_LABELS, VARIABLE_OP_LABELS, actionProblem } from "$lib/api/automations/actions";
+  import { VARIABLE_OPS, type VariableOp } from "$shared/automation";
   import { soundEffects, type SoundOscType } from "$lib/api/sound-effects";
   import { avatarProfiles } from "$lib/api/vrc-osc";
   import RouteLink from "$lib/components/route-link.svelte";
@@ -16,6 +17,7 @@
     ArrowUpIcon,
     BlocksIcon,
     BookUserIcon,
+    CalculatorIcon,
     RadioIcon,
     SlidersHorizontalIcon,
     Trash2Icon,
@@ -56,6 +58,7 @@
     loadProfile: BookUserIcon,
     moduleInput: BlocksIcon,
     setVariable: VariableIcon,
+    changeVariable: CalculatorIcon,
     toy: VibrateIcon,
   };
 
@@ -315,6 +318,61 @@
           Read it anywhere with <span class="font-mono">{`{{Var;${action.name}}}`}</span>.
         </p>
       {/if}
+      {#if mode !== "live"}
+        <p class="text-xs text-muted-foreground">
+          <span class="font-mono">$value</span> is the variable's current value, so
+          <span class="font-mono">{"{{Expr;$value * 2}}"}</span> doubles it.
+        </p>
+      {/if}
+    </div>
+  {:else if action.type === "changeVariable"}
+    <div class="flex flex-col gap-2">
+      <div class="flex flex-wrap items-start gap-2">
+        <div class="flex w-40 flex-col gap-1">
+          <Label class="text-xs">Name</Label>
+          <Input
+            class="h-8 font-mono text-xs"
+            placeholder="myVariable"
+            aria-label="Variable name"
+            value={action.name}
+            oninput={(e) => onChange({ name: (e.target as HTMLInputElement).value })}
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label class="text-xs">Change</Label>
+          <Select.Root
+            type="single"
+            value={action.op}
+            onValueChange={(v) => {
+              if (v) onChange({ op: v as VariableOp });
+            }}
+          >
+            <Select.Trigger class="h-8 w-52 text-xs">{VARIABLE_OP_LABELS[action.op]}</Select.Trigger>
+            <Select.Content>
+              {#each VARIABLE_OPS as op (op)}
+                <Select.Item value={op}>{VARIABLE_OP_LABELS[op]}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="flex min-w-32 flex-1 flex-col gap-1">
+          <Label class="text-xs">{action.op === "append" ? "Text" : "Number"}</Label>
+          <ValuePicker
+            ariaLabel={action.op === "append" ? "Text" : "Number"}
+            inputClass={VALUE_FIELD}
+            placeholder={action.op === "append" ? "Text, or a placeholder" : "1, or a placeholder"}
+            value={action.value}
+            onChange={(value) => onChange({ value })}
+          />
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground">
+        {#if action.op === "append"}
+          Adds the text to whatever the variable holds now.
+        {:else}
+          A variable that isn't set yet counts as 0. If it holds text, nothing changes.
+        {/if}
+      </p>
     </div>
   {:else if action.type === "toy"}
     <ToyActionEditor {action} {mode} {onChange} />

@@ -1,5 +1,12 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from "fflate";
-import type { Automation, AutomationAction, AutomationMode, AutomationRange } from "./automation";
+import {
+  VARIABLE_OPS,
+  type Automation,
+  type AutomationAction,
+  type AutomationMode,
+  type AutomationRange,
+  type VariableOp,
+} from "./automation";
 import { makeId } from "./sound-effects";
 import type { ToyAction, ToyFeature, ToyPresetName } from "./toys";
 
@@ -290,6 +297,21 @@ function validateAction(value: unknown, mode: AutomationMode, where: string) {
       requireName(action.name, MAX_NAME, `${where}'s variable name`);
       requireText(action.value, MAX_VALUE, `${where}'s variable value`);
       return;
+
+    case "changeVariable": {
+      requireFields(action, ["type", "name", "op", "value"], `${where}'s action`);
+      if (mode === "live") throw new Error(`${where} can't change a variable in live mode.`);
+      requireName(action.name, MAX_NAME, `${where}'s variable name`);
+      if (!VARIABLE_OPS.includes(action.op as VariableOp)) {
+        throw new Error(`${where}'s variable change has to be one of ${VARIABLE_OPS.join(", ")}.`);
+      }
+      const value = requireText(action.value, MAX_VALUE, `${where}'s variable change value`);
+      // Bundle values are literal, so a math op with a non-number would only ever fail.
+      if (action.op !== "append" && (!value.trim() || !Number.isFinite(Number(value)))) {
+        throw new Error(`${where}'s variable change value has to be a number.`);
+      }
+      return;
+    }
 
     case "sound":
       requireFields(action, ["type", "soundIds", "soundNames", "loop", "stopOnEnd"], `${where}'s action`);

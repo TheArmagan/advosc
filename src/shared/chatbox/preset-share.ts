@@ -197,6 +197,7 @@ const SHAREABLE_ACTIONS = new Set<AutomationActionType>([
   "loadProfile",
   "moduleInput",
   "setVariable",
+  "changeVariable",
 ]);
 
 function isShareableAction(action: any): boolean {

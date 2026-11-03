@@ -1,4 +1,4 @@
-import type { Automation, AutomationAction } from "$shared/automation";
+import { VARIABLE_SELF, type Automation, type AutomationAction, type VariableOp } from "$shared/automation";
 import { isTruthy } from "$shared/sound-effects";
 import { chatbox } from "../chatbox";
 import type { VarModule } from "../chatbox/modules/chatbox-var-module";
@@ -12,6 +12,7 @@ const HAS_PLACEHOLDER = /\{\{|\[\[/;
 
 type OscAction = Extract<AutomationAction, { type: "osc" }>;
 type SoundAction = Extract<AutomationAction, { type: "sound" }>;
+type ChangeVariableAction = Extract<AutomationAction, { type: "changeVariable" }>;
 
 function varModule() {
   return chatbox.modules.get("Var") as VarModule | undefined;
@@ -26,6 +27,69 @@ async function resolveText(rule: Automation, text: string): Promise<string | nul
     scope: `Automation;${rule.id};action`,
   });
   return result.failure ? null : result.value;
+}
+
+/**
+ * Puts a variable's current value in for `$value`. Inside a placeholder it's escaped, so a value
+ * holding `;` or `:` stays one argument instead of splitting into several.
+ */
+function withCurrentValue(text: string, current: string): string {
+  if (!text.includes(VARIABLE_SELF)) return text;
+  const value = HAS_PLACEHOLDER.test(text) ? current.replace(/[\\;:]/g, "\\$&") : current;
+  return text.split(VARIABLE_SELF).join(value);
+}
+
+/** Drops float noise, so 0.1 + 0.2 stores as 0.3. */
+function formatNumber(value: number): string {
+  return String(Number(value.toPrecision(12)));
+}
+
+function applyVariableOp(op: VariableOp, current: number, operand: number): number {
+  switch (op) {
+    case "add":
+      return current + operand;
+    case "subtract":
+      return current - operand;
+    case "multiply":
+      return current * operand;
+    case "divide":
+      if (operand === 0) throw new Error("Can't divide a variable by 0.");
+      return current / operand;
+    case "modulo":
+      if (operand === 0) throw new Error("Can't divide a variable by 0.");
+      return current % operand;
+    case "min":
+      return Math.min(current, operand);
+    case "max":
+      return Math.max(current, operand);
+    case "append":
+      throw new Error("Append isn't a number operation.");
+  }
+}
+
+async function changeVariable(rule: Automation, action: ChangeVariableAction) {
+  const vars = varModule();
+  if (!vars || !action.name) return;
+
+  const operandText = await resolveText(rule, action.value);
+  if (operandText === null) return;
+
+  // Read after resolving, so a placeholder in the value that takes a moment can't make the
+  // change land on a stale value.
+  const currentText = vars.get(action.name) ?? "";
+  if (action.op === "append") {
+    vars.set(action.name, currentText + operandText);
+    return;
+  }
+
+  const current = currentText.trim() === "" ? 0 : toNumber(currentText);
+  if (current === null) throw new Error(`The variable ${action.name} isn't a number, so it can't be changed with math.`);
+  const operand = toNumber(operandText);
+  if (operand === null) throw new Error(`"${operandText}" isn't a number.`);
+
+  const result = applyVariableOp(action.op, current, operand);
+  if (!Number.isFinite(result)) throw new Error(`The variable ${action.name} got too big to store.`);
+  vars.set(action.name, formatNumber(result));
 }
 
 function sendOsc(action: OscAction, value: string | number): number | string | boolean | null {
@@ -122,10 +186,16 @@ async function runAction(state: RuleState, action: AutomationAction, runId: numb
     }
 
     case "setVariable": {
-      const value = level ?? (await resolveText(rule, action.value));
-      if (value !== null) varModule()?.set(action.name, String(value));
+      const vars = varModule();
+      if (!vars) return;
+      const value = level ?? (await resolveText(rule, withCurrentValue(action.value, vars.get(action.name) ?? "")));
+      if (value !== null) vars.set(action.name, String(value));
       return;
     }
+
+    case "changeVariable":
+      await changeVariable(rule, action);
+      return;
 
     case "toy": {
       const sink = getToySink();
