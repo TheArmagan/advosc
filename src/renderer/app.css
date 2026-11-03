@@ -115,6 +115,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* The window never scrolls. Pages scroll in the shell's content area. */
+  html,
+  body {
+    @apply overflow-hidden;
+  }
   body {
     @apply bg-background text-foreground;
   }

@@ -16,7 +16,8 @@
   <div class="flex flex-1 min-h-0">
     <AppSidebar />
     {#key currentPage.path}
-      <div class="flex-1 min-w-0 min-h-0 overflow-auto">
+      <!-- `relative` keeps absolutely positioned bits (sr-only inputs) inside the scroll area. -->
+      <div class="relative flex-1 min-w-0 min-h-0 overflow-auto">
         <currentPage.component />
       </div>
     {/key}
