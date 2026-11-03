@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/TheArmagan/advosc/releases/latest"><img src="https://img.shields.io/github/downloads/thearmagan/advosc/total.svg?label=downloads" alt="Downloads"></a>
   <a href="https://discord.gg/spfmB7S78n"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://patreon.com/armagan"><img src="https://img.shields.io/badge/Patreon-support-F96854?logo=patreon&logoColor=white" alt="Support on Patreon"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/thearmagan/advosc" alt="License"></a>
 </p>
 
@@ -73,6 +74,10 @@ bun run dev     # main + preload + engine + renderer + electron, all watching
 bun run build   # production build into dist/
 bun run package # distributable
 ```
+
+## Support
+
+ADVOSC is free and stays free. If it's become part of your VRChat nights and you'd like to help me keep working on it, you can support me on [Patreon](https://patreon.com/armagan). Telling a friend about it or reporting a bug on [Discord](https://discord.gg/spfmB7S78n) helps too.
 
 ## License
 
