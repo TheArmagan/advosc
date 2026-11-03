@@ -66,11 +66,13 @@ async function fetchNewestRelease(feedURL: string): Promise<Release | null> {
       .split(/\r?\n/)
       .map((line) => line.trim().split(/\s+/))
       .filter((parts) => parts.length >= 3)
-      .map(([, filename, size]) => ({
-        filename,
-        size: Number(size),
-        version: /-(\d+\.\d+\.\d+(?:-[\w.]+)?)-full\.nupkg$/i.exec(filename)?.[1] ?? '',
-      }))
+      // update.electronjs.org rewrites the name to the full download URL, while Squirrel
+      // saves the file under its bare name, so only the last part is any use here.
+      .map(([, name, size]) => {
+        const filename = decodeURIComponent(name.split('/').pop() ?? name);
+        const version = /-(\d+\.\d+\.\d+(?:-[\w.]+)?)-full\.nupkg$/i.exec(filename)?.[1] ?? '';
+        return { filename, size: Number(size), version };
+      })
       .filter((release) => release.version && release.size > 0);
     releases.sort((a, b) => compareVersions(b.version, a.version));
     return releases[0] ?? null;
