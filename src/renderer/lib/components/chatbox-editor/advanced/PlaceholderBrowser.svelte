@@ -12,10 +12,13 @@
 
   let {
     onInsert,
+    hideModules = [],
     class: className,
   }: {
     /** `snippet` uses Monaco tabstops, so the arguments can be tabbed through. */
     onInsert: (snippet: string) => void;
+    /** Module ids listed somewhere else, like shortcuts having their own panel. */
+    hideModules?: string[];
     class?: string;
   } = $props();
 
@@ -37,6 +40,7 @@
     for (const placeholder of $placeholders) {
       const id = placeholder.params[0];
       if (id === LOVENSE_MODULE_ID && !toyStatus.enabled) continue;
+      if (hideModules.includes(id)) continue;
       if (q) {
         const name = chatbox.modules.get(id)?.options.name ?? id;
         const haystack = `${keyOf(placeholder)} ${placeholder.description} ${name}`.toLowerCase();

@@ -418,7 +418,7 @@ The hotkey actions are Start/Toggle, Pause (keeps the time), Reset (back to zero
 <details>
 <summary><strong>📝 Shortcut</strong> :: name your own placeholders</summary>
 
-Give a name to a chunk of placeholder soup you keep retyping, then use the name instead. The simple editor also generates these for you behind the scenes.
+Give a name to a chunk of placeholder soup you keep retyping, then use the name instead. You make and edit them in Chatbox > Advanced Editor, in the Shortcuts tab on the right. The simple editor also generates these for you behind the scenes.
 
 | Placeholder | Output | Description |
 |-------------|--------|-------------|

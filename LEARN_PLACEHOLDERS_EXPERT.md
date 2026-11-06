@@ -27,7 +27,7 @@ Call:    {{Shortcut;MyShortcut;World;25}}
 Get:     Hello World, you are 25 years old!
 ```
 
-`$0` is the first parameter after the name, `$1` the second, and it keeps going as far as you need.
+`$0` is the first parameter after the name, `$1` the second, and it keeps going as far as you need. When you have a shortcut open in the Advanced Editor, the Try it bar under it gives you a box for each one so you can see the result without calling it from the template.
 
 And since parameters are just text that gets substituted in, they can be placeholders themselves:
 

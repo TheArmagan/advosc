@@ -45,6 +45,10 @@ If you would rather just write the template, this is a real editor with autocomp
 
 Type `{{` or `[[` and suggestions come up. The placeholder list on the right is searchable, groups everything by module, and shows what a placeholder returns right now when it needs no arguments. Inserting one puts in its arguments as stops you can Tab through. The toolbar can style selected text, comment lines out (`Ctrl+/`), and copy the template. The preview and the one-off message box work the same as in the simple editor.
 
+Shortcuts live here too, in the Shortcuts tab next to the placeholder list. Click one and it opens as a tab beside Template, so you edit it in the same editor with the same autocomplete, and it saves as you type. From the list you can make a new one, rename it (calls to it in the template and in other shortcuts get updated), duplicate it, keep it out of shares, or delete it with an Undo. Double click inserts a call to it. While a shortcut is open, the Try it bar under the editor has a box for each `$0`, `$1` it uses and shows what it gives back. Export and Import move shortcuts around as JSON.
+
+The + at the end of the editor's tabs opens any shortcut, or starts a new one. To turn part of the template into a shortcut, select it and press Make shortcut in the toolbar (or Ctrl+Shift+E, or right click). You name it, and the selection gets replaced with a call to it, in the `[[ ]]` form if it was inside a `{{ }}`. Put the cursor anywhere in a `{{Shortcut;Name;...}}` call and a bar under the editor shows a box for each param it takes, filled from the call. Typing in one rewrites that param for you, escaping any `;`, and the bar shows what the call gives right now.
+
 Whichever editor you have open is the one that gets sent.
 
 ## My Templates

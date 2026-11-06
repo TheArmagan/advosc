@@ -62,7 +62,7 @@ Inner first, then outer. Like getting your ingredients out before you start cook
 
 ## Shortcuts
 
-The Shortcut module lets you give a name to a chunk of placeholder and use the name instead. Nothing more to it, but it is what makes big templates survivable, because a shortcut can contain other shortcuts:
+The Shortcut module lets you give a name to a chunk of placeholder and use the name instead. Nothing more to it, but it is what makes big templates survivable, because a shortcut can contain other shortcuts. You make them in Chatbox > Advanced Editor, from the Shortcuts tab next to the placeholder list:
 
 ```
 Shortcut A → Shortcut B → Shortcut C → actual data
